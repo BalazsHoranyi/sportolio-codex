@@ -3,7 +3,7 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Note**: This template is filled in by the `/speckit.plan` command.
 
 ## Summary
 
@@ -31,7 +31,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] Spec-first scope is complete: prioritized stories, acceptance scenarios, edge cases,
+      measurable outcomes, and explicit clarifications.
+- [ ] Code quality gates are defined (linting, formatting, static analysis) with pass criteria.
+- [ ] Strict TDD workflow is defined: tests first, failing evidence, then implementation.
+- [ ] Testing matrix is defined for changed behavior (unit/integration/contract/regression).
+- [ ] UX consistency criteria are defined for user-facing flows
+      (success/loading/empty/error + accessibility checks).
+- [ ] Performance targets, thresholds, and validation method are defined for critical paths.
+- [ ] Any requested gate exception is logged in Complexity Tracking with approver and rationale.
 
 ## Project Structure
 
