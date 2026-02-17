@@ -18,9 +18,9 @@
 - [] T005 [P] Configure backend tooling (ruff, mypy, pytest, coverage) in `backend/pyproject.toml`
 - [] T006 [P] Configure frontend tooling (eslint, typescript, test runner) in `frontend/tsconfig.json`
 - [] T007 Configure pre-commit hooks for backend/frontend lint gates in `.pre-commit-config.yaml`
-- [ ] T161 [P] Initialize production frontend runtime scripts (`dev`, `build`, `start`) and modern UI dependencies in `frontend/package.json`
-- [ ] T162 [P] Add frontend release verification script that enforces browser evidence presence in `frontend/scripts/verify-ui-evidence.mjs`
-- [ ] T163 Add root quality-gate targets for frontend production build and UI verification in `Makefile`
+- [] T161 [P] Initialize production frontend runtime scripts (`dev`, `build`, `start`) and modern UI dependencies in `frontend/package.json`
+- [] T162 [P] Add frontend release verification script that enforces browser evidence presence in `frontend/scripts/verify-ui-evidence.mjs`
+- [] T163 Add root quality-gate targets for frontend production build and UI verification in `Makefile`
 
 ---
 
