@@ -265,6 +265,9 @@ Validation-only phase: no new product behavior is introduced; any defects found 
 - [ ] T168 [US2] Integrate required mapped Aceternity components for workout execution route in `frontend/src/app/workouts/[workoutId]/execute/page.tsx`
 - [ ] T169 [US3] Integrate required mapped Aceternity components for today/calendar routes in `frontend/src/app/today/page.tsx`
 - [ ] T170 Enforce checklist/release gate requiring Aceternity component evidence (or documented fallback exception) in `specs/001-define-sportolo-v1/checklists/ui-browser-verification.md`
+- [ ] T171 [P] Configure shadcn registry alias and reproducible token-based install prerequisites for `@ss-themes/midnight-bloom` in `frontend/components.json`
+- [ ] T172 Apply `@ss-themes/midnight-bloom` tokens/theme variables across frontend global styling in `frontend/src/app/globals.css`
+- [ ] T173 Add release verification step for authenticated `midnight-bloom` theme install and browser evidence in `specs/001-define-sportolo-v1/quickstart.md`
 
 ---
 
@@ -382,3 +385,4 @@ Task: T088 frontend/src/features/integrations/ImportResolutionPanel.tsx
 - Every task includes explicit file paths.
 - Verification tasks are defined per story and should fail before implementation begins.
 - Aceternity route mapping is a release requirement; T166-T170 must be completed or explicitly exception-documented before sign-off.
+- Midnight Bloom theme reproducibility is a release requirement; T171-T173 must be completed before sign-off.

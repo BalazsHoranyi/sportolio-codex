@@ -23,17 +23,32 @@ Deliver the API + responsive web slice for Sportolo v1 with deterministic planni
 ## UI Composition Contract (Required)
 
 Aceternity is mandatory for designated v1 routes. Each route below MUST include at least one listed Aceternity component in shipped UI:
-
-| Route | Required Aceternity Components (at least one) | Purpose |
-|-------|-----------------------------------------------|---------|
-| `/planner` | `BackgroundBeams`, `HoverBorderGradient`, `SparklesText` | Plan authoring visual hierarchy and focus cues |
-| `/workouts/[workoutId]/execute` | `Spotlight`, `TracingBeam`, `AnimatedTooltip` | Execution focus, progression visibility, and interaction affordance |
-| `/today` | `BentoGrid`, `CardStack`, `TextGenerateEffect` | Fatigue summary readability and analytical grouping |
-| `/calendar` | `BentoGrid`, `HoverBorderGradient`, `AnimatedTooltip` | Calendar audit emphasis and signal explanations |
-
-Aceternity-first composition rule (for future work): use Aceternity templates, then Aceternity blocks, then Aceternity components wherever possible before introducing custom UI primitives.
+Aceternity-first composition rule: use Aceternity templates, then Aceternity blocks, then Aceternity components wherever possible before introducing custom UI primitives.
+Frontend skill invocation rule (required): any frontend implementation, refactor, or review task MUST invoke `frontend-design`, `refactoring-ui`, `vercel-react-best-practices`, and `web-design-guidelines`.
 
 Fallback rule: if a mapped Aceternity component cannot be used (technical incompatibility or missing asset), implementation MUST document the reason in browser verification evidence and use a shadcn equivalent that preserves the same interaction intent.
+If Aceternity rule is behind pro access, ask user to download. 
+
+Theme reproducibility rule (required): apply `@ss-themes/midnight-bloom` across frontend surfaces and keep installation reproducible with authenticated shadcn CLI steps:
+
+1. shadcn token is definied in env vars. SHADCN_TOKEN.
+2. Ensure `/Users/bhoranyi/Personal/sportolo2/frontend/components.json` defines the registry alias:
+   ```json
+   {
+     "registries": {
+       "@ss-themes": "https://www.shadcn.io/registry"
+     }
+   }
+   ```
+3. Run theme install from `/Users/bhoranyi/Personal/sportolo2/frontend`:
+   ```bash
+   pnpm dlx shadcn@latest add @ss-themes/midnight-bloom
+   ```
+4. If alias resolution fails, use direct registry URL:
+   ```bash
+   pnpm dlx shadcn@latest add https://www.shadcn.io/r/midnight-bloom.json
+   ```
+5. Verify theme tokens are wired in global styles and confirm with browser evidence (`agent-browser` + `chrome-devtools-mcp`).
 
 ## Constitution Check
 
@@ -134,6 +149,7 @@ Design highlights:
 - Phase 8 includes explicit closure tasks for FR-033 parity verification, FR-026 provider matrix coverage, FR-010 trigger matrix tests, and PRF-004 network-profile performance validation.
 - Explicit route-to-component Aceternity mapping is mandatory for `/planner`, `/workouts/[workoutId]/execute`, `/today`, and `/calendar` with evidence-backed fallback exceptions only.
 - For upcoming iterations, UI delivery should prioritize Aceternity templates/blocks/components in that order wherever feasible.
+- Frontend work requires explicit use of `frontend-design`, `refactoring-ui`, `vercel-react-best-practices`, and `web-design-guidelines`.
 
 ## Agent Context Update
 
