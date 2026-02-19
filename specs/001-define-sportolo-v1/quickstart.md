@@ -68,7 +68,12 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
 
 9. **Responsive web implementation**
    - Build planner/today/calendar/session/conflict-resolution/DSL validation feedback/prescription-preview flows with Tailwind + shadcn/ui.
-   - Use Aceternity components wherever a specific screen can utilize them.
+   - Enforce route-level Aceternity composition map:
+     - `/planner`: at least one of `BackgroundBeams`, `HoverBorderGradient`, `SparklesText`
+     - `/workouts/[workoutId]/execute`: at least one of `Spotlight`, `TracingBeam`, `AnimatedTooltip`
+     - `/today`: at least one of `BentoGrid`, `CardStack`, `TextGenerateEffect`
+     - `/calendar`: at least one of `BentoGrid`, `HoverBorderGradient`, `AnimatedTooltip`
+   - If a mapped component cannot be used, record route-specific exception + shadcn fallback in verification evidence.
 
 10. **Integration boundary**
    - Implement ingest/export pipelines for Strava/Garmin/Wahoo/FIT/TCX.
@@ -193,6 +198,7 @@ make release
 3. Save evidence to:
    - `specs/001-define-sportolo-v1/checklists/ui-browser-verification.md`
    - optional screenshots under `specs/001-define-sportolo-v1/checklists/artifacts/`
+4. For mapped routes, include Aceternity component names observed in render output and any documented fallback exceptions.
 
 ## Aceternity Pro Rule
 

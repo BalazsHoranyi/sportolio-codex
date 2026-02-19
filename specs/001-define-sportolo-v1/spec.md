@@ -153,6 +153,13 @@ As a coach or team admin, I can manage athlete plans and collaboration while res
 3. **Given** an external activity import, **When** the activity is ingested, **Then** completed data is added without altering planned workouts owned by Sportolo.
 4. **Given** an imported activity candidate, **When** deduplication runs, **Then** the system matches first on `(provider, athlete, external_activity_id)`, then fallback `(start time within +/-60s, duration within +/-5%, same modality)` when ID is unavailable, and requires explicit user resolution for ambiguous multiple matches.
 
+### Aceternity Screen Acceptance
+
+1. **Given** the `/planner` route, **When** UI verification is executed, **Then** at least one mapped Aceternity component (`BackgroundBeams`, `HoverBorderGradient`, `SparklesText`) is visibly rendered and recorded in evidence.
+2. **Given** the `/workouts/[workoutId]/execute` route, **When** UI verification is executed, **Then** at least one mapped Aceternity component (`Spotlight`, `TracingBeam`, `AnimatedTooltip`) is visibly rendered and recorded in evidence.
+3. **Given** the `/today` and `/calendar` routes, **When** UI verification is executed, **Then** each route contains at least one mapped Aceternity component from the approved map and evidence includes component names plus screenshots.
+4. **Given** a mapped Aceternity component cannot be used, **When** release evidence is reviewed, **Then** the exception reason and shadcn fallback component are documented per-route.
+
 ### Edge Cases
 
 - A user moves multiple planned workouts into a single day that crosses fatigue red thresholds.
@@ -247,6 +254,8 @@ As a coach or team admin, I can manage athlete plans and collaboration while res
 - **FR-070**: Endurance analytics MUST include at minimum completed-session count, total completed duration, and modality load trend over 7-day and 30-day windows using the athlete's configured primary training signal (pace/power/HR).
 - **FR-071**: The frontend MUST be runnable and deployable with explicit production commands (`npm run build` and `npm run start`) and must pass all frontend quality gates before release.
 - **FR-072**: User-facing pages in v1 MUST use a modern visual system (Aceternity + shadcn/ui + Tailwind) with intentional typography, spacing, and motion rather than placeholder/default browser styling.
+- **FR-073**: Route-level Aceternity coverage is mandatory for `/planner`, `/workouts/[workoutId]/execute`, `/today`, and `/calendar`; each mapped route MUST render at least one approved Aceternity component from the implementation plan mapping.
+- **FR-074**: If an approved Aceternity component is not used on a mapped route, release evidence MUST include a documented exception reason and the specific shadcn fallback component used to preserve intended interaction semantics.
 - **FR-029**: The system MUST support roles for athlete, coach, and team admin with role-appropriate plan editing, commenting, template sharing, privacy controls, and edit history visibility.
 - **FR-030**: The system MUST seed and maintain an exercise catalog with deduplicated canonical identifiers, aliases, region tags, placeholder media, and user-created exercises that remain user-scoped.
 - **FR-031**: The platform MUST support subscription monetization including coach access for unlimited athletes and MUST enforce at least one entitlement-gated operation in v1; when entitlement is absent, the operation MUST return a deterministic access-denied response (`403` + machine-readable reason code). Future feature-gating capability MUST reuse the same entitlement mechanism.
@@ -282,6 +291,8 @@ As a coach or team admin, I can manage athlete plans and collaboration while res
 - **UXR-005**: Modified screens MUST meet a WCAG 2.2 AA baseline: full keyboard navigation for interactive controls, visible focus indicators, accessible form labels/status messages, and zero critical accessibility violations in automated and manual release checks.
 - **UXR-006**: Every modified frontend page/component MUST be manually verified in a real browser with `agent-browser` + `chrome-devtools-mcp`, and evidence must be saved in feature verification artifacts.
 - **UXR-007**: Production UI reviews MUST reject generic placeholder styling; accepted designs must demonstrate a defined visual direction and responsive behavior on mobile and desktop.
+- **UXR-008**: Browser verification evidence for each changed mapped route MUST list the exact Aceternity component names observed in the rendered UI.
+- **UXR-009**: Any Aceternity exception MUST be approved in evidence with a route-specific fallback note before release.
 
 ### Performance Requirements *(mandatory)*
 

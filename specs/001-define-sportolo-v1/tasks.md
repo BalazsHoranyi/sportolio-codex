@@ -11,16 +11,16 @@
 
 **Purpose**: Initialize backend/frontend workspaces, shared quality gates, and project scaffolding.
 
-- [] T001 Initialize backend project metadata and dependencies in `backend/pyproject.toml`
-- [] T002 Initialize frontend project metadata and scripts in `frontend/package.json`
-- [] T003 Create FastAPI app bootstrap and router registration in `backend/src/main.py`
-- [] T004 Create Next.js app shell and root layout in `frontend/src/app/layout.tsx`
-- [] T005 [P] Configure backend tooling (ruff, mypy, pytest, coverage) in `backend/pyproject.toml`
-- [] T006 [P] Configure frontend tooling (eslint, typescript, test runner) in `frontend/tsconfig.json`
-- [] T007 Configure pre-commit hooks for backend/frontend lint gates in `.pre-commit-config.yaml`
-- [] T161 [P] Initialize production frontend runtime scripts (`dev`, `build`, `start`) and modern UI dependencies in `frontend/package.json`
-- [] T162 [P] Add frontend release verification script that enforces browser evidence presence in `frontend/scripts/verify-ui-evidence.mjs`
-- [] T163 Add root quality-gate targets for frontend production build and UI verification in `Makefile`
+- [X] T001 Initialize backend project metadata and dependencies in `backend/pyproject.toml`
+- [X] T002 Initialize frontend project metadata and scripts in `frontend/package.json`
+- [X] T003 Create FastAPI app bootstrap and router registration in `backend/src/main.py`
+- [X] T004 Create Next.js app shell and root layout in `frontend/src/app/layout.tsx`
+- [X] T005 [P] Configure backend tooling (ruff, mypy, pytest, coverage) in `backend/pyproject.toml`
+- [X] T006 [P] Configure frontend tooling (eslint, typescript, test runner) in `frontend/tsconfig.json`
+- [X] T007 Configure pre-commit hooks for backend/frontend lint gates in `.pre-commit-config.yaml`
+- [X] T161 [P] Initialize production frontend runtime scripts (`dev`, `build`, `start`) and modern UI dependencies in `frontend/package.json`
+- [X] T162 [P] Add frontend release verification script that enforces browser evidence presence in `frontend/scripts/verify-ui-evidence.mjs`
+- [X] T163 Add root quality-gate targets for frontend production build and UI verification in `Makefile`
 
 ---
 
@@ -30,16 +30,16 @@
 
 **⚠️ CRITICAL**: No user story work should start before this phase is complete.
 
-- [] T008 Configure environment and settings loading in `backend/src/core/settings.py`
-- [] T009 Setup SQLAlchemy base, engine, and session management in `backend/src/db/session.py`
-- [] T010 Initialize Alembic config and migration environment in `backend/migrations/env.py`
-- [] T011 Create initial schema baseline migration in `backend/migrations/versions/0001_initial_baseline.py`
-- [] T012 Implement shared API error models and exception handlers in `backend/src/api/errors.py`
-- [] T013 Implement authentication and role authorization middleware in `backend/src/api/middleware/auth.py`
-- [] T014 [P] Implement audit logging and request tracing middleware in `backend/src/api/middleware/audit.py`
-- [] T015 [P] Define deterministic policy constants and no-randomness guardrails in `backend/src/domain/policies/determinism.py`
-- [] T016 Create shared OpenAPI-driven API client wrappers in `frontend/src/services/api/client.ts`
-- [] T017 Create reusable UI state components (loading/empty/error/success) in `frontend/src/components/state/index.tsx`
+- [X] T008 Configure environment and settings loading in `backend/src/core/settings.py`
+- [X] T009 Setup SQLAlchemy base, engine, and session management in `backend/src/db/session.py`
+- [X] T010 Initialize Alembic config and migration environment in `backend/migrations/env.py`
+- [X] T011 Create initial schema baseline migration in `backend/migrations/versions/0001_initial_baseline.py`
+- [X] T012 Implement shared API error models and exception handlers in `backend/src/api/errors.py`
+- [X] T013 Implement authentication and role authorization middleware in `backend/src/api/middleware/auth.py`
+- [X] T014 [P] Implement audit logging and request tracing middleware in `backend/src/api/middleware/audit.py`
+- [X] T015 [P] Define deterministic policy constants and no-randomness guardrails in `backend/src/domain/policies/determinism.py`
+- [X] T016 Create shared OpenAPI-driven API client wrappers in `frontend/src/services/api/client.ts`
+- [X] T017 Create reusable UI state components (loading/empty/error/success) in `frontend/src/components/state/index.tsx`
 
 **Checkpoint**: Foundation complete. User story phases can begin.
 
@@ -53,30 +53,30 @@
 
 ### Tests for User Story 1 ⚠️
 
-- [] T018 [P] [US1] Add failing contract tests for profile and macrocycle endpoints in `backend/tests/contract/test_profiles_macrocycles_contract.py`
-- [] T019 [P] [US1] Add failing contract tests for snapshots, DSL compile/translate, and resolved prescriptions in `backend/tests/contract/test_dsl_snapshot_prescription_contract.py`
-- [] T020 [P] [US1] Add failing integration test for effective-date rebase and forward snapshot restore in `backend/tests/integration/test_plan_versioning_restore.py`
-- [] T021 [US1] Add failing unit tests for DSL guardrail limits and timeout handling in `backend/tests/unit/test_dsl_guardrails.py`
-- [] T022 [US1] Add failing frontend integration test for planner creation flow in `frontend/tests/integration/planner-create-flow.test.tsx`
+- [X] T018 [P] [US1] Add failing contract tests for profile and macrocycle endpoints in `backend/tests/contract/test_profiles_macrocycles_contract.py`
+- [X] T019 [P] [US1] Add failing contract tests for snapshots, DSL compile/translate, and resolved prescriptions in `backend/tests/contract/test_dsl_snapshot_prescription_contract.py`
+- [X] T020 [P] [US1] Add failing integration test for effective-date rebase and forward snapshot restore in `backend/tests/integration/test_plan_versioning_restore.py`
+- [X] T021 [US1] Add failing unit tests for DSL guardrail limits and timeout handling in `backend/tests/unit/test_dsl_guardrails.py`
+- [X] T022 [US1] Add failing frontend integration test for planner creation flow in `frontend/tests/integration/planner-create-flow.test.tsx`
 
 ### Implementation for User Story 1
 
-- [] T023 [P] [US1] Implement athlete profile and baseline version models in `backend/src/models/athlete_profile.py`
-- [] T024 [P] [US1] Implement macrocycle/mesocycle/workout and version lineage models in `backend/src/models/planning.py`
-- [] T025 [P] [US1] Implement snapshot and restore event models in `backend/src/models/snapshot.py`
-- [] T026 [P] [US1] Implement DSL program, compile attempt, and canonical IR models in `backend/src/models/dsl_ir.py`
-- [] T027 [P] [US1] Implement resolved prescription snapshot model in `backend/src/models/resolved_prescription.py`
-- [] T028 [US1] Create planning and DSL schema migration in `backend/migrations/versions/0002_planning_dsl_lineage.py`
-- [] T029 [US1] Implement plan versioning and effective-date regeneration service in `backend/src/services/planning/versioning_service.py`
-- [] T030 [US1] Implement snapshot create/restore forward-version service in `backend/src/services/planning/snapshot_service.py`
-- [] T031 [US1] Implement deterministic DSL compile/translate guardrail service in `backend/src/services/dsl/compile_service.py`
-- [] T032 [US1] Implement late-binding resolved prescription service in `backend/src/services/prescriptions/resolve_service.py`
-- [] T033 [US1] Implement planning routers for profiles, macrocycles, mesocycles, workouts, and moves in `backend/src/api/routes/planning.py`
-- [] T034 [US1] Implement DSL and resolved-prescription routers in `backend/src/api/routes/dsl.py`
-- [] T035 [US1] Implement planner data hooks and API bindings in `frontend/src/features/planner/api.ts`
-- [] T036 [US1] Implement planner screens for profile/macro/meso/workout authoring in `frontend/src/app/planner/page.tsx`
-- [] T037 [US1] Implement DSL editor and validation feedback UI in `frontend/src/features/dsl/EditorPanel.tsx`
-- [] T038 [US1] Implement snapshot/version history and restore UI in `frontend/src/features/planner/VersionHistoryPanel.tsx`
+- [X] T023 [P] [US1] Implement athlete profile and baseline version models in `backend/src/models/athlete_profile.py`
+- [X] T024 [P] [US1] Implement macrocycle/mesocycle/workout and version lineage models in `backend/src/models/planning.py`
+- [X] T025 [P] [US1] Implement snapshot and restore event models in `backend/src/models/snapshot.py`
+- [X] T026 [P] [US1] Implement DSL program, compile attempt, and canonical IR models in `backend/src/models/dsl_ir.py`
+- [X] T027 [P] [US1] Implement resolved prescription snapshot model in `backend/src/models/resolved_prescription.py`
+- [X] T028 [US1] Create planning and DSL schema migration in `backend/migrations/versions/0002_planning_dsl_lineage.py`
+- [X] T029 [US1] Implement plan versioning and effective-date regeneration service in `backend/src/services/planning/versioning_service.py`
+- [X] T030 [US1] Implement snapshot create/restore forward-version service in `backend/src/services/planning/snapshot_service.py`
+- [X] T031 [US1] Implement deterministic DSL compile/translate guardrail service in `backend/src/services/dsl/compile_service.py`
+- [X] T032 [US1] Implement late-binding resolved prescription service in `backend/src/services/prescriptions/resolve_service.py`
+- [X] T033 [US1] Implement planning routers for profiles, macrocycles, mesocycles, workouts, and moves in `backend/src/api/routes/planning.py`
+- [X] T034 [US1] Implement DSL and resolved-prescription routers in `backend/src/api/routes/dsl.py`
+- [X] T035 [US1] Implement planner data hooks and API bindings in `frontend/src/features/planner/api.ts`
+- [X] T036 [US1] Implement planner screens for profile/macro/meso/workout authoring in `frontend/src/app/planner/page.tsx`
+- [X] T037 [US1] Implement DSL editor and validation feedback UI in `frontend/src/features/dsl/EditorPanel.tsx`
+- [X] T038 [US1] Implement snapshot/version history and restore UI in `frontend/src/features/planner/VersionHistoryPanel.tsx`
 
 **Checkpoint**: User Story 1 core behavior is functional; full story sign-off depends on Phase 8 cross-cutting validation tasks.
 
@@ -90,27 +90,27 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [] T039 [P] [US2] Add failing contract tests for session create/finalize/progression endpoints in `backend/tests/contract/test_sessions_contract.py`
-- [] T040 [P] [US2] Add failing contract tests for sync batch/conflict resolution endpoints in `backend/tests/contract/test_sync_contract.py`
-- [] T041 [P] [US2] Add failing integration test for partial vs abandoned deterministic transitions in `backend/tests/integration/test_session_state_transitions.py`
-- [] T042 [P] [US2] Add failing integration test for offline same-workout conflict precedence and tie-break rules in `backend/tests/integration/test_sync_conflict_resolution.py`
-- [] T043 [US2] Add failing frontend integration test for offline session logging and replay in `frontend/tests/integration/session-offline-sync.test.tsx`
+- [X] T039 [P] [US2] Add failing contract tests for session create/finalize/progression endpoints in `backend/tests/contract/test_sessions_contract.py`
+- [X] T040 [P] [US2] Add failing contract tests for sync batch/conflict resolution endpoints in `backend/tests/contract/test_sync_contract.py`
+- [X] T041 [P] [US2] Add failing integration test for partial vs abandoned deterministic transitions in `backend/tests/integration/test_session_state_transitions.py`
+- [X] T042 [P] [US2] Add failing integration test for offline same-workout conflict precedence and tie-break rules in `backend/tests/integration/test_sync_conflict_resolution.py`
+- [X] T043 [US2] Add failing frontend integration test for offline session logging and replay in `frontend/tests/integration/session-offline-sync.test.tsx`
 
 ### Implementation for User Story 2
 
-- [] T044 [P] [US2] Implement session and execution payload models with required completion invariants in `backend/src/models/session.py`
-- [] T045 [P] [US2] Implement progression failure outcome model in `backend/src/models/progression_failure.py`
-- [] T046 [P] [US2] Implement sync conflict record model in `backend/src/models/sync_conflict.py`
-- [] T047 [US2] Create session/sync/progression schema migration in `backend/migrations/versions/0003_sessions_sync_progression.py`
-- [] T048 [US2] Implement session lifecycle state machine service in `backend/src/services/sessions/state_machine.py`
-- [] T049 [US2] Implement progression-failure detection and policy application service in `backend/src/services/sessions/progression_service.py`
-- [] T050 [US2] Implement sync conflict resolver with deterministic precedence rules in `backend/src/services/sync/conflict_resolver.py`
-- [] T051 [US2] Implement session create/finalize and progression routes in `backend/src/api/routes/sessions.py`
-- [] T052 [US2] Implement sync batch, conflict list, and conflict resolve routes in `backend/src/api/routes/sync.py`
-- [] T053 [US2] Implement frontend workout execution and set/interval logger screen in `frontend/src/app/workouts/[workoutId]/execute/page.tsx`
-- [] T054 [US2] Implement frontend offline queue and retry sync store in `frontend/src/features/sessions/offlineQueue.ts`
-- [] T055 [US2] Implement frontend sync conflict resolution modal in `frontend/src/features/sync/ConflictResolutionModal.tsx`
-- [] T056 [US2] Implement frontend progression failure outcome panel in `frontend/src/features/sessions/ProgressionFailurePanel.tsx`
+- [X] T044 [P] [US2] Implement session and execution payload models with required completion invariants in `backend/src/models/session.py`
+- [X] T045 [P] [US2] Implement progression failure outcome model in `backend/src/models/progression_failure.py`
+- [X] T046 [P] [US2] Implement sync conflict record model in `backend/src/models/sync_conflict.py`
+- [X] T047 [US2] Create session/sync/progression schema migration in `backend/migrations/versions/0003_sessions_sync_progression.py`
+- [X] T048 [US2] Implement session lifecycle state machine service in `backend/src/services/sessions/state_machine.py`
+- [X] T049 [US2] Implement progression-failure detection and policy application service in `backend/src/services/sessions/progression_service.py`
+- [X] T050 [US2] Implement sync conflict resolver with deterministic precedence rules in `backend/src/services/sync/conflict_resolver.py`
+- [X] T051 [US2] Implement session create/finalize and progression routes in `backend/src/api/routes/sessions.py`
+- [X] T052 [US2] Implement sync batch, conflict list, and conflict resolve routes in `backend/src/api/routes/sync.py`
+- [X] T053 [US2] Implement frontend workout execution and set/interval logger screen in `frontend/src/app/workouts/[workoutId]/execute/page.tsx`
+- [X] T054 [US2] Implement frontend offline queue and retry sync store in `frontend/src/features/sessions/offlineQueue.ts`
+- [X] T055 [US2] Implement frontend sync conflict resolution modal in `frontend/src/features/sync/ConflictResolutionModal.tsx`
+- [X] T056 [US2] Implement frontend progression failure outcome panel in `frontend/src/features/sessions/ProgressionFailurePanel.tsx`
 
 **Checkpoint**: User Stories 1 and 2 core behavior are functional; full sign-off depends on Phase 8 cross-cutting validation tasks.
 
@@ -260,6 +260,11 @@ Validation-only phase: no new product behavior is introduced; any defects found 
 - [ ] T160 Add and execute frontend UX consistency regression suite for advisory-only warnings, completed-vs-planned visual semantics, and plain-language fatigue explanations in `frontend/tests/integration/ux-consistency.test.tsx`
 - [ ] T164 [P] Add mandatory browser verification checklist for changed UI surfaces in `specs/001-define-sportolo-v1/checklists/ui-browser-verification.md`
 - [ ] T165 Enforce release gate requiring `npm run build` and browser verification evidence in `specs/001-define-sportolo-v1/quickstart.md`
+- [ ] T166 [P] Add Aceternity route-to-component mapping artifact and wrapper usage notes in `frontend/src/components/ui/aceternity/README.md`
+- [ ] T167 [US1] Integrate required mapped Aceternity components for planner route in `frontend/src/app/planner/page.tsx`
+- [ ] T168 [US2] Integrate required mapped Aceternity components for workout execution route in `frontend/src/app/workouts/[workoutId]/execute/page.tsx`
+- [ ] T169 [US3] Integrate required mapped Aceternity components for today/calendar routes in `frontend/src/app/today/page.tsx`
+- [ ] T170 Enforce checklist/release gate requiring Aceternity component evidence (or documented fallback exception) in `specs/001-define-sportolo-v1/checklists/ui-browser-verification.md`
 
 ---
 
@@ -376,3 +381,4 @@ Task: T088 frontend/src/features/integrations/ImportResolutionPanel.tsx
 - All user-story tasks include `[US#]` labels for traceability.
 - Every task includes explicit file paths.
 - Verification tasks are defined per story and should fail before implementation begins.
+- Aceternity route mapping is a release requirement; T166-T170 must be completed or explicitly exception-documented before sign-off.
