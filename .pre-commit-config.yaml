@@ -1,3 +1,6 @@
+minimum_pre_commit_version: "3.7.0"
+default_stages: [pre-commit, pre-push]
+
 repos:
   - repo: local
     hooks:

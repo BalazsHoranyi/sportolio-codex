@@ -27,7 +27,7 @@ Aceternity-first composition rule: use Aceternity templates, then Aceternity blo
 Frontend skill invocation rule (required): any frontend implementation, refactor, or review task MUST invoke `frontend-design`, `refactoring-ui`, `vercel-react-best-practices`, and `web-design-guidelines`.
 
 Fallback rule: if a mapped Aceternity component cannot be used (technical incompatibility or missing asset), implementation MUST document the reason in browser verification evidence and use a shadcn equivalent that preserves the same interaction intent.
-If Aceternity rule is behind pro access, ask user to download. 
+If Aceternity rule is behind pro access, download by using chrome. 
 
 Theme reproducibility rule (required): apply `@ss-themes/midnight-bloom` across frontend surfaces and keep installation reproducible with authenticated shadcn CLI steps:
 

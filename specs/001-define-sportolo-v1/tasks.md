@@ -11,16 +11,16 @@
 
 **Purpose**: Initialize backend/frontend workspaces, shared quality gates, and project scaffolding.
 
-- [ ] T001 Initialize backend project metadata and dependencies in `backend/pyproject.toml`
-- [ ] T002 Initialize frontend project metadata and scripts in `frontend/package.json`
-- [ ] T003 Create FastAPI app bootstrap and router registration in `backend/src/main.py`
-- [ ] T004 Create Next.js app shell and root layout in `frontend/src/app/layout.tsx`
-- [ ] T005 [P] Configure backend tooling (ruff, mypy, pytest, coverage) in `backend/pyproject.toml`
-- [ ] T006 [P] Configure frontend tooling (eslint, typescript, test runner) in `frontend/tsconfig.json`
-- [ ] T007 Configure pre-commit hooks for backend/frontend lint gates in `.pre-commit-config.yaml`
-- [ ] T161 [P] Initialize production frontend runtime scripts (`dev`, `build`, `start`) and modern UI dependencies in `frontend/package.json`
-- [ ] T162 [P] Add frontend release verification script that enforces browser evidence presence in `frontend/scripts/verify-ui-evidence.mjs`
-- [ ] T163 Add root quality-gate targets for frontend production build and UI verification in `Makefile`
+- [x] T001 Initialize backend project metadata and dependencies in `backend/pyproject.toml`
+- [X] T002 Initialize frontend project metadata and scripts in `frontend/package.json`
+- [X] T003 Create FastAPI app bootstrap and router registration in `backend/src/main.py`
+- [X] T004 Create Next.js app shell and root layout in `frontend/src/app/layout.tsx`
+- [X] T005 [P] Configure backend tooling (ruff, mypy, pytest, coverage) in `backend/pyproject.toml`
+- [X] T006 [P] Configure frontend tooling (eslint, typescript, test runner) in `frontend/tsconfig.json`
+- [X] T007 Configure pre-commit hooks for backend/frontend lint gates in `.pre-commit-config.yaml`
+- [X] T161 [P] Initialize production frontend runtime scripts (`dev`, `build`, `start`) and modern UI dependencies in `frontend/package.json`
+- [X] T162 [P] Add frontend release verification script that enforces browser evidence presence in `frontend/scripts/verify-ui-evidence.mjs`
+- [X] T163 Add root quality-gate targets for frontend production build and UI verification in `Makefile`
 
 ---
 
@@ -30,20 +30,26 @@
 
 **⚠️ CRITICAL**: No user story work should start before this phase is complete.
 
-- [ ] T008 Configure environment and settings loading in `backend/src/core/settings.py`
-- [ ] T009 Setup SQLAlchemy base, engine, and session management in `backend/src/db/session.py`
-- [ ] T010 Initialize Alembic config and migration environment in `backend/migrations/env.py`
-- [ ] T011 Create initial schema baseline migration in `backend/migrations/versions/0001_initial_baseline.py`
-- [ ] T012 Implement shared API error models and exception handlers in `backend/src/api/errors.py`
-- [ ] T013 Implement authentication and role authorization middleware in `backend/src/api/middleware/auth.py`
-- [ ] T014 [P] Implement audit logging and request tracing middleware in `backend/src/api/middleware/audit.py`
-- [ ] T015 [P] Define deterministic policy constants and no-randomness guardrails in `backend/src/domain/policies/determinism.py`
-- [ ] T016 Create shared OpenAPI-driven API client wrappers in `frontend/src/services/api/client.ts`
-- [ ] T017 Create reusable UI state components (loading/empty/error/success) in `frontend/src/components/state/index.tsx`
+- [X] T008 Configure environment and settings loading in `backend/src/core/settings.py`
+- [X] T009 Setup SQLAlchemy base, engine, and session management in `backend/src/db/session.py`
+- [X] T010 Initialize Alembic config and migration environment in `backend/migrations/env.py`
+- [X] T011 Create initial schema baseline migration in `backend/migrations/versions/0001_initial_baseline.py`
+- [X] T012 Implement shared API error models and exception handlers in `backend/src/api/errors.py`
+- [X] T013 Implement authentication and role authorization middleware in `backend/src/api/middleware/auth.py`
+- [X] T014 [P] Implement audit logging and request tracing middleware in `backend/src/api/middleware/audit.py`
+- [X] T015 [P] Define deterministic policy constants and no-randomness guardrails in `backend/src/domain/policies/determinism.py`
+- [X] T016 Create shared OpenAPI-driven API client wrappers in `frontend/src/services/api/client.ts`
+- [X] T017 Create reusable UI state components (loading/empty/error/success) in `frontend/src/components/state/index.tsx` Use shadcn wherever possible
 
 **Checkpoint**: Foundation complete. User story phases can begin.
 
 ---
+**GOAL**: Set up UI templates
+- [X] T02B use pnpm dlx shadcn@latest add "https://shadcnstudio.com/r/themes/midnight-bloom.json" for overall themes in the frontend. 
+- [X] T02C use template in aceternity/nodus-template for overarching website design
+  - overwrite any existing pages
+- [X] T02A  Implement login page for athletes and coaches. use https://ui.aceternity.com/blocks/login-and-signup-sections/login-form-with-gradient template
+
 
 ## Phase 3: User Story 1 - Build a Hybrid Plan (Priority: P1) 🎯 MVP
 
@@ -53,30 +59,32 @@
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T018 [P] [US1] Add failing contract tests for profile and macrocycle endpoints in `backend/tests/contract/test_profiles_macrocycles_contract.py`
-- [ ] T019 [P] [US1] Add failing contract tests for snapshots, DSL compile/translate, and resolved prescriptions in `backend/tests/contract/test_dsl_snapshot_prescription_contract.py`
-- [ ] T020 [P] [US1] Add failing integration test for effective-date rebase and forward snapshot restore in `backend/tests/integration/test_plan_versioning_restore.py`
-- [ ] T021 [US1] Add failing unit tests for DSL guardrail limits and timeout handling in `backend/tests/unit/test_dsl_guardrails.py`
-- [ ] T022 [US1] Add failing frontend integration test for planner creation flow in `frontend/tests/integration/planner-create-flow.test.tsx`
+- [X] T018 [P] [US1] Add failing contract tests for profile and macrocycle endpoints in `backend/tests/contract/test_profiles_macrocycles_contract.py`
+- [X] T019 [P] [US1] Add failing contract tests for snapshots, DSL compile/translate, and resolved prescriptions in `backend/tests/contract/test_dsl_snapshot_prescription_contract.py`
+- [X] T020 [P] [US1] Add failing integration test for effective-date rebase and forward snapshot restore in `backend/tests/integration/test_plan_versioning_restore.py`
+- [X] T021 [US1] Add failing unit tests for DSL guardrail limits and timeout handling in `backend/tests/unit/test_dsl_guardrails.py`
+- [X] T022 [US1] Add failing frontend integration test for planner creation flow in `frontend/tests/integration/planner-create-flow.test.tsx`
 
 ### Implementation for User Story 1
 
-- [ ] T023 [P] [US1] Implement athlete profile and baseline version models in `backend/src/models/athlete_profile.py`
-- [ ] T024 [P] [US1] Implement macrocycle/mesocycle/workout and version lineage models in `backend/src/models/planning.py`
-- [ ] T025 [P] [US1] Implement snapshot and restore event models in `backend/src/models/snapshot.py`
-- [ ] T026 [P] [US1] Implement DSL program, compile attempt, and canonical IR models in `backend/src/models/dsl_ir.py`
-- [ ] T027 [P] [US1] Implement resolved prescription snapshot model in `backend/src/models/resolved_prescription.py`
-- [ ] T028 [US1] Create planning and DSL schema migration in `backend/migrations/versions/0002_planning_dsl_lineage.py`
-- [ ] T029 [US1] Implement plan versioning and effective-date regeneration service in `backend/src/services/planning/versioning_service.py`
-- [ ] T030 [US1] Implement snapshot create/restore forward-version service in `backend/src/services/planning/snapshot_service.py`
-- [ ] T031 [US1] Implement deterministic DSL compile/translate guardrail service in `backend/src/services/dsl/compile_service.py`
-- [ ] T032 [US1] Implement late-binding resolved prescription service in `backend/src/services/prescriptions/resolve_service.py`
-- [ ] T033 [US1] Implement planning routers for profiles, macrocycles, mesocycles, workouts, and moves in `backend/src/api/routes/planning.py`
-- [ ] T034 [US1] Implement DSL and resolved-prescription routers in `backend/src/api/routes/dsl.py`
-- [ ] T035 [US1] Implement planner data hooks and API bindings in `frontend/src/features/planner/api.ts`
-- [ ] T036 [US1] Implement planner screens for profile/macro/meso/workout authoring in `frontend/src/app/planner/page.tsx`
-- [ ] T037 [US1] Implement DSL editor and validation feedback UI in `frontend/src/features/dsl/EditorPanel.tsx`
-- [ ] T038 [US1] Implement snapshot/version history and restore UI in `frontend/src/features/planner/VersionHistoryPanel.tsx`
+
+- [X] T023 [P] [US1] Implement athlete profile and baseline version models in `backend/src/models/athlete_profile.py`
+- [X] T024 [P] [US1] Implement macrocycle/mesocycle/workout and version lineage models in `backend/src/models/planning.py`
+- [X] T025 [P] [US1] Implement snapshot and restore event models in `backend/src/models/snapshot.py`
+- [X] T026 [P] [US1] Implement DSL program, compile attempt, and canonical IR models in `backend/src/models/dsl_ir.py`
+  - use execplans to track complete feature parity for liftosaur, and intervals.icu
+- [X] T027 [P] [US1] Implement resolved prescription snapshot model in `backend/src/models/resolved_prescription.py`
+- [X] T028 [US1] Create planning and DSL schema migration in `backend/migrations/versions/0002_planning_dsl_lineage.py`
+- [X] T029 [US1] Implement plan versioning and effective-date regeneration service in `backend/src/services/planning/versioning_service.py`
+- [X] T030 [US1] Implement snapshot create/restore forward-version service in `backend/src/services/planning/snapshot_service.py`
+- [X] T031 [US1] Implement deterministic DSL compile/translate guardrail service in `backend/src/services/dsl/compile_service.py`
+- [X] T032 [US1] Implement late-binding resolved prescription service in `backend/src/services/prescriptions/resolve_service.py`
+- [X] T033 [US1] Implement planning routers for profiles, macrocycles, mesocycles, workouts, and moves in `backend/src/api/routes/planning.py`
+- [X] T034 [US1] Implement DSL and resolved-prescription routers in `backend/src/api/routes/dsl.py`
+- [X] T035 [US1] Implement planner data hooks and API bindings in `frontend/src/features/planner/api.ts`
+- [X] T036 [US1] Implement planner screens for profile/macro/meso/workout authoring in `frontend/src/app/planner/page.tsx`
+- [X] T037 [US1] Implement DSL editor and validation feedback UI in `frontend/src/features/dsl/EditorPanel.tsx`
+- [X] T038 [US1] Implement snapshot/version history and restore UI in `frontend/src/features/planner/VersionHistoryPanel.tsx`
 
 **Checkpoint**: User Story 1 core behavior is functional; full story sign-off depends on Phase 8 cross-cutting validation tasks.
 
@@ -90,27 +98,27 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T039 [P] [US2] Add failing contract tests for session create/finalize/progression endpoints in `backend/tests/contract/test_sessions_contract.py`
-- [ ] T040 [P] [US2] Add failing contract tests for sync batch/conflict resolution endpoints in `backend/tests/contract/test_sync_contract.py`
-- [ ] T041 [P] [US2] Add failing integration test for partial vs abandoned deterministic transitions in `backend/tests/integration/test_session_state_transitions.py`
-- [ ] T042 [P] [US2] Add failing integration test for offline same-workout conflict precedence and tie-break rules in `backend/tests/integration/test_sync_conflict_resolution.py`
-- [ ] T043 [US2] Add failing frontend integration test for offline session logging and replay in `frontend/tests/integration/session-offline-sync.test.tsx`
+- [X] T039 [P] [US2] Add failing contract tests for session create/finalize/progression endpoints in `backend/tests/contract/test_sessions_contract.py`
+- [X] T040 [P] [US2] Add failing contract tests for sync batch/conflict resolution endpoints in `backend/tests/contract/test_sync_contract.py`
+- [X] T041 [P] [US2] Add failing integration test for partial vs abandoned deterministic transitions in `backend/tests/integration/test_session_state_transitions.py`
+- [X] T042 [P] [US2] Add failing integration test for offline same-workout conflict precedence and tie-break rules in `backend/tests/integration/test_sync_conflict_resolution.py`
+- [X] T043 [US2] Add failing frontend integration test for offline session logging and replay in `frontend/tests/integration/session-offline-sync.test.tsx`
 
 ### Implementation for User Story 2
 
-- [ ] T044 [P] [US2] Implement session and execution payload models with required completion invariants in `backend/src/models/session.py`
-- [ ] T045 [P] [US2] Implement progression failure outcome model in `backend/src/models/progression_failure.py`
-- [ ] T046 [P] [US2] Implement sync conflict record model in `backend/src/models/sync_conflict.py`
-- [ ] T047 [US2] Create session/sync/progression schema migration in `backend/migrations/versions/0003_sessions_sync_progression.py`
-- [ ] T048 [US2] Implement session lifecycle state machine service in `backend/src/services/sessions/state_machine.py`
-- [ ] T049 [US2] Implement progression-failure detection and policy application service in `backend/src/services/sessions/progression_service.py`
-- [ ] T050 [US2] Implement sync conflict resolver with deterministic precedence rules in `backend/src/services/sync/conflict_resolver.py`
-- [ ] T051 [US2] Implement session create/finalize and progression routes in `backend/src/api/routes/sessions.py`
-- [ ] T052 [US2] Implement sync batch, conflict list, and conflict resolve routes in `backend/src/api/routes/sync.py`
-- [ ] T053 [US2] Implement frontend workout execution and set/interval logger screen in `frontend/src/app/workouts/[workoutId]/execute/page.tsx`
-- [ ] T054 [US2] Implement frontend offline queue and retry sync store in `frontend/src/features/sessions/offlineQueue.ts`
-- [ ] T055 [US2] Implement frontend sync conflict resolution modal in `frontend/src/features/sync/ConflictResolutionModal.tsx`
-- [ ] T056 [US2] Implement frontend progression failure outcome panel in `frontend/src/features/sessions/ProgressionFailurePanel.tsx`
+- [X] T044 [P] [US2] Implement session and execution payload models with required completion invariants in `backend/src/models/session.py`
+- [X] T045 [P] [US2] Implement progression failure outcome model in `backend/src/models/progression_failure.py`
+- [X] T046 [P] [US2] Implement sync conflict record model in `backend/src/models/sync_conflict.py`
+- [X] T047 [US2] Create session/sync/progression schema migration in `backend/migrations/versions/0003_sessions_sync_progression.py`
+- [X] T048 [US2] Implement session lifecycle state machine service in `backend/src/services/sessions/state_machine.py`
+- [X] T049 [US2] Implement progression-failure detection and policy application service in `backend/src/services/sessions/progression_service.py`
+- [X] T050 [US2] Implement sync conflict resolver with deterministic precedence rules in `backend/src/services/sync/conflict_resolver.py`
+- [X] T051 [US2] Implement session create/finalize and progression routes in `backend/src/api/routes/sessions.py`
+- [X] T052 [US2] Implement sync batch, conflict list, and conflict resolve routes in `backend/src/api/routes/sync.py`
+- [X] T053 [US2] Implement frontend workout execution and set/interval logger screen in `frontend/src/app/workouts/[workoutId]/execute/page.tsx`
+- [X] T054 [US2] Implement frontend offline queue and retry sync store in `frontend/src/features/sessions/offlineQueue.ts`
+- [X] T055 [US2] Implement frontend sync conflict resolution modal in `frontend/src/features/sync/ConflictResolutionModal.tsx`
+- [X] T056 [US2] Implement frontend progression failure outcome panel in `frontend/src/features/sessions/ProgressionFailurePanel.tsx`
 
 **Checkpoint**: User Stories 1 and 2 core behavior are functional; full sign-off depends on Phase 8 cross-cutting validation tasks.
 
@@ -124,27 +132,27 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T057 [P] [US3] Add failing contract tests for check-ins, fatigue, calendar, and recalculation endpoints in `backend/tests/contract/test_fatigue_calendar_contract.py`
-- [ ] T058 [P] [US3] Add failing contract tests for adherence analytics endpoint in `backend/tests/contract/test_adherence_contract.py`
-- [ ] T059 [P] [US3] Add failing integration test for retroactive recomputation with immutable snapshot lineage in `backend/tests/integration/test_recompute_lineage.py`
-- [ ] T060 [P] [US3] Add failing unit tests for fatigue math determinism and recruitment derivation in `backend/tests/unit/test_fatigue_engine.py`
-- [ ] T061 [US3] Add failing frontend integration test for today/calendar/adherence dashboards in `frontend/tests/integration/fatigue-dashboard.test.tsx`
+- [X] T057 [P] [US3] Add failing contract tests for check-ins, fatigue, calendar, and recalculation endpoints in `backend/tests/contract/test_fatigue_calendar_contract.py`
+- [X] T058 [P] [US3] Add failing contract tests for adherence analytics endpoint in `backend/tests/contract/test_adherence_contract.py`
+- [X] T059 [P] [US3] Add failing integration test for retroactive recomputation with immutable snapshot lineage in `backend/tests/integration/test_recompute_lineage.py`
+- [X] T060 [P] [US3] Add failing unit tests for fatigue math determinism and recruitment derivation in `backend/tests/unit/test_fatigue_engine.py`
+- [X] T061 [US3] Add failing frontend integration test for today/calendar/adherence dashboards in `frontend/tests/integration/fatigue-dashboard.test.tsx`
 
 ### Implementation for User Story 3
 
-- [ ] T062 [P] [US3] Implement daily check-in, fatigue snapshot, and recalculation event models in `backend/src/models/fatigue.py`
-- [ ] T063 [P] [US3] Implement calendar audit point and two-a-day warning signal models in `backend/src/models/calendar.py`
-- [ ] T064 [P] [US3] Implement adherence training flag model with deterministic thresholds in `backend/src/models/adherence.py`
-- [ ] T065 [US3] Create fatigue/adherence schema migration in `backend/migrations/versions/0004_fatigue_recompute_adherence.py`
-- [ ] T066 [US3] Implement deterministic fatigue engine and model-policy read service in `backend/src/services/fatigue/engine.py`
-- [ ] T067 [US3] Implement retroactive recomputation orchestrator and recalc audit service in `backend/src/services/fatigue/recompute_service.py`
-- [ ] T068 [US3] Implement adherence analytics computation service in `backend/src/services/analytics/adherence_service.py`
-- [ ] T069 [US3] Implement check-ins, fatigue, recalculation, and calendar routes in `backend/src/api/routes/fatigue.py`
-- [ ] T070 [US3] Implement adherence analytics route in `backend/src/api/routes/analytics.py`
-- [ ] T071 [US3] Implement frontend today fatigue gauges and explanation chips in `frontend/src/app/today/page.tsx`
-- [ ] T072 [US3] Implement frontend weekly/monthly calendar audit charts in `frontend/src/app/calendar/page.tsx`
-- [ ] T073 [US3] Implement frontend check-in editor with retroactive update flow in `frontend/src/features/checkins/CheckinEditor.tsx`
-- [ ] T074 [US3] Implement frontend adherence metrics and over/undertraining flag UI in `frontend/src/features/analytics/AdherencePanel.tsx`
+- [X] T062 [P] [US3] Implement daily check-in, fatigue snapshot, and recalculation event models in `backend/src/models/fatigue.py`
+- [X] T063 [P] [US3] Implement calendar audit point and two-a-day warning signal models in `backend/src/models/calendar.py`
+- [X] T064 [P] [US3] Implement adherence training flag model with deterministic thresholds in `backend/src/models/adherence.py`
+- [X] T065 [US3] Create fatigue/adherence schema migration in `backend/migrations/versions/0004_fatigue_recompute_adherence.py`
+- [X] T066 [US3] Implement deterministic fatigue engine and model-policy read service in `backend/src/services/fatigue/engine.py`
+- [X] T067 [US3] Implement retroactive recomputation orchestrator and recalc audit service in `backend/src/services/fatigue/recompute_service.py`
+- [X] T068 [US3] Implement adherence analytics computation service in `backend/src/services/analytics/adherence_service.py`
+- [X] T069 [US3] Implement check-ins, fatigue, recalculation, and calendar routes in `backend/src/api/routes/fatigue.py`
+- [X] T070 [US3] Implement adherence analytics route in `backend/src/api/routes/analytics.py`
+- [X] T071 [US3] Implement frontend today fatigue gauges and explanation chips in `frontend/src/app/today/page.tsx`
+- [X] T072 [US3] Implement frontend weekly/monthly calendar audit charts in `frontend/src/app/calendar/page.tsx`
+- [X] T073 [US3] Implement frontend check-in editor with retroactive update flow in `frontend/src/features/checkins/CheckinEditor.tsx`
+- [X] T074 [US3] Implement frontend adherence metrics and over/undertraining flag UI in `frontend/src/features/analytics/AdherencePanel.tsx`
 
 **Checkpoint**: User Stories 1-3 core behavior are functional; full sign-off depends on Phase 8 cross-cutting validation tasks.
 
@@ -158,23 +166,23 @@
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T075 [P] [US4] Add failing contract tests for integration import and dedup resolution endpoints in `backend/tests/contract/test_integrations_contract.py`
-- [ ] T076 [P] [US4] Add failing integration test for role-based coach edit and privacy filtering in `backend/tests/integration/test_coach_team_permissions.py`
-- [ ] T077 [P] [US4] Add failing integration test for deterministic import dedup hierarchy and ambiguous resolution in `backend/tests/integration/test_import_dedup_workflow.py`
-- [ ] T078 [US4] Add failing frontend integration test for coach/team calendar privacy behavior in `frontend/tests/integration/team-privacy-calendar.test.tsx`
+- [X] T075 [P] [US4] Add failing contract tests for integration import and dedup resolution endpoints in `backend/tests/contract/test_integrations_contract.py`
+- [X] T076 [P] [US4] Add failing integration test for role-based coach edit and privacy filtering in `backend/tests/integration/test_coach_team_permissions.py`
+- [X] T077 [P] [US4] Add failing integration test for deterministic import dedup hierarchy and ambiguous resolution in `backend/tests/integration/test_import_dedup_workflow.py`
+- [X] T078 [US4] Add failing frontend integration test for coach/team calendar privacy behavior in `frontend/tests/integration/team-privacy-calendar.test.tsx`
 
 ### Implementation for User Story 4
 
-- [ ] T079 [P] [US4] Implement team membership, privacy policy, and coach comment models in `backend/src/models/team.py`
-- [ ] T080 [P] [US4] Implement integration activity and dedup resolution models in `backend/src/models/integration_activity.py`
-- [ ] T081 [US4] Create team/integration schema migration in `backend/migrations/versions/0005_team_integrations.py`
-- [ ] T082 [US4] Implement role-based access and privacy filter service in `backend/src/services/team/privacy_service.py`
-- [ ] T083 [US4] Implement integration ingest and dedup workflow service in `backend/src/services/integrations/import_service.py`
-- [ ] T084 [US4] Implement integration import and dedup-resolution routes in `backend/src/api/routes/integrations.py`
-- [ ] T085 [US4] Implement coach comments and athlete privacy-policy routes in `backend/src/api/routes/team.py`
-- [ ] T086 [US4] Implement frontend coach athlete workspace and comments panel in `frontend/src/app/coach/athletes/[athleteId]/page.tsx`
-- [ ] T087 [US4] Implement frontend team calendar privacy-aware view in `frontend/src/app/team/calendar/page.tsx`
-- [ ] T088 [US4] Implement frontend import review and dedup resolution UI in `frontend/src/features/integrations/ImportResolutionPanel.tsx`
+- [X] T079 [P] [US4] Implement team membership, privacy policy, and coach comment models in `backend/src/models/team.py`
+- [X] T080 [P] [US4] Implement integration activity and dedup resolution models in `backend/src/models/integration_activity.py`
+- [X] T081 [US4] Create team/integration schema migration in `backend/migrations/versions/0005_team_integrations.py`
+- [X] T082 [US4] Implement role-based access and privacy filter service in `backend/src/services/team/privacy_service.py`
+- [X] T083 [US4] Implement integration ingest and dedup workflow service in `backend/src/services/integrations/import_service.py`
+- [X] T084 [US4] Implement integration import and dedup-resolution routes in `backend/src/api/routes/integrations.py`
+- [X] T085 [US4] Implement coach comments and athlete privacy-policy routes in `backend/src/api/routes/team.py`
+- [X] T086 [US4] Implement frontend coach athlete workspace and comments panel in `frontend/src/app/coach/athletes/[athleteId]/page.tsx`
+- [X] T087 [US4] Implement frontend team calendar privacy-aware view in `frontend/src/app/team/calendar/page.tsx`
+- [X] T088 [US4] Implement frontend import review and dedup resolution UI in `frontend/src/features/integrations/ImportResolutionPanel.tsx`
 
 **Checkpoint**: All user stories are core-functional excluding coverage-remediation items explicitly tracked in Phase 7; final sign-off depends on Phase 8 cross-cutting validation gates.
 
@@ -184,33 +192,33 @@
 
 **Purpose**: Address identified consistency and coverage gaps while preserving story traceability.
 
-- [ ] T089 [P] [US1] Add failing contract tests for exercise catalog list/create endpoints in `backend/tests/contract/test_exercise_catalog_contract.py`
-- [ ] T090 [US1] Add failing frontend integration tests for planner success/loading/empty/error states in `frontend/tests/integration/planner-states.test.tsx`
-- [ ] T091 [US1] Implement exercise catalog model with canonical/alias/user-scope fields in `backend/src/models/exercise_catalog.py`
-- [ ] T092 [US1] Create exercise catalog schema migration in `backend/migrations/versions/0006_exercise_catalog.py`
-- [ ] T093 [US1] Implement exercise catalog seed/dedupe/alias service in `backend/src/services/catalog/exercise_catalog_service.py`
-- [ ] T094 [US1] Implement exercise catalog routes in `backend/src/api/routes/exercises.py`
-- [ ] T095 [US1] Implement planner exercise selector UI in `frontend/src/features/planner/ExerciseSelector.tsx`
-- [ ] T096 [US2] Add failing frontend integration tests for workout execution success/loading/empty/error states in `frontend/tests/integration/session-execution-states.test.tsx`
-- [ ] T097 [US3] Add failing frontend integration tests for fatigue/calendar/adherence success/loading/empty/error states in `frontend/tests/integration/fatigue-states.test.tsx`
-- [ ] T098 [P] [US4] Add failing contract tests for team calendar and coach comments endpoints in `backend/tests/contract/test_team_contract.py`
-- [ ] T099 [P] [US4] Add failing contract tests for billing entitlements and compliance endpoints in `backend/tests/contract/test_billing_compliance_contract.py`
-- [ ] T100 [P] [US4] Add failing contract tests for integration export endpoint in `backend/tests/contract/test_integration_exports_contract.py`
-- [ ] T101 [US4] Add failing frontend integration tests for coach/team/compliance success/loading/empty/error states in `frontend/tests/integration/team-coach-states.test.tsx`
-- [ ] T102 [US4] Add failing backend integration test for compliance export/delete workflows in `backend/tests/integration/test_compliance_workflows.py`
-- [ ] T103 [US4] Add failing backend integration test for entitlement enforcement rules in `backend/tests/integration/test_entitlement_enforcement.py`
-- [ ] T104 [US4] Implement subscription and coach entitlement models in `backend/src/models/subscription.py`
-- [ ] T105 [US4] Implement compliance request and privacy-operation models in `backend/src/models/compliance.py`
-- [ ] T106 [US4] Create billing and compliance schema migration in `backend/migrations/versions/0007_billing_compliance.py`
-- [ ] T107 [US4] Implement entitlement service in `backend/src/services/billing/entitlement_service.py`
-- [ ] T108 [US4] Implement compliance privacy/export/delete service in `backend/src/services/compliance/privacy_service.py`
-- [ ] T109 [US4] Implement integration export service in `backend/src/services/integrations/export_service.py`
-- [ ] T110 [US4] Implement team calendar route (`GET /v1/teams/{teamId}/calendar`) in `backend/src/api/routes/team_calendar.py`
-- [ ] T111 [US4] Implement billing entitlement and compliance routes in `backend/src/api/routes/billing_compliance.py`
-- [ ] T112 [US4] Implement frontend privacy/compliance settings page in `frontend/src/app/settings/privacy/page.tsx`
-- [ ] T113 [US4] Implement frontend integration export panel in `frontend/src/features/integrations/ExportPanel.tsx`
-- [ ] T114 [US4] Implement frontend coach/team loading-empty-error state handling in `frontend/src/app/team/calendar/page.tsx`
-- [ ] T115 [US4] Implement frontend compliance action state handling in `frontend/src/app/settings/privacy/page.tsx`
+- [X] T089 [P] [US1] Add failing contract tests for exercise catalog list/create endpoints in `backend/tests/contract/test_exercise_catalog_contract.py`
+- [X] T090 [US1] Add failing frontend integration tests for planner success/loading/empty/error states in `frontend/tests/integration/planner-states.test.tsx`
+- [X] T091 [US1] Implement exercise catalog model with canonical/alias/user-scope fields in `backend/src/models/exercise_catalog.py`
+- [X] T092 [US1] Create exercise catalog schema migration in `backend/migrations/versions/0006_exercise_catalog.py`
+- [X] T093 [US1] Implement exercise catalog seed/dedupe/alias service in `backend/src/services/catalog/exercise_catalog_service.py`
+- [X] T094 [US1] Implement exercise catalog routes in `backend/src/api/routes/exercises.py`
+- [X] T095 [US1] Implement planner exercise selector UI in `frontend/src/features/planner/ExerciseSelector.tsx`
+- [X] T096 [US2] Add failing frontend integration tests for workout execution success/loading/empty/error states in `frontend/tests/integration/session-execution-states.test.tsx`
+- [X] T097 [US3] Add failing frontend integration tests for fatigue/calendar/adherence success/loading/empty/error states in `frontend/tests/integration/fatigue-states.test.tsx`
+- [X] T098 [P] [US4] Add failing contract tests for team calendar and coach comments endpoints in `backend/tests/contract/test_team_contract.py`
+- [X] T099 [P] [US4] Add failing contract tests for billing entitlements and compliance endpoints in `backend/tests/contract/test_billing_compliance_contract.py`
+- [X] T100 [P] [US4] Add failing contract tests for integration export endpoint in `backend/tests/contract/test_integration_exports_contract.py`
+- [X] T101 [US4] Add failing frontend integration tests for coach/team/compliance success/loading/empty/error states in `frontend/tests/integration/team-coach-states.test.tsx`
+- [X] T102 [US4] Add failing backend integration test for compliance export/delete workflows in `backend/tests/integration/test_compliance_workflows.py`
+- [X] T103 [US4] Add failing backend integration test for entitlement enforcement rules in `backend/tests/integration/test_entitlement_enforcement.py`
+- [X] T104 [US4] Implement subscription and coach entitlement models in `backend/src/models/subscription.py`
+- [X] T105 [US4] Implement compliance request and privacy-operation models in `backend/src/models/compliance.py`
+- [X] T106 [US4] Create billing and compliance schema migration in `backend/migrations/versions/0007_billing_compliance.py`
+- [X] T107 [US4] Implement entitlement service in `backend/src/services/billing/entitlement_service.py`
+- [X] T108 [US4] Implement compliance privacy/export/delete service in `backend/src/services/compliance/privacy_service.py`
+- [X] T109 [US4] Implement integration export service in `backend/src/services/integrations/export_service.py`
+- [X] T110 [US4] Implement team calendar route (`GET /v1/teams/{teamId}/calendar`) in `backend/src/api/routes/team_calendar.py`
+- [X] T111 [US4] Implement billing entitlement and compliance routes in `backend/src/api/routes/billing_compliance.py`
+- [X] T112 [US4] Implement frontend privacy/compliance settings page in `frontend/src/app/settings/privacy/page.tsx`
+- [X] T113 [US4] Implement frontend integration export panel in `frontend/src/features/integrations/ExportPanel.tsx`
+- [X] T114 [US4] Implement frontend coach/team loading-empty-error state handling in `frontend/src/app/team/calendar/page.tsx`
+- [X] T115 [US4] Implement frontend compliance action state handling in `frontend/src/app/settings/privacy/page.tsx`
 - [ ] T116 [US1] Implement planner success/loading/empty/error state handling to satisfy `planner-states.test.tsx` in `frontend/src/app/planner/page.tsx`
 - [ ] T117 [US2] Implement workout execution success/loading/empty/error state handling to satisfy `session-execution-states.test.tsx` in `frontend/src/app/workouts/[workoutId]/execute/page.tsx`
 - [ ] T118 [US3] Implement fatigue/dashboard success/loading/empty/error state handling to satisfy `fatigue-states.test.tsx` in `frontend/src/app/today/page.tsx`
@@ -377,6 +385,7 @@ Task: T088 frontend/src/features/integrations/ImportResolutionPanel.tsx
 3. Integrate by story checkpoints, not by layer.
 
 ---
+
 
 ## Notes
 

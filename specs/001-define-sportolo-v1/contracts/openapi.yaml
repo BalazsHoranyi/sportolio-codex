@@ -10,6 +10,7 @@ servers:
   - url: https://api.sportolo.example
 
 tags:
+  - name: Auth
   - name: Profiles
   - name: Planning
   - name: Versions
@@ -29,6 +30,31 @@ tags:
   - name: Compliance
 
 paths:
+  /v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login athlete or coach and issue bearer token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
   /v1/athletes/{athleteId}/profiles:
     get:
       tags: [Profiles]
@@ -1024,6 +1050,49 @@ components:
         type: string
 
   schemas:
+    LoginRequest:
+      type: object
+      required: [email, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role:
+          type: string
+          enum: [athlete, coach]
+
+    LoginResponse:
+      type: object
+      required:
+        [
+          access_token,
+          token_type,
+          role,
+          user_id,
+          expires_in_seconds,
+        ]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [bearer]
+        role:
+          type: string
+          enum: [athlete, coach]
+        user_id:
+          type: string
+        athlete_id:
+          type: string
+        team_id:
+          type: string
+        expires_in_seconds:
+          type: integer
+          minimum: 1
+
     AthleteProfile:
       type: object
       required: [id, userId, unitSystem, targetPriority]
@@ -2485,3 +2554,12 @@ components:
         column:
           type: integer
           nullable: true
+
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

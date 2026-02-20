@@ -5,7 +5,7 @@ BACKEND_DIR ?= backend
 FRONTEND_DIR ?= frontend
 
 .PHONY: all help install precommit-install \
-	format lint typecheck test build release frontend-verify-ui \
+	format lint typecheck test build release frontend-release frontend-verify-ui \
 	backend-install backend-format backend-lint backend-typecheck backend-test \
 	frontend-install frontend-format frontend-lint frontend-typecheck frontend-test frontend-build
 
@@ -48,7 +48,7 @@ endef
 
 all: format lint typecheck test build ## Run quality + build gates for backend and frontend
 
-release: all frontend-verify-ui ## Run release gates including browser verification evidence
+release: all frontend-release ## Run release gates including frontend build and browser evidence verification
 
 install: backend-install frontend-install precommit-install ## Install backend/frontend dependencies and git hooks
 
@@ -123,6 +123,8 @@ frontend-test: ## Run frontend tests
 
 frontend-build: ## Build frontend production bundle
 	$(call frontend_run,build)
+
+frontend-release: frontend-build frontend-verify-ui ## Run frontend production quality gates
 
 frontend-verify-ui: ## Verify browser evidence artifacts exist for changed UI work
 	$(call frontend_run,verify:ui)
