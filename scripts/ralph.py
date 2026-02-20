@@ -27,11 +27,12 @@ D) Implement the feature thoroughly:
    - This is production facing, so be thorough, take all the time you need to implement, never forsake completeness for brevity.
 E) Add/update documentation if behavior changes.
 F) Make ONE commit on a new branch with a clear git commit message referencing the Linear issue key. Push to remote. and open up an mr if not already open
-G) Update Linear to Done and comment with:
-   - what changed
-   - how to test manually
-   - commands run + results
-   - links to commit/PR
+
+REVIEW GATE RULE:
+- Do NOT move the Linear issue to Done in this phase.
+- Do NOT post a final "what changed / how to test / commands / links" completion comment yet.
+- Final Linear Done transition happens only after all automated review gates pass.
+
 
 SCOPE RULES:
 - Work on ONE issue only. Do not start a second issue.
@@ -107,9 +108,7 @@ def get_current_branch(cwd: Path) -> str:
 
 
 def get_repo_slug(cwd: Path) -> str | None:
-    remote_url = run_text_command(
-        ["git", "config", "--get", "remote.origin.url"], cwd, allow_fail=True
-    )
+    remote_url = run_text_command(["git", "config", "--get", "remote.origin.url"], cwd, allow_fail=True)
     if not remote_url:
         return None
     return parse_repo_slug(remote_url)
@@ -125,6 +124,92 @@ def get_pr_number(cwd: Path, branch: str) -> str | None:
         if out and out != "null":
             return out
     return None
+
+
+def get_pr_base_branch(cwd: Path, pr_number: str | None) -> str:
+    if pr_number:
+        out = run_text_command(
+            ["gh", "pr", "view", pr_number, "--json", "baseRefName", "--jq", ".baseRefName"],
+            cwd,
+            allow_fail=True,
+        )
+        if out and out != "null":
+            return out
+    return "main"
+
+
+def resolve_base_ref(cwd: Path, base_branch: str) -> str:
+    candidates = [f"origin/{base_branch}", base_branch]
+    for ref in candidates:
+        ok = run_text_command(["git", "rev-parse", "--verify", ref], cwd, allow_fail=True)
+        if ok:
+            return ref
+    return "HEAD~1"
+
+
+def changed_files_against_base(cwd: Path, base_ref: str) -> list[str]:
+    out = run_text_command(["git", "diff", "--name-only", f"{base_ref}...HEAD"], cwd, allow_fail=True)
+    if not out:
+        out = run_text_command(["git", "diff", "--name-only", "HEAD~1..HEAD"], cwd, allow_fail=True)
+    return [line.strip() for line in out.splitlines() if line.strip()]
+
+
+def has_frontend_changes(files: list[str]) -> bool:
+    for p in files:
+        if p.startswith("frontend/"):
+            return True
+        if p.endswith((".tsx", ".ts", ".jsx", ".js", ".css", ".scss")) and "/frontend/" in f"/{p}":
+            return True
+    return False
+
+
+def build_ui_review_prompt(
+    agent_browser_skill_path: str,
+    branch: str,
+    repo_slug: str | None,
+    pr_number: str | None,
+    changed_files: list[str],
+) -> str:
+    changed = "\n".join(f"- {f}" for f in changed_files[:200]) or "- (not available)"
+    return textwrap.dedent(
+        f"""
+        Use [$agent-browser]({agent_browser_skill_path}) and chrome-devtools-mcp to validate frontend changes on branch `{branch}`.
+
+        Context:
+        - Repository: {repo_slug or "UNKNOWN"}
+        - PR number: {pr_number or "UNKNOWN"}
+        - Changed files:
+        {changed}
+
+        Review requirements:
+        - Act as a first-time end user with no product knowledge.
+        - Explore flows by clicking, typing, dragging (where relevant), navigating, and trying edge interactions.
+        - Check intuitive UX, full functionality of changed areas, and obvious broken states.
+        - Assess visual polish from a designer UI/UX perspective.
+        - Provide concrete feedback with severity and actionable fixes.
+        - If no updates are required, output exactly: <promise>UI-LGTM</promise>
+        - If updates are required, output exactly: <promise>UI-Changes Requested</promise>
+        """
+    ).strip()
+
+
+def build_ui_fix_prompt(branch: str, ui_review_output: str) -> str:
+    return textwrap.dedent(
+        f"""
+        You requested frontend changes from UX/browser validation. Apply all required updates on branch `{branch}`.
+
+        Validation feedback to address:
+        {ui_review_output}
+
+        Requirements:
+        - Implement all required frontend fixes.
+        - Keep scope to the same Linear issue.
+        - Do NOT move the Linear issue to Done yet.
+        - Run relevant checks/tests.
+        - Commit and push updates to the same branch/PR.
+        - Output exactly: <promise>UI-Fixes Applied</promise>
+        """
+    ).strip()
 
 
 def build_review_prompt(skill_path: str, branch: str, repo_slug: str | None, pr_number: str | None) -> str:
@@ -159,6 +244,7 @@ def build_fix_prompt(branch: str, review_output: str) -> str:
         Requirements:
         - Fix every Critical/Major/Minor issue required to pass review.
         - Keep scope to the same Linear issue.
+        - Do NOT move the Linear issue to Done yet.
         - Run relevant tests/checks.
         - Commit and push updates to the same branch/PR.
         - Output exactly: <promise>Ready for Re-Review</promise>
@@ -183,44 +269,106 @@ def build_close_linear_prompt(branch: str) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run codex implementation/review loop for sportolo Linear work.")
+    parser = argparse.ArgumentParser(description="Run codex implementation + UI validation + PR review loops.")
     parser.add_argument("--cwd", default=os.getcwd(), help="Working directory.")
     parser.add_argument("--codex-bin", default="codex", help="Codex CLI binary.")
-    parser.add_argument("--max-review-loops", type=int, default=10, help="Maximum review/fix loops.")
+    parser.add_argument("--max-ui-loops", type=int, default=5, help="Maximum UI validation/fix loops.")
+    parser.add_argument("--max-review-loops", type=int, default=10, help="Maximum code review/fix loops.")
     parser.add_argument(
         "--review-skill-path",
         default="/Users/bhoranyi/Personal/sportolo2/.codex/skills/reviewing-pr-local/SKILL.md",
         help="Path to reviewing-pr-local SKILL.md.",
     )
+    parser.add_argument(
+        "--agent-browser-skill-path",
+        default="/Users/bhoranyi/Personal/sportolo2/.codex/skills/agent-browser/SKILL.md",
+        help="Path to agent-browser SKILL.md.",
+    )
     args = parser.parse_args()
 
     cwd = Path(args.cwd).resolve()
 
-    impl_result = run_codex(
-        prompt=IMPLEMENT_PROMPT,
-        cwd=cwd,
-        codex_bin=args.codex_bin,
-        label="Initial implementation",
-    )
+    impl_result = run_codex(IMPLEMENT_PROMPT, cwd=cwd, codex_bin=args.codex_bin, label="Initial implementation")
     if impl_result.returncode != 0:
         print("Initial implementation failed.", file=sys.stderr)
         return impl_result.returncode
 
     impl_promise = parse_promise(impl_result.output)
-    if impl_promise == "COMPLETE":
-        print("<promise>COMPLETE</promise>")
-        return 0
 
-    for loop_index in range(1, args.max_review_loops + 1):
+    branch = get_current_branch(cwd)
+    repo_slug = get_repo_slug(cwd)
+    pr_number = get_pr_number(cwd, branch)
+
+    if impl_promise == "COMPLETE":
+        # Only truly complete when no feature branch / no PR exists.
+        if branch in {"main", "master"} and pr_number is None:
+            print("<promise>COMPLETE</promise>")
+            return 0
+
+        print(
+            "Initial run returned COMPLETE, but active branch/PR detected; "
+            "continuing review gates."
+        )
+    base_branch = get_pr_base_branch(cwd, pr_number)
+    base_ref = resolve_base_ref(cwd, base_branch)
+    changed_files = changed_files_against_base(cwd, base_ref)
+
+    if has_frontend_changes(changed_files):
+        for ui_loop in range(1, args.max_ui_loops + 1):
+            ui_review = run_codex(
+                build_ui_review_prompt(
+                    agent_browser_skill_path=args.agent_browser_skill_path,
+                    branch=branch,
+                    repo_slug=repo_slug,
+                    pr_number=pr_number,
+                    changed_files=changed_files,
+                ),
+                cwd=cwd,
+                codex_bin=args.codex_bin,
+                label=f"Frontend UX validation #{ui_loop}",
+            )
+            if ui_review.returncode != 0:
+                print("Frontend UX validation failed.", file=sys.stderr)
+                return ui_review.returncode
+
+            ui_promise = parse_promise(ui_review.output)
+            if ui_promise in {"UI-LGTM", "LGTM"}:
+                break
+
+            if ui_promise in {"UI-CHANGES REQUESTED", "CHANGES REQUESTED"}:
+                ui_fix = run_codex(
+                    build_ui_fix_prompt(branch, ui_review.output),
+                    cwd=cwd,
+                    codex_bin=args.codex_bin,
+                    label=f"Apply frontend fixes #{ui_loop}",
+                )
+                if ui_fix.returncode != 0:
+                    print("Applying frontend fixes failed.", file=sys.stderr)
+                    return ui_fix.returncode
+                continue
+
+            print(
+                "Unrecognized UI promise. Expected <promise>UI-LGTM</promise> or "
+                "<promise>UI-Changes Requested</promise>.",
+                file=sys.stderr,
+            )
+            return 2
+        else:
+            print("Reached max UI loops without UI-LGTM.", file=sys.stderr)
+            return 4
+    else:
+        print("No frontend changes detected. Skipping UI validation loop.")
+
+    for review_loop in range(1, args.max_review_loops + 1):
         branch = get_current_branch(cwd)
         repo_slug = get_repo_slug(cwd)
         pr_number = get_pr_number(cwd, branch)
 
         review_result = run_codex(
-            prompt=build_review_prompt(args.review_skill_path, branch, repo_slug, pr_number),
+            build_review_prompt(args.review_skill_path, branch, repo_slug, pr_number),
             cwd=cwd,
             codex_bin=args.codex_bin,
-            label=f"Full review #{loop_index}",
+            label=f"Full review #{review_loop}",
         )
         if review_result.returncode != 0:
             print("Review run failed.", file=sys.stderr)
@@ -230,7 +378,7 @@ def main() -> int:
 
         if review_promise == "LGTM":
             close_result = run_codex(
-                prompt=build_close_linear_prompt(branch),
+                build_close_linear_prompt(branch),
                 cwd=cwd,
                 codex_bin=args.codex_bin,
                 label="Close Linear issue",
@@ -242,13 +390,13 @@ def main() -> int:
 
         if review_promise == "CHANGES REQUESTED":
             fix_result = run_codex(
-                prompt=build_fix_prompt(branch, review_result.output),
+                build_fix_prompt(branch, review_result.output),
                 cwd=cwd,
                 codex_bin=args.codex_bin,
-                label=f"Apply fixes #{loop_index}",
+                label=f"Apply code fixes #{review_loop}",
             )
             if fix_result.returncode != 0:
-                print("Applying fixes failed.", file=sys.stderr)
+                print("Applying code fixes failed.", file=sys.stderr)
                 return fix_result.returncode
             continue
 
@@ -257,10 +405,10 @@ def main() -> int:
             "<promise>Changes Requested</promise>.",
             file=sys.stderr,
         )
-        return 2
+        return 3
 
     print("Reached max review loops without LGTM.", file=sys.stderr)
-    return 3
+    return 5
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ venv/
 .coverage
 htmlcov/
 *.egg-info/
+*.png
 
 # Node / TypeScript
 node_modules/
