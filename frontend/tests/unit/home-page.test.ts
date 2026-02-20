@@ -34,6 +34,25 @@ describe("HomePage", () => {
     expect(fullCardLinks).toHaveLength(3);
   });
 
+  it("uses jump-style CTA labels that match in-page anchor navigation", () => {
+    const html = renderToStaticMarkup(HomePage());
+
+    expect(html).toContain("Jump to athlete flow");
+    expect(html).toContain("Jump to coach flow");
+    expect(html).toContain("Jump to integration checklist");
+  });
+
+  it("includes targetable anchor sections and a back-to-top recovery action", () => {
+    const html = renderToStaticMarkup(HomePage());
+
+    expect(html).toContain('id="start-here" class="section anchor-target');
+    expect(html).toContain('id="athlete-flow" class="flow-card anchor-target');
+    expect(html).toContain('id="coach-flow" class="flow-card anchor-target');
+    expect(html).toContain('id="integration" class="section anchor-target');
+    expect(html).toContain('href="#top"');
+    expect(html).toContain("Back to Top");
+  });
+
   it("shows the exact muscle-usage integration endpoint for first-run setup", () => {
     const html = renderToStaticMarkup(HomePage());
 

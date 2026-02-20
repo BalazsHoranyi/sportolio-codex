@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Work_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
@@ -22,6 +22,10 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
     apple: "/favicon.ico",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f6eee3",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -7,7 +7,7 @@ const launchPaths = [
     detail:
       "Log sessions, monitor fatigue trends, and keep endurance + strength work coordinated.",
     timeEstimate: "2-min kickoff",
-    cta: "Open athlete flow",
+    cta: "Jump to athlete flow",
     href: "#athlete-flow",
   },
   {
@@ -16,7 +16,7 @@ const launchPaths = [
     detail:
       "Audit weekly adherence and compare athlete load profiles without manual spreadsheet work.",
     timeEstimate: "3-min kickoff",
-    cta: "Open coach flow",
+    cta: "Jump to coach flow",
     href: "#coach-flow",
   },
   {
@@ -25,7 +25,7 @@ const launchPaths = [
     detail:
       "Connect the new muscle-usage endpoint and validate deterministic aggregation behavior.",
     timeEstimate: "4-min kickoff",
-    cta: "Open integration flow",
+    cta: "Jump to integration checklist",
     href: "#integration",
   },
 ];
@@ -42,6 +42,7 @@ const integrationEndpoint =
 export default function HomePage() {
   return (
     <main className="home-shell" id="main-content">
+      <div id="top" />
       <a className="skip-link" href="#main-content">
         Skip to Main Content
       </a>
@@ -78,7 +79,10 @@ export default function HomePage() {
         </dl>
       </section>
 
-      <section id="start-here" className="section fade-in delay-1">
+      <section
+        id="start-here"
+        className="section anchor-target fade-in delay-1"
+      >
         <header className="section-header">
           <h2>First session in under 10 minutes</h2>
           <p>
@@ -87,7 +91,6 @@ export default function HomePage() {
           </p>
         </header>
         <div className="path-grid" aria-label="Choose your launch path">
-          <h3>Choose your launch path</h3>
           <div className="path-cards">
             {launchPaths.map((path) => (
               <a
@@ -110,7 +113,7 @@ export default function HomePage() {
       </section>
 
       <section className="section split-layout fade-in delay-2">
-        <article id="athlete-flow" className="flow-card">
+        <article id="athlete-flow" className="flow-card anchor-target">
           <h3>Athlete flow</h3>
           <p>
             Set a weekly focus, then anchor your first microcycle around it.
@@ -122,7 +125,7 @@ export default function HomePage() {
           </ul>
         </article>
 
-        <article id="coach-flow" className="flow-card">
+        <article id="coach-flow" className="flow-card anchor-target">
           <h3>Coach flow</h3>
           <p>Run one deterministic review cycle each week for every athlete.</p>
           <ul>
@@ -135,7 +138,7 @@ export default function HomePage() {
 
       <section
         id="integration"
-        className="section integration-card fade-in delay-3"
+        className="section anchor-target integration-card fade-in delay-3"
       >
         <h3>Integration checklist</h3>
         <p>
@@ -160,6 +163,10 @@ export default function HomePage() {
           ))}
         </ul>
       </section>
+
+      <a className="back-to-top" href="#top">
+        Back to Top
+      </a>
     </main>
   );
 }
