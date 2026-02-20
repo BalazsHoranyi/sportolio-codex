@@ -33,6 +33,7 @@
 
 ## Result
 
+- Re-ran full persona login/logout redirect flow for desktop and mobile after production auth-secret hardening; all persona paths passed without UX regressions.
 - All required persona screenshots were refreshed for this auth-gating release (`home-*` and `persona-*` artifacts), and each artifact now reflects real authenticated surfaces rather than 404 pages.
 - Unauthenticated access to protected routes redirects to login with preserved `next` target.
 - Valid credentials establish authenticated session and return users to the intended protected route (`/calendar?week=2026-W08` now resolves).

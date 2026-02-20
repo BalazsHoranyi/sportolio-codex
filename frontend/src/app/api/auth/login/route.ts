@@ -4,6 +4,7 @@ import { validateCredentials } from "../../../../features/auth/credentials";
 import { sanitizeRedirectTarget } from "../../../../features/auth/redirect";
 import {
   createSessionToken,
+  SessionConfigurationError,
   SESSION_COOKIE_NAME,
   sessionCookieOptions,
 } from "../../../../features/auth/session";
@@ -53,7 +54,20 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const sessionToken = await createSessionToken(user);
+  let sessionToken: string;
+  try {
+    sessionToken = await createSessionToken(user);
+  } catch (error) {
+    if (error instanceof SessionConfigurationError) {
+      return NextResponse.json(
+        { error: "Unable to sign in right now. Please try again." },
+        { status: 503, headers: noStoreHeaders() },
+      );
+    }
+
+    throw error;
+  }
+
   const response = NextResponse.json(
     {
       authenticated: true,

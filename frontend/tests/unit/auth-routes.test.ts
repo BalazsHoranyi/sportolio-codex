@@ -8,8 +8,33 @@ async function responseJson(response: Response): Promise<unknown> {
 }
 
 describe("auth api routes", () => {
+  const mutableEnv = process.env as Record<string, string | undefined>;
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalSecret = process.env.SPORTOLO_AUTH_SECRET;
+
+  function setNodeEnv(value: string | undefined) {
+    if (value === undefined) {
+      delete mutableEnv.NODE_ENV;
+      return;
+    }
+
+    mutableEnv.NODE_ENV = value;
+  }
+
   beforeEach(() => {
+    setNodeEnv("test");
     process.env.SPORTOLO_AUTH_SECRET = "test-secret-sportolo";
+  });
+
+  afterEach(() => {
+    setNodeEnv(originalNodeEnv);
+
+    if (originalSecret === undefined) {
+      delete process.env.SPORTOLO_AUTH_SECRET;
+      return;
+    }
+
+    process.env.SPORTOLO_AUTH_SECRET = originalSecret;
   });
 
   it("returns generic non-leaky error for invalid credentials", async () => {
@@ -53,6 +78,27 @@ describe("auth api routes", () => {
         email: "diego.tri@axis.test",
         displayName: "Diego",
       },
+    });
+  });
+
+  it("fails safely when production auth secret is missing", async () => {
+    setNodeEnv("production");
+    delete process.env.SPORTOLO_AUTH_SECRET;
+
+    const response = await loginPost(
+      new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: "diego.tri@axis.test",
+          password: "axis-demo-diego",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(await responseJson(response)).toEqual({
+      error: "Unable to sign in right now. Please try again.",
     });
   });
 

@@ -2,6 +2,7 @@ import type { AuthenticatedUser } from "./credentials";
 
 export const SESSION_COOKIE_NAME = "sportolo_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 8;
+const DEVELOPMENT_SESSION_SECRET = "sportolo-dev-auth-secret";
 
 export const sessionCookieOptions = {
   httpOnly: true,
@@ -17,8 +18,24 @@ interface SessionTokenPayload extends AuthenticatedUser {
   exp: number;
 }
 
-function sessionSecret(): string {
-  return process.env.SPORTOLO_AUTH_SECRET ?? "sportolo-dev-auth-secret";
+export class SessionConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SessionConfigurationError";
+  }
+}
+
+function configuredSessionSecret(): string | null {
+  const configuredSecret = process.env.SPORTOLO_AUTH_SECRET?.trim();
+  if (configuredSecret) {
+    return configuredSecret;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
+
+  return DEVELOPMENT_SESSION_SECRET;
 }
 
 function toBase64Url(bytes: Uint8Array): string {
@@ -91,18 +108,21 @@ function isSessionPayload(value: unknown): value is SessionTokenPayload {
   );
 }
 
-async function signingKey(): Promise<CryptoKey> {
+async function signingKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(sessionSecret()),
+    new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign", "verify"],
   );
 }
 
-async function signPayload(payloadSegment: string): Promise<string> {
-  const key = await signingKey();
+async function signPayload(
+  payloadSegment: string,
+  secret: string,
+): Promise<string> {
+  const key = await signingKey(secret);
   const signature = await crypto.subtle.sign(
     "HMAC",
     key,
@@ -114,13 +134,14 @@ async function signPayload(payloadSegment: string): Promise<string> {
 async function verifyPayloadSignature(
   payloadSegment: string,
   signatureSegment: string,
+  secret: string,
 ): Promise<boolean> {
   const signatureBytes = fromBase64Url(signatureSegment);
   if (!signatureBytes) {
     return false;
   }
 
-  const key = await signingKey();
+  const key = await signingKey(secret);
   const normalizedSignature = new Uint8Array(signatureBytes.byteLength);
   normalizedSignature.set(signatureBytes);
 
@@ -140,11 +161,18 @@ export async function createSessionToken(
   user: AuthenticatedUser,
   issuedAt = new Date(),
 ): Promise<string> {
+  const secret = configuredSessionSecret();
+  if (!secret) {
+    throw new SessionConfigurationError(
+      "SPORTOLO_AUTH_SECRET is required when NODE_ENV=production.",
+    );
+  }
+
   const payload = toSessionPayload(user, issuedAt);
   const payloadSegment = toBase64Url(
     new TextEncoder().encode(JSON.stringify(payload)),
   );
-  const signatureSegment = await signPayload(payloadSegment);
+  const signatureSegment = await signPayload(payloadSegment, secret);
 
   return `${payloadSegment}.${signatureSegment}`;
 }
@@ -153,6 +181,11 @@ export async function getSessionFromToken(
   token: string,
   now = new Date(),
 ): Promise<AuthenticatedUser | null> {
+  const secret = configuredSessionSecret();
+  if (!secret) {
+    return null;
+  }
+
   const [payloadSegment, signatureSegment, extraSegment] = token.split(".");
   if (!payloadSegment || !signatureSegment || extraSegment) {
     return null;
@@ -161,6 +194,7 @@ export async function getSessionFromToken(
   const signatureValid = await verifyPayloadSignature(
     payloadSegment,
     signatureSegment,
+    secret,
   );
   if (!signatureValid) {
     return null;
