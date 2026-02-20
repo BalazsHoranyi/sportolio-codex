@@ -75,6 +75,19 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
+## Constitution Alignment *(mandatory)*
+
+- **Code Quality Gates**: Define required linting, formatting, static-analysis checks, and pass
+  criteria for this feature.
+- **TDD Plan**: Describe how Red-Green-Refactor will be enforced for each behavior change.
+- **Testing Matrix**: Identify required test levels (unit, integration, contract, regression) and
+  map them to feature behavior.
+- **UX Consistency Plan**: Define consistency expectations for components, interactions, and
+  success/loading/empty/error states for user-facing flows.
+- **Performance Budget**: Specify measurable targets, thresholds, and validation approach for the
+  critical path.
+- **Open Clarifications**: Enumerate unresolved constraints that MUST be decided before planning.
+
 ## Requirements *(mandatory)*
 
 <!--
@@ -89,6 +102,22 @@
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
+- Each functional requirement MUST map to at least one user story and acceptance scenario.
+
+### User Experience Consistency Requirements *(mandatory for user-facing changes)*
+
+- **UXR-001**: User-facing flows MUST define expected behavior for success, loading, empty, and
+  error states.
+- **UXR-002**: UI changes MUST use approved design patterns/components or document an approved
+  exception.
+- **UXR-003**: Accessibility checks required by project standards MUST pass for modified screens.
+
+### Performance Requirements *(mandatory)*
+
+- **PRF-001**: Feature MUST define at least one measurable performance target for a critical path.
+- **PRF-002**: Feature MUST define how performance validation is executed
+  (test type/tool/environment).
+- **PRF-003**: Feature MUST define failure thresholds that block release without approved exception.
 
 *Example of marking unclear requirements:*
 

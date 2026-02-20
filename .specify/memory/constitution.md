@@ -1,50 +1,82 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# sportolo Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Code Quality as a Release Gate
+- All production code MUST meet project linting, formatting, and static-analysis gates before
+  review approval.
+- Every change MUST preserve readability through clear naming, focused functions, and removal of
+  dead code.
+- Pull requests MUST include evidence that quality checks passed for affected modules.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Rationale: quality gates reduce defect density and keep maintenance cost predictable.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Strict TDD (Non-Negotiable)
+- Behavior changes MUST follow Red-Green-Refactor in that order.
+- Tests for new or changed behavior MUST be authored and executed in a failing state before
+  implementation code is added.
+- Merges are blocked when implementation appears before corresponding failing tests unless a
+  documented maintainer exception is approved.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Rationale: strict TDD prevents overbuilding and keeps behavior specification executable.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Testing Standards and Coverage Accountability
+- Test strategy MUST include the appropriate levels: unit tests for logic, integration tests for
+  component boundaries, and contract tests for external interfaces.
+- Every bug fix MUST include a regression test that fails before the fix and passes after the fix.
+- Coverage for touched modules MUST NOT decrease without a documented waiver and approver.
+- Flaky tests MUST be fixed or quarantined with an owner and deadline before release.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Rationale: standardized testing lowers regression risk and keeps confidence high during delivery.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. User Experience Consistency
+- User-facing changes MUST align with established interaction patterns, component usage, and visual
+  language for the product surface.
+- Each user-facing story MUST define acceptance criteria for success, loading, empty, and error
+  states.
+- Accessibility for new or changed UI flows MUST meet the project's baseline a11y checks before
+  merge.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Rationale: consistent UX lowers cognitive load and improves trust in product behavior.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Performance Requirements by Default
+- Every feature MUST declare measurable performance targets for its critical path before
+  implementation starts.
+- Plans MUST define how performance is validated, including tooling and pass/fail thresholds.
+- Changes that degrade an agreed performance target MUST be blocked unless a documented exception
+  and mitigation plan are approved.
+
+Rationale: explicit budgets prevent gradual performance erosion and production instability.
+
+## Engineering and Experience Standards
+
+- `plan.md` MUST document quality gates, TDD approach, testing matrix, UX consistency checks, and
+  performance budgets for the feature.
+- `spec.md` MUST capture measurable outcomes for both user experience and performance where
+  applicable.
+- Task plans MUST include explicit work items for code quality checks, failing-first tests,
+  UX validation, and performance validation.
+- Unknown constraints MUST be marked as concrete clarification items before implementation begins.
+
+## Delivery Workflow and Enforcement
+
+- Delivery order is mandatory: `spec.md` -> `plan.md` -> `tasks.md` -> implementation.
+- Constitution Check in `plan.md` MUST pass before research and MUST be re-validated after design.
+- Pull request review MUST verify evidence for quality gates, TDD execution, test results,
+  UX acceptance coverage, and performance validation.
+- A change is complete only when documentation and validation artifacts are updated to match
+  delivered behavior.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- This constitution is the authoritative policy for engineering decisions in this repository.
+- Amendment process: submit a proposed change with rationale, affected artifacts, migration impact,
+  and maintainer approval before merge.
+- Versioning policy follows semantic versioning for governance updates:
+  - MAJOR for incompatible principle removals or redefinitions.
+  - MINOR for new principles/sections or materially expanded obligations.
+  - PATCH for clarifications, wording improvements, or typo-level edits.
+- Compliance review expectations: each plan, task list, and pull request MUST include an explicit
+  constitution compliance check.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-02-16 | **Last Amended**: 2026-02-16

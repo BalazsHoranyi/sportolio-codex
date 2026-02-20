@@ -1,0 +1,2565 @@
+openapi: 3.0.3
+info:
+  title: Sportolo API (v1)
+  version: 1.0.0
+  description: |
+    REST contract for Sportolo planning, unified DSL workflows, deterministic fatigue,
+    session lifecycle semantics, plan versioning/snapshots, retroactive recomputation auditability,
+    and two-a-day warning-only time-gap behavior (no intra-day decay in v1).
+servers:
+  - url: https://api.sportolo.example
+
+tags:
+  - name: Auth
+  - name: Profiles
+  - name: Planning
+  - name: Versions
+  - name: Snapshots
+  - name: DSL
+  - name: Prescriptions
+  - name: Sessions
+  - name: Sync
+  - name: Fatigue
+  - name: Recalculation
+  - name: Calendar
+  - name: Analytics
+  - name: Integrations
+  - name: Team
+  - name: Catalog
+  - name: Billing
+  - name: Compliance
+
+paths:
+  /v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login athlete or coach and issue bearer token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /v1/athletes/{athleteId}/profiles:
+    get:
+      tags: [Profiles]
+      summary: Get athlete profile
+      operationId: getAthleteProfile
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      responses:
+        '200':
+          description: Athlete profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AthleteProfile'
+
+  /v1/athletes/{athleteId}/macrocycles:
+    post:
+      tags: [Planning]
+      summary: Create macrocycle
+      operationId: createMacrocycle
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMacrocycleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Macrocycle'
+
+  /v1/athletes/{athleteId}/macrocycles/{macrocycleId}/goal-change:
+    post:
+      tags: [Versions]
+      summary: Change macro goal/priority with forward versioning
+      operationId: changeMacroGoal
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/MacrocycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeMacroGoalRequest'
+      responses:
+        '200':
+          description: New version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersionResponse'
+
+  /v1/athletes/{athleteId}/mesocycles/{mesocycleId}/template-edit:
+    post:
+      tags: [Versions]
+      summary: Apply template structural edit and rebase uncompleted future workouts
+      operationId: editMesocycleTemplate
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/MesocycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditMesocycleTemplateRequest'
+      responses:
+        '200':
+          description: New version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersionResponse'
+
+  /v1/athletes/{athleteId}/macrocycles/{macrocycleId}/versions:
+    get:
+      tags: [Versions]
+      summary: List macrocycle versions
+      operationId: listMacrocycleVersions
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/MacrocycleId'
+      responses:
+        '200':
+          description: Version list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionListResponse'
+
+  /v1/athletes/{athleteId}/mesocycles/{mesocycleId}/versions:
+    get:
+      tags: [Versions]
+      summary: List mesocycle versions
+      operationId: listMesocycleVersions
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/MesocycleId'
+      responses:
+        '200':
+          description: Version list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionListResponse'
+
+  /v1/athletes/{athleteId}/mesocycles/{mesocycleId}/workouts:
+    post:
+      tags: [Planning]
+      summary: Create workout from UI or DSL source
+      operationId: createWorkout
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/MesocycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkoutRequest'
+      responses:
+        '201':
+          description: Workout created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+        '422':
+          description: Validation failed (for example parent/invariant violation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /v1/athletes/{athleteId}/workouts/{workoutId}/move:
+    post:
+      tags: [Planning]
+      summary: Move planned workout
+      operationId: moveWorkout
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/WorkoutId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveWorkoutRequest'
+      responses:
+        '200':
+          description: Workout moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveWorkoutResponse'
+        '409':
+          description: Completed workout cannot be moved
+
+  /v1/athletes/{athleteId}/snapshots:
+    post:
+      tags: [Snapshots]
+      summary: Create snapshot
+      operationId: createSnapshot
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSnapshotRequest'
+      responses:
+        '201':
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Snapshot'
+    get:
+      tags: [Snapshots]
+      summary: List snapshots
+      operationId: listSnapshots
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      responses:
+        '200':
+          description: Snapshot list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotListResponse'
+
+  /v1/athletes/{athleteId}/snapshots/{snapshotId}/restore:
+    post:
+      tags: [Snapshots]
+      summary: Restore snapshot with forward-only version creation
+      operationId: restoreSnapshot
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/SnapshotId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreSnapshotRequest'
+      responses:
+        '200':
+          description: Snapshot restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanVersionResponse'
+
+  /v1/athletes/{athleteId}/dsl/compile:
+    post:
+      tags: [DSL]
+      summary: Compile unified DSL to canonical IR
+      operationId: compileDsl
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompileDslRequest'
+      responses:
+        '200':
+          description: Compile result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompileDslResponse'
+        '408':
+          description: Compile timed out (hard stop)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompileDslResponse'
+        '413':
+          description: DSL/IR guardrail exceeded (source size/depth/node/loop bound)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompileDslResponse'
+        '422':
+          description: Deterministic validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompileDslResponse'
+
+  /v1/athletes/{athleteId}/dsl/translate:
+    post:
+      tags: [DSL]
+      summary: Translate UI <-> DSL through canonical IR
+      operationId: translateDsl
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateDslRequest'
+      responses:
+        '200':
+          description: Translation output
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslateDslResponse'
+
+  /v1/athletes/{athleteId}/baselines/versions:
+    get:
+      tags: [Prescriptions]
+      summary: List athlete baseline versions
+      operationId: listBaselineVersions
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      responses:
+        '200':
+          description: Baseline version list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaselineVersionListResponse'
+    post:
+      tags: [Prescriptions]
+      summary: Create new athlete baseline version
+      operationId: createBaselineVersion
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBaselineVersionRequest'
+      responses:
+        '201':
+          description: Baseline version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaselineVersion'
+
+  /v1/athletes/{athleteId}/workouts/{workoutId}/resolved-prescriptions:
+    post:
+      tags: [Prescriptions]
+      summary: Resolve symbolic IR against effective athlete baseline and persist immutable resolved prescription snapshot
+      operationId: resolveWorkoutPrescription
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/WorkoutId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolvePrescriptionRequest'
+      responses:
+        '201':
+          description: Resolved prescription snapshot persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolvedPrescriptionSnapshot'
+
+  /v1/athletes/{athleteId}/resolved-prescriptions/{resolvedPrescriptionId}:
+    get:
+      tags: [Prescriptions]
+      summary: Retrieve immutable resolved prescription snapshot
+      operationId: getResolvedPrescription
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/ResolvedPrescriptionId'
+      responses:
+        '200':
+          description: Resolved prescription snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolvedPrescriptionSnapshot'
+
+  /v1/athletes/{athleteId}/sessions:
+    post:
+      tags: [Sessions]
+      summary: Create or start session
+      operationId: createSession
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+
+  /v1/athletes/{athleteId}/sessions/{sessionId}/finalize:
+    post:
+      tags: [Sessions]
+      summary: Finalize session with deterministic terminal state resolution
+      operationId: finalizeSession
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizeSessionRequest'
+      responses:
+        '200':
+          description: Session finalized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '422':
+          description: Completed-session invariant validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /v1/athletes/{athleteId}/sessions/{sessionId}/progression-failure:
+    get:
+      tags: [Sessions]
+      summary: Get deterministic progression-failure outcome for a finalized session
+      operationId: getSessionProgressionFailure
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Progression failure outcome
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressionFailureOutcome'
+        '404':
+          description: No progression failure outcome exists for this session
+
+  /v1/athletes/{athleteId}/sync/batches:
+    post:
+      tags: [Sync]
+      summary: Submit offline mutation batch and apply deterministic merge
+      operationId: syncBatch
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncBatchRequest'
+      responses:
+        '200':
+          description: Sync batch processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncBatchResponse'
+
+  /v1/athletes/{athleteId}/sync/conflicts:
+    get:
+      tags: [Sync]
+      summary: List sync conflicts for same-workout concurrent edits
+      operationId: listSyncConflicts
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - name: resolutionStatus
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [manual_required, resolved]
+      responses:
+        '200':
+          description: Sync conflict list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncConflictListResponse'
+
+  /v1/athletes/{athleteId}/sync/conflicts/{conflictId}/resolve:
+    post:
+      tags: [Sync]
+      summary: Resolve a structural sync conflict explicitly
+      operationId: resolveSyncConflict
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/ConflictId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveSyncConflictRequest'
+      responses:
+        '200':
+          description: Conflict resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveSyncConflictResponse'
+
+  /v1/athletes/{athleteId}/checkins:
+    put:
+      tags: [Fatigue]
+      summary: Upsert daily check-in (retroactive edits trigger deterministic recomputation)
+      operationId: upsertDailyCheckin
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyCheckinRequest'
+      responses:
+        '200':
+          description: Check-in saved and recompute outcome returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckinUpdateResponse'
+
+  /v1/athletes/{athleteId}/fatigue/today:
+    get:
+      tags: [Fatigue]
+      summary: Get today's fatigue snapshot
+      operationId: getTodayFatigue
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      responses:
+        '200':
+          description: Fatigue snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FatigueSnapshot'
+
+  /v1/athletes/{athleteId}/fatigue/model-policy:
+    get:
+      tags: [Fatigue]
+      summary: Get active read-only fatigue model policy parameters
+      operationId: getFatigueModelPolicy
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      responses:
+        '200':
+          description: Active fatigue model policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FatigueModelPolicy'
+
+  /v1/athletes/{athleteId}/fatigue/snapshots:
+    get:
+      tags: [Fatigue]
+      summary: List versioned fatigue snapshots (authoritative read model history)
+      operationId: listFatigueSnapshots
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - name: fromDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: includeSuperseded
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Fatigue snapshot history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FatigueSnapshotListResponse'
+
+  /v1/athletes/{athleteId}/fatigue/recalculations:
+    get:
+      tags: [Recalculation]
+      summary: List recalculation events
+      operationId: listRecalculationEvents
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Recalculation event history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecalculationEventListResponse'
+
+  /v1/athletes/{athleteId}/calendar/weekly-audit:
+    get:
+      tags: [Calendar]
+      summary: Get weekly audit series
+      operationId: getWeeklyAudit
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Weekly series
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditSeriesResponse'
+
+  /v1/athletes/{athleteId}/calendar/monthly-audit:
+    get:
+      tags: [Calendar]
+      summary: Get monthly audit series
+      operationId: getMonthlyAudit
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Monthly series
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditSeriesResponse'
+
+  /v1/athletes/{athleteId}/analytics/adherence:
+    get:
+      tags: [Analytics]
+      summary: Get adherence analytics with deterministic over/undertraining flags
+      operationId: getAdherenceAnalytics
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - name: asOfDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: windowDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [30]
+            default: 30
+      responses:
+        '200':
+          description: Adherence analytics for the requested window
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdherenceAnalyticsResponse'
+
+  /v1/athletes/{athleteId}/integrations/imports:
+    post:
+      tags: [Integrations]
+      summary: Import external artifact
+      operationId: createIntegrationImport
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationImportRequest'
+      responses:
+        '202':
+          description: Import accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationImportResponse'
+
+  /v1/athletes/{athleteId}/integrations/imports/{importId}/dedup-resolution:
+    post:
+      tags: [Integrations]
+      summary: Resolve ambiguous integration dedup candidate
+      operationId: resolveIntegrationDedup
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+        - $ref: '#/components/parameters/ImportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveIntegrationDedupRequest'
+      responses:
+        '200':
+          description: Dedup resolution applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveIntegrationDedupResponse'
+        '409':
+          description: Import is not in pending dedup resolution state
+
+  /v1/teams/{teamId}/calendar:
+    get:
+      tags: [Team]
+      summary: Get team calendar view with athlete privacy filtering
+      operationId: getTeamCalendar
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Team calendar entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamCalendarResponse'
+
+  /v1/athletes/{athleteId}/coach-comments:
+    get:
+      tags: [Team]
+      summary: List coach comments for an athlete
+      operationId: listCoachComments
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      responses:
+        '200':
+          description: Coach comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachCommentListResponse'
+    post:
+      tags: [Team]
+      summary: Create coach comment for an athlete
+      operationId: createCoachComment
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCoachCommentRequest'
+      responses:
+        '201':
+          description: Coach comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachComment'
+
+  /v1/athletes/{athleteId}/privacy-policy:
+    put:
+      tags: [Team]
+      summary: Update athlete privacy policy for team visibility
+      operationId: updateAthletePrivacyPolicy
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePrivacyPolicyRequest'
+      responses:
+        '200':
+          description: Privacy policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyPolicyResponse'
+
+  /v1/exercises:
+    get:
+      tags: [Catalog]
+      summary: List exercise catalog entries
+      operationId: listExercises
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [global, user, all]
+            default: all
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exercise catalog list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseCatalogListResponse'
+
+  /v1/athletes/{athleteId}/exercises:
+    post:
+      tags: [Catalog]
+      summary: Create user-scoped exercise
+      operationId: createUserExercise
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserExerciseRequest'
+      responses:
+        '201':
+          description: User-scoped exercise created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseCatalogItem'
+
+  /v1/athletes/{athleteId}/integrations/exports:
+    post:
+      tags: [Integrations]
+      summary: Export completed activities/workouts to an external provider or file format
+      operationId: createIntegrationExport
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationExportRequest'
+      responses:
+        '202':
+          description: Export accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationExportResponse'
+
+  /v1/athletes/{athleteId}/billing/entitlements:
+    get:
+      tags: [Billing]
+      summary: Get athlete and coach entitlement state
+      operationId: getEntitlements
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      responses:
+        '200':
+          description: Entitlement state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementsResponse'
+
+  /v1/athletes/{athleteId}/compliance/disclaimer:
+    get:
+      tags: [Compliance]
+      summary: Get current medical disclaimer text and acceptance status
+      operationId: getComplianceDisclaimer
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      responses:
+        '200':
+          description: Medical disclaimer payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceDisclaimerResponse'
+
+  /v1/athletes/{athleteId}/compliance/export:
+    post:
+      tags: [Compliance]
+      summary: Request athlete data export
+      operationId: requestComplianceExport
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComplianceExportRequest'
+      responses:
+        '202':
+          description: Export request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceExportResponse'
+
+  /v1/athletes/{athleteId}/compliance/delete:
+    post:
+      tags: [Compliance]
+      summary: Request athlete data deletion
+      operationId: requestComplianceDelete
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComplianceDeleteRequest'
+      responses:
+        '202':
+          description: Deletion request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceDeleteResponse'
+
+components:
+  parameters:
+    AthleteId:
+      name: athleteId
+      in: path
+      required: true
+      schema:
+        type: string
+    MacrocycleId:
+      name: macrocycleId
+      in: path
+      required: true
+      schema:
+        type: string
+    MesocycleId:
+      name: mesocycleId
+      in: path
+      required: true
+      schema:
+        type: string
+    WorkoutId:
+      name: workoutId
+      in: path
+      required: true
+      schema:
+        type: string
+    SnapshotId:
+      name: snapshotId
+      in: path
+      required: true
+      schema:
+        type: string
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+    ConflictId:
+      name: conflictId
+      in: path
+      required: true
+      schema:
+        type: string
+    ResolvedPrescriptionId:
+      name: resolvedPrescriptionId
+      in: path
+      required: true
+      schema:
+        type: string
+    BaselineVersionId:
+      name: baselineVersionId
+      in: path
+      required: true
+      schema:
+        type: string
+    ImportId:
+      name: importId
+      in: path
+      required: true
+      schema:
+        type: string
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role:
+          type: string
+          enum: [athlete, coach]
+
+    LoginResponse:
+      type: object
+      required:
+        [
+          access_token,
+          token_type,
+          role,
+          user_id,
+          expires_in_seconds,
+        ]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [bearer]
+        role:
+          type: string
+          enum: [athlete, coach]
+        user_id:
+          type: string
+        athlete_id:
+          type: string
+        team_id:
+          type: string
+        expires_in_seconds:
+          type: integer
+          minimum: 1
+
+    AthleteProfile:
+      type: object
+      required: [id, userId, unitSystem, targetPriority]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        unitSystem:
+          type: string
+          enum: [metric, imperial]
+        targetPriority:
+          type: array
+          items:
+            type: string
+            enum: [hr, power, pace]
+
+    CreateMacrocycleRequest:
+      type: object
+      required: [primaryGoal, targetDate, priorityMode, timelineAnchor]
+      properties:
+        primaryGoal:
+          type: string
+        targetDate:
+          type: string
+          format: date
+        priorityMode:
+          type: string
+          enum: [strength_first, endurance_first, balanced]
+        timelineAnchor:
+          type: string
+          format: date
+
+    Macrocycle:
+      allOf:
+        - $ref: '#/components/schemas/CreateMacrocycleRequest'
+        - type: object
+          required: [id, activeVersionNumber]
+          properties:
+            id:
+              type: string
+            activeVersionNumber:
+              type: integer
+
+    ChangeMacroGoalRequest:
+      type: object
+      required: [primaryGoal, priorityMode, effectiveDate, changeReason]
+      properties:
+        primaryGoal:
+          type: string
+        priorityMode:
+          type: string
+          enum: [strength_first, endurance_first, balanced]
+        effectiveDate:
+          type: string
+          format: date
+        changeReason:
+          type: string
+
+    EditMesocycleTemplateRequest:
+      type: object
+      required: [templatePatch, effectiveDate, changeReason]
+      properties:
+        templatePatch:
+          type: object
+          additionalProperties: true
+        progressionFailurePolicy:
+          type: string
+          enum: [advisory_only, repeat, regress, deload]
+        effectiveDate:
+          type: string
+          format: date
+        changeReason:
+          type: string
+
+    PlanVersionResponse:
+      type: object
+      required: [versionId, versionNumber, effectiveDate, rebasedWorkoutCount]
+      properties:
+        versionId:
+          type: string
+        versionNumber:
+          type: integer
+        effectiveDate:
+          type: string
+          format: date
+        rebasedWorkoutCount:
+          type: integer
+        priorVersionId:
+          type: string
+
+    VersionListResponse:
+      type: object
+      required: [versions]
+      properties:
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanVersionResponse'
+
+    CreateWorkoutRequest:
+      type: object
+      required: [scheduledAt, source]
+      properties:
+        scheduledAt:
+          type: string
+          format: date-time
+        timeOfDay:
+          type: string
+          enum: [morning, midday, evening, night]
+        timeBetweenPreviousMinutes:
+          type: integer
+          minimum: 0
+          nullable: true
+        source:
+          type: string
+          enum: [ui, dsl, imported]
+        progressionTrackId:
+          type: string
+        progressionFailurePolicy:
+          type: string
+          enum: [advisory_only, repeat, regress, deload]
+        uiDefinition:
+          $ref: '#/components/schemas/UiWorkoutDefinition'
+        dslDefinition:
+          $ref: '#/components/schemas/DslDefinition'
+
+    Workout:
+      type: object
+      required: [id, scheduledAt, status, versionNumber]
+      properties:
+        id:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        timeOfDay:
+          type: string
+          enum: [morning, midday, evening, night]
+        timeBetweenPreviousMinutes:
+          type: integer
+          minimum: 0
+          nullable: true
+        twoADayGapWarningLevel:
+          type: string
+          enum: [none, low, medium, high]
+        status:
+          type: string
+          enum: [planned, skipped, completed]
+        versionNumber:
+          type: integer
+        progressionTrackId:
+          type: string
+        progressionFailurePolicy:
+          type: string
+          enum: [advisory_only, repeat, regress, deload]
+      description: Planned workouts are always mesocycle-scoped and cannot exist without a mesocycle parent.
+
+    MoveWorkoutRequest:
+      type: object
+      required: [targetDateTime]
+      properties:
+        targetDateTime:
+          type: string
+          format: date-time
+
+    MoveWorkoutResponse:
+      type: object
+      required: [workoutId, moved, weeklyAuditRecomputed]
+      properties:
+        workoutId:
+          type: string
+        moved:
+          type: boolean
+        weeklyAuditRecomputed:
+          type: boolean
+
+    CreateSnapshotRequest:
+      type: object
+      required: [snapshotType, effectiveVersionId]
+      properties:
+        snapshotType:
+          type: string
+          enum: [macrocycle, mesocycle]
+        targetMacrocycleId:
+          type: string
+        targetMesocycleId:
+          type: string
+        effectiveVersionId:
+          type: string
+        note:
+          type: string
+
+    Snapshot:
+      type: object
+      required: [id, snapshotType, effectiveVersionId, isSystemGenerated, createdAt]
+      properties:
+        id:
+          type: string
+        snapshotType:
+          type: string
+          enum: [macrocycle, mesocycle]
+        targetMacrocycleId:
+          type: string
+        targetMesocycleId:
+          type: string
+        effectiveVersionId:
+          type: string
+        isSystemGenerated:
+          type: boolean
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    SnapshotListResponse:
+      type: object
+      required: [snapshots]
+      properties:
+        snapshots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Snapshot'
+
+    RestoreSnapshotRequest:
+      type: object
+      required: [effectiveDate, restoreReason]
+      properties:
+        effectiveDate:
+          type: string
+          format: date
+        restoreReason:
+          type: string
+
+    DslDefinition:
+      type: object
+      required: [dslVersion, sourceText]
+      properties:
+        dslVersion:
+          type: string
+        sourceText:
+          type: string
+          maxLength: 50000
+        parityProfile:
+          type: string
+          enum: [unified, strength_parity, endurance_parity]
+        compatibilityMode:
+          type: string
+          enum: [native, liftosaur_reference, intervals_icu_reference]
+
+    UiWorkoutDefinition:
+      type: object
+      properties:
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/UiWorkoutSegment'
+
+    UiWorkoutSegment:
+      type: object
+      required: [modality]
+      properties:
+        modality:
+          type: string
+          enum: [strength, endurance]
+        payload:
+          type: object
+          additionalProperties: true
+
+    CompileDslRequest:
+      type: object
+      required: [dslVersion, sourceText]
+      properties:
+        dslVersion:
+          type: string
+        sourceText:
+          type: string
+          maxLength: 50000
+        parityProfile:
+          type: string
+          enum: [unified, strength_parity, endurance_parity]
+        requestSource:
+          type: string
+          enum: [user, llm_translate, llm_parse]
+        guardrailProfile:
+          type: string
+          enum: [balanced_v1]
+
+    CompileDslResponse:
+      type: object
+      required: [valid, guardrailProfile, guardrailLimits, compileStats]
+      properties:
+        valid:
+          type: boolean
+        guardrailProfile:
+          type: string
+          enum: [balanced_v1]
+        guardrailLimits:
+          $ref: '#/components/schemas/DslGuardrailLimits'
+        compileStatus:
+          type: string
+          enum: [success, rejected_guardrail, rejected_validation, timed_out]
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        irWorkout:
+          $ref: '#/components/schemas/IrWorkout'
+          nullable: true
+        compileStats:
+          $ref: '#/components/schemas/DslCompileStats'
+
+    DslCompileStats:
+      type: object
+      required: [sourceLength, maxNestingDepthObserved, irNodeCount, boundedLoopIterationsTotal, compileDurationMs, hardTimeoutMs]
+      properties:
+        sourceLength:
+          type: integer
+        maxNestingDepthObserved:
+          type: integer
+        irNodeCount:
+          type: integer
+        boundedLoopIterationsTotal:
+          type: integer
+        compileDurationMs:
+          type: integer
+        hardTimeoutMs:
+          type: integer
+
+    DslGuardrailLimits:
+      type: object
+      required: [maxSourceLength, maxNestingDepth, maxIrNodeCount, maxLoopIterationsTotal, compileTargetMs, compileHardTimeoutMs]
+      properties:
+        maxSourceLength:
+          type: integer
+          enum: [50000]
+        maxNestingDepth:
+          type: integer
+          enum: [16]
+        maxIrNodeCount:
+          type: integer
+          enum: [20000]
+        maxLoopIterationsTotal:
+          type: integer
+          enum: [10000]
+        compileTargetMs:
+          type: integer
+          enum: [2000]
+        compileHardTimeoutMs:
+          type: integer
+          enum: [5000]
+
+    TranslateDslRequest:
+      type: object
+      required: [direction]
+      properties:
+        direction:
+          type: string
+          enum: [ui_to_dsl, dsl_to_ui]
+        uiDefinition:
+          $ref: '#/components/schemas/UiWorkoutDefinition'
+        dslDefinition:
+          $ref: '#/components/schemas/DslDefinition'
+
+    TranslateDslResponse:
+      type: object
+      required: [direction, requiresCompileValidation]
+      properties:
+        direction:
+          type: string
+        dslDefinition:
+          $ref: '#/components/schemas/DslDefinition'
+        uiDefinition:
+          $ref: '#/components/schemas/UiWorkoutDefinition'
+        warnings:
+          type: array
+          items:
+            type: string
+        requiresCompileValidation:
+          type: boolean
+
+    CreateBaselineVersionRequest:
+      type: object
+      required: [effectiveFrom, strengthBaselines, enduranceBaselines]
+      properties:
+        effectiveFrom:
+          type: string
+          format: date
+        strengthBaselines:
+          type: object
+          additionalProperties: true
+        enduranceBaselines:
+          type: object
+          additionalProperties: true
+        updateReason:
+          type: string
+
+    BaselineVersion:
+      type: object
+      required: [id, athleteId, versionNumber, effectiveFrom, createdAt]
+      properties:
+        id:
+          type: string
+        athleteId:
+          type: string
+        versionNumber:
+          type: integer
+        effectiveFrom:
+          type: string
+          format: date
+        strengthBaselines:
+          type: object
+          additionalProperties: true
+        enduranceBaselines:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+
+    BaselineVersionListResponse:
+      type: object
+      required: [versions]
+      properties:
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/BaselineVersion'
+
+    ResolvePrescriptionRequest:
+      type: object
+      required: [resolutionContext]
+      properties:
+        resolutionContext:
+          type: string
+          enum: [preview, session_start]
+        baselineVersionId:
+          type: string
+        requestReason:
+          type: string
+
+    ResolvedPrescriptionSnapshot:
+      type: object
+      required: [id, athleteId, workoutId, workoutVersionId, irWorkoutId, irVersion, baselineVersionId, baselineVersionNumber, resolvedAt, isLocked]
+      properties:
+        id:
+          type: string
+        athleteId:
+          type: string
+        workoutId:
+          type: string
+        workoutVersionId:
+          type: string
+        irWorkoutId:
+          type: string
+        irVersion:
+          type: string
+        baselineVersionId:
+          type: string
+        baselineVersionNumber:
+          type: integer
+        resolvedIntensityTargets:
+          type: object
+          additionalProperties: true
+        resolvedProgressionValues:
+          type: object
+          additionalProperties: true
+        resolutionContext:
+          type: object
+          additionalProperties: true
+        resolvedAt:
+          type: string
+          format: date-time
+        resolvedBy:
+          type: string
+        isLocked:
+          type: boolean
+
+    IrWorkout:
+      type: object
+      required: [irVersion, determinismHash, bindingMode, segments]
+      properties:
+        irVersion:
+          type: string
+        determinismHash:
+          type: string
+        bindingMode:
+          type: string
+          enum: [late_execution]
+        segments:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        symbolicIntensityRefs:
+          type: object
+          additionalProperties: true
+        symbolicProgressionRefs:
+          type: object
+          additionalProperties: true
+        nodeCount:
+          type: integer
+
+    CreateSessionRequest:
+      type: object
+      required: [workoutId, startedAt, resolvedPrescriptionSnapshotId]
+      properties:
+        workoutId:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        resolvedPrescriptionSnapshotId:
+          type: string
+        baselineVersionIdUsed:
+          type: string
+
+    FinalizeSessionRequest:
+      type: object
+      required: [endedAt, terminationSignal, completedWorkRatio, actualLoadSummary, executionEvents]
+      properties:
+        endedAt:
+          type: string
+          format: date-time
+        terminationSignal:
+          type: string
+          enum: [planned_complete, user_end_save, discard, timeout, app_exit]
+        completedWorkRatio:
+          type: number
+          minimum: 0
+          maximum: 1
+        progressionSignals:
+          $ref: '#/components/schemas/ProgressionSignals'
+        classificationInputs:
+          type: object
+          description: |
+            Optional user-edited classification inputs used to determine contributor scoring.
+            These inputs may affect neural/mechanical contributors but MUST NOT directly set recruitment.
+          additionalProperties: true
+        actualLoadSummary:
+          type: object
+          description: |
+            Required execution/load summary used for completed-session invariants.
+            For completed sessions this must be non-empty and contain deterministic actual load values.
+          additionalProperties: true
+        executionEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExecutionEvent'
+
+    ExecutionEvent:
+      type: object
+      required: [eventType, timestamp]
+      properties:
+        eventType:
+          type: string
+          enum: [set_logged, interval_started, interval_extended, interval_skipped, edit, sensor_dropout, autopause]
+        timestamp:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          additionalProperties: true
+
+    Session:
+      type: object
+      required: [id, workoutId, state, terminationSignal, completedWorkRatio, endedAt, actualLoadSummary, fatigueEligible, syncState, resolvedPrescriptionSnapshotId, baselineVersionIdUsed]
+      properties:
+        id:
+          type: string
+        workoutId:
+          type: string
+        state:
+          type: string
+          enum: [planned, in_progress, completed, partial, abandoned]
+        terminationSignal:
+          type: string
+          enum: [planned_complete, user_end_save, discard, timeout, app_exit]
+        completedWorkRatio:
+          type: number
+        endedAt:
+          type: string
+          format: date-time
+        actualLoadSummary:
+          type: object
+          additionalProperties: true
+        fatigueEligible:
+          type: boolean
+        fatigueEligibilityReason:
+          type: string
+        resolvedPrescriptionSnapshotId:
+          type: string
+        baselineVersionIdUsed:
+          type: string
+        progressionFailureDetected:
+          type: boolean
+        progressionFailureOutcomeId:
+          type: string
+          nullable: true
+        serverReceivedAt:
+          type: string
+          format: date-time
+        syncState:
+          type: string
+          enum: [pending, synced, conflict_pending, conflict_resolved]
+
+    ProgressionSignals:
+      type: object
+      required: [progressionTrackId, prescribedTargetMet]
+      properties:
+        progressionTrackId:
+          type: string
+        prescribedTargetMet:
+          type: boolean
+        expectedTopSetRpe:
+          type: number
+          nullable: true
+        actualTopSetRpe:
+          type: number
+          nullable: true
+        progressionSource:
+          type: string
+          enum: [autoreg_top_set, amrap_trigger, wave, mixed]
+
+    ProgressionFailureOutcome:
+      type: object
+      required: [id, sessionId, workoutId, progressionTrackId, failureDetected, policyApplied, adjustmentApplied, modelPolicyVersionId, randomnessUsed, createdAt]
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        workoutId:
+          type: string
+        progressionTrackId:
+          type: string
+        failureDetected:
+          type: boolean
+        failureReasons:
+          type: array
+          items:
+            type: string
+            enum: [target_miss, rpe_overshoot]
+        expectedTopSetRpe:
+          type: number
+          nullable: true
+        actualTopSetRpe:
+          type: number
+          nullable: true
+        policyApplied:
+          type: string
+          enum: [advisory_only, repeat, regress, deload]
+        adjustmentApplied:
+          type: boolean
+        nextWorkoutVersionId:
+          type: string
+          nullable: true
+        modelPolicyVersionId:
+          type: string
+        randomnessUsed:
+          type: boolean
+          enum: [false]
+        advisoryMessage:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    SyncBatchRequest:
+      type: object
+      required: [clientId, sentAt, mutations]
+      properties:
+        clientId:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+        mutations:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncMutation'
+
+    SyncMutation:
+      type: object
+      required: [mutationId, entityType, entityId, fieldCategory, operation, payload, clientOccurredAt]
+      properties:
+        mutationId:
+          type: string
+        entityType:
+          type: string
+          enum: [session, workout]
+        entityId:
+          type: string
+        fieldCategory:
+          type: string
+          enum: [session_state, execution_data, notes, structure]
+        operation:
+          type: string
+          enum: [create, update, finalize]
+        payload:
+          type: object
+          additionalProperties: true
+        clientOccurredAt:
+          type: string
+          format: date-time
+
+    SyncBatchResponse:
+      type: object
+      required: [batchId, processedAt, appliedCount, autoResolvedCount, manualConflictCount, conflicts]
+      properties:
+        batchId:
+          type: string
+        processedAt:
+          type: string
+          format: date-time
+        appliedCount:
+          type: integer
+        autoResolvedCount:
+          type: integer
+        manualConflictCount:
+          type: integer
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncConflictRecord'
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+
+    SyncConflictRecord:
+      type: object
+      required: [id, workoutId, fieldCategory, conflictType, resolutionMode, resolutionStatus, winnerRule, createdAt]
+      properties:
+        id:
+          type: string
+        workoutId:
+          type: string
+        fieldCategory:
+          type: string
+          enum: [session_state, execution_data, notes, structure]
+        conflictType:
+          type: string
+          enum: [same_workout_concurrent_edit, equal_precedence_execution_tie, structural_incompatibility]
+        resolutionMode:
+          type: string
+          enum: [auto, manual_required, manual_applied]
+        resolutionStatus:
+          type: string
+          enum: [resolved, manual_required]
+        winnerRule:
+          type: string
+          enum: [state_precedence, completed_over_planned, notes_lww_server_receive, higher_completed_work_ratio, server_receive_lww, manual_selection]
+        leftSource:
+          type: string
+        rightSource:
+          type: string
+        winnerSessionId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    SyncConflictListResponse:
+      type: object
+      required: [conflicts]
+      properties:
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncConflictRecord'
+
+    ResolveSyncConflictRequest:
+      type: object
+      required: [resolutionChoice]
+      properties:
+        resolutionChoice:
+          type: string
+          enum: [left, right, merged]
+        mergedPayload:
+          type: object
+          additionalProperties: true
+        resolutionNote:
+          type: string
+
+    ResolveSyncConflictResponse:
+      type: object
+      required: [conflictId, resolutionStatus, winnerRule, resolvedAt]
+      properties:
+        conflictId:
+          type: string
+        resolutionStatus:
+          type: string
+          enum: [resolved]
+        winnerRule:
+          type: string
+          enum: [manual_selection]
+        resolvedAt:
+          type: string
+          format: date-time
+        resultingSession:
+          $ref: '#/components/schemas/Session'
+
+    DailyCheckinRequest:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+          format: date
+        sleep:
+          type: number
+          nullable: true
+        fuel:
+          type: number
+        stress:
+          type: number
+        updateReason:
+          type: string
+
+    CheckinUpdateResponse:
+      type: object
+      required: [checkinId, recomputationTriggered]
+      properties:
+        checkinId:
+          type: string
+        recomputationTriggered:
+          type: boolean
+        recalculationEventId:
+          type: string
+          nullable: true
+        recomputeFromDate:
+          type: string
+          format: date
+          nullable: true
+        recomputeToDate:
+          type: string
+          format: date
+          nullable: true
+        latestComputedVersion:
+          type: integer
+          nullable: true
+
+    FatigueSnapshot:
+      type: object
+      required: [asOf, neural, metabolic, mechanical, recruitment, recruitmentDerivationMode, intraDayDecayApplied, modelPolicyVersionId, randomnessUsed, combinedScore, sourcePlanVersionId, computedVersion]
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        neural:
+          type: number
+        metabolic:
+          type: number
+        mechanical:
+          type: number
+        recruitment:
+          type: number
+          description: Derived-only value computed as max(neural, mechanical); no direct override path.
+        recruitmentDerivationMode:
+          type: string
+          enum: [max_neural_mechanical]
+        intraDayDecayApplied:
+          type: boolean
+          enum: [false]
+          description: v1 does not apply time-between intra-day decay adjustments; time-between drives warning context only.
+        modelPolicyVersionId:
+          type: string
+        randomnessUsed:
+          type: boolean
+          enum: [false]
+          description: Fatigue computation is deterministic and does not use randomness.
+        combinedScore:
+          type: number
+        sourcePlanVersionId:
+          type: string
+        computedVersion:
+          type: integer
+        priorComputedVersionId:
+          type: string
+          nullable: true
+        isAuthoritativeForDate:
+          type: boolean
+        supersededByComputedVersion:
+          type: integer
+          nullable: true
+        topContributors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        twoADayGapWarnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TwoADayGapWarning'
+
+    FatigueSnapshotListResponse:
+      type: object
+      required: [selectionPolicy, snapshots]
+      properties:
+        selectionPolicy:
+          type: string
+          enum: [latest_per_day, include_superseded]
+        snapshots:
+          type: array
+          items:
+            $ref: '#/components/schemas/FatigueSnapshot'
+
+    RecalculationEvent:
+      type: object
+      required: [id, actorUserId, triggerReason, recomputeFromDate, recomputeToDate, affectedPriorSnapshotVersions, createdSnapshotVersions, createdAt]
+      properties:
+        id:
+          type: string
+        actorUserId:
+          type: string
+        triggerReason:
+          type: string
+        recomputeFromDate:
+          type: string
+          format: date
+        recomputeToDate:
+          type: string
+          format: date
+        affectedPriorSnapshotVersions:
+          type: array
+          items:
+            type: integer
+        createdSnapshotVersions:
+          type: array
+          items:
+            type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    RecalculationEventListResponse:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecalculationEvent'
+
+    AuditSeriesResponse:
+      type: object
+      required: [startDate, points]
+      properties:
+        startDate:
+          type: string
+          format: date
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditPoint'
+
+    AuditPoint:
+      type: object
+      required: [date, completedAxes, plannedAxes, planVersionId, fatigueComputedVersion]
+      properties:
+        date:
+          type: string
+          format: date
+        completedAxes:
+          type: object
+          additionalProperties:
+            type: number
+        plannedAxes:
+          type: object
+          additionalProperties:
+            type: number
+        recruitmentOverlay:
+          type: number
+        thresholdZoneState:
+          type: string
+        planVersionId:
+          type: string
+        fatigueComputedVersion:
+          type: integer
+
+    TwoADayGapWarning:
+      type: object
+      required: [workoutId, gapMinutes, warningLevel, warningOnly]
+      properties:
+        workoutId:
+          type: string
+        priorWorkoutId:
+          type: string
+          nullable: true
+        gapMinutes:
+          type: integer
+        warningLevel:
+          type: string
+          enum: [none, low, medium, high]
+        warningOnly:
+          type: boolean
+          enum: [true]
+        ruleVersion:
+          type: string
+        message:
+          type: string
+
+    AdherenceAnalyticsResponse:
+      type: object
+      required: [athleteId, asOfDate, windowDays, adherenceRate30d, overtrainingFlag, undertrainingFlag, overallFlagState, overtrainingSignals, undertrainingSignals, thresholdsApplied, modelPolicyVersionId, randomnessUsed]
+      properties:
+        athleteId:
+          type: string
+        asOfDate:
+          type: string
+          format: date
+        windowDays:
+          type: integer
+          enum: [30]
+        adherenceRate30d:
+          type: number
+          minimum: 0
+          maximum: 100
+        overtrainingFlag:
+          type: boolean
+        undertrainingFlag:
+          type: boolean
+        overallFlagState:
+          type: string
+          enum: [none, overtraining, undertraining, both]
+        overtrainingSignals:
+          $ref: '#/components/schemas/OvertrainingSignals'
+        undertrainingSignals:
+          $ref: '#/components/schemas/UndertrainingSignals'
+        thresholdsApplied:
+          $ref: '#/components/schemas/AdherenceThresholds'
+        modelPolicyVersionId:
+          type: string
+        randomnessUsed:
+          type: boolean
+          enum: [false]
+        sourceFatigueComputedVersions:
+          type: array
+          items:
+            type: integer
+
+    FatigueModelPolicy:
+      type: object
+      required: [policyVersionId, effectiveFrom, isUserEditable, axisDecayParameters, baseWeightParameters, randomnessAllowed]
+      properties:
+        policyVersionId:
+          type: string
+        effectiveFrom:
+          type: string
+          format: date-time
+        isUserEditable:
+          type: boolean
+          enum: [false]
+        axisDecayParameters:
+          type: object
+          additionalProperties: true
+        baseWeightParameters:
+          type: object
+          additionalProperties: true
+        randomnessAllowed:
+          type: boolean
+          enum: [false]
+
+    OvertrainingSignals:
+      type: object
+      required: [rolling7DayCompletedLoadRatioPct, fatigueAxisGe7DaysIn7d, fatigueAxisGe7ConsecutiveDays]
+      properties:
+        rolling7DayCompletedLoadRatioPct:
+          type: number
+        fatigueAxisGe7DaysIn7d:
+          type: integer
+        fatigueAxisGe7ConsecutiveDays:
+          type: integer
+
+    UndertrainingSignals:
+      type: object
+      required: [rolling14DayCompletedLoadRatioPct, plannedSessionCompletionRate14d]
+      properties:
+        rolling14DayCompletedLoadRatioPct:
+          type: number
+        plannedSessionCompletionRate14d:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    AdherenceThresholds:
+      type: object
+      required: [overtrainingLoadThresholdPct, overtrainingFatigueDaysThreshold, overtrainingConsecutiveDaysThreshold, undertrainingLoadThresholdPct, undertrainingCompletionThresholdPct]
+      properties:
+        overtrainingLoadThresholdPct:
+          type: integer
+          enum: [115]
+        overtrainingFatigueDaysThreshold:
+          type: integer
+          enum: [2]
+        overtrainingConsecutiveDaysThreshold:
+          type: integer
+          enum: [3]
+        undertrainingLoadThresholdPct:
+          type: integer
+          enum: [75]
+        undertrainingCompletionThresholdPct:
+          type: integer
+          enum: [70]
+
+    IntegrationImportRequest:
+      type: object
+      required: [provider, artifactType, payloadRef]
+      properties:
+        provider:
+          type: string
+          enum: [strava, garmin, wahoo, fit, tcx]
+        artifactType:
+          type: string
+          enum: [activity, workout]
+        payloadRef:
+          type: string
+        externalActivityId:
+          type: string
+        activityStartAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: integer
+        modality:
+          type: string
+          enum: [strength, endurance, mixed]
+
+    IntegrationImportResponse:
+      type: object
+      required: [importId, status]
+      properties:
+        importId:
+          type: string
+        status:
+          type: string
+          enum: [received, parsed, linked, duplicate_linked, pending_dedup_resolution, failed]
+        dedupMatchStrategy:
+          type: string
+          enum: [external_id_exact, time_duration_modality_fallback, manual_resolution]
+          nullable: true
+        dedupStatus:
+          type: string
+          enum: [new_linked, duplicate_linked, pending_resolution]
+          nullable: true
+        matchedActivityId:
+          type: string
+          nullable: true
+        candidateActivityIds:
+          type: array
+          items:
+            type: string
+        startTimeToleranceSeconds:
+          type: integer
+          enum: [60]
+        durationTolerancePercent:
+          type: number
+          enum: [5]
+
+    ResolveIntegrationDedupRequest:
+      type: object
+      required: [resolutionAction]
+      properties:
+        resolutionAction:
+          type: string
+          enum: [link_candidate, create_new]
+        selectedCandidateId:
+          type: string
+        resolutionNote:
+          type: string
+
+    ResolveIntegrationDedupResponse:
+      type: object
+      required: [importId, dedupStatus, resolvedBy, resolvedAt]
+      properties:
+        importId:
+          type: string
+        dedupStatus:
+          type: string
+          enum: [new_linked, duplicate_linked]
+        dedupMatchStrategy:
+          type: string
+          enum: [manual_resolution]
+        matchedActivityId:
+          type: string
+          nullable: true
+        resolvedBy:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+
+    TeamCalendarResponse:
+      type: object
+      required: [teamId, startDate, points]
+      properties:
+        teamId:
+          type: string
+        startDate:
+          type: string
+          format: date
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamCalendarPoint'
+
+    TeamCalendarPoint:
+      type: object
+      required: [date, athleteId, visibility, summary]
+      properties:
+        date:
+          type: string
+          format: date
+        athleteId:
+          type: string
+        visibility:
+          type: string
+          enum: [full, redacted]
+        summary:
+          type: string
+
+    CreateCoachCommentRequest:
+      type: object
+      required: [comment]
+      properties:
+        comment:
+          type: string
+          minLength: 1
+        workoutId:
+          type: string
+          nullable: true
+
+    CoachComment:
+      type: object
+      required: [id, athleteId, coachUserId, comment, createdAt]
+      properties:
+        id:
+          type: string
+        athleteId:
+          type: string
+        coachUserId:
+          type: string
+        comment:
+          type: string
+        workoutId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CoachCommentListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoachComment'
+
+    UpdatePrivacyPolicyRequest:
+      type: object
+      required: [calendarVisibility]
+      properties:
+        calendarVisibility:
+          type: string
+          enum: [team_full, team_redacted, private]
+
+    PrivacyPolicyResponse:
+      type: object
+      required: [athleteId, calendarVisibility]
+      properties:
+        athleteId:
+          type: string
+        calendarVisibility:
+          type: string
+          enum: [team_full, team_redacted, private]
+
+    ExerciseCatalogItem:
+      type: object
+      required: [id, scope, canonicalName, aliases]
+      properties:
+        id:
+          type: string
+        scope:
+          type: string
+          enum: [global, user]
+        canonicalName:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        regionTags:
+          type: array
+          items:
+            type: string
+        ownerUserId:
+          type: string
+          nullable: true
+
+    ExerciseCatalogListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseCatalogItem'
+
+    CreateUserExerciseRequest:
+      type: object
+      required: [canonicalName]
+      properties:
+        canonicalName:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        regionTags:
+          type: array
+          items:
+            type: string
+
+    IntegrationExportRequest:
+      type: object
+      required: [provider, artifactType]
+      properties:
+        provider:
+          type: string
+          enum: [strava, garmin, wahoo, fit, tcx]
+        artifactType:
+          type: string
+          enum: [activity, workout]
+        fromDate:
+          type: string
+          format: date
+        toDate:
+          type: string
+          format: date
+
+    IntegrationExportResponse:
+      type: object
+      required: [exportId, status]
+      properties:
+        exportId:
+          type: string
+        status:
+          type: string
+          enum: [accepted, processing, completed, failed]
+        provider:
+          type: string
+          enum: [strava, garmin, wahoo, fit, tcx]
+
+    EntitlementsResponse:
+      type: object
+      required: [athleteId, planTier, coachUnlimitedAthletes]
+      properties:
+        athleteId:
+          type: string
+        planTier:
+          type: string
+          enum: [free, pro, coach]
+        coachUnlimitedAthletes:
+          type: boolean
+        featureGates:
+          type: object
+          additionalProperties:
+            type: boolean
+
+    ComplianceDisclaimerResponse:
+      type: object
+      required: [version, message, accepted]
+      properties:
+        version:
+          type: string
+        message:
+          type: string
+        accepted:
+          type: boolean
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ComplianceExportRequest:
+      type: object
+      required: [format]
+      properties:
+        format:
+          type: string
+          enum: [json, csv]
+
+    ComplianceExportResponse:
+      type: object
+      required: [requestId, status]
+      properties:
+        requestId:
+          type: string
+        status:
+          type: string
+          enum: [accepted, processing, completed, failed]
+
+    ComplianceDeleteRequest:
+      type: object
+      required: [confirmToken]
+      properties:
+        confirmToken:
+          type: string
+        reason:
+          type: string
+          nullable: true
+
+    ComplianceDeleteResponse:
+      type: object
+      required: [requestId, status]
+      properties:
+        requestId:
+          type: string
+        status:
+          type: string
+          enum: [accepted, processing, completed, failed]
+
+    ValidationError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - DSL_SOURCE_TOO_LARGE
+            - DSL_NESTING_DEPTH_EXCEEDED
+            - IR_NODE_LIMIT_EXCEEDED
+            - LOOP_ITERATION_LIMIT_EXCEEDED
+            - DSL_COMPILE_TIMEOUT
+            - DSL_VALIDATION_ERROR
+            - FATIGUE_MODEL_READ_ONLY
+            - RANDOMNESS_NOT_ALLOWED
+            - COMPLETED_SESSION_INVARIANT_VIOLATION
+            - ORPHAN_PLANNED_WORKOUT
+        message:
+          type: string
+        phase:
+          type: string
+          enum: [parse, validate, compile, guardrail]
+        line:
+          type: integer
+          nullable: true
+        column:
+          type: integer
+          nullable: true
+
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

@@ -1,0 +1,180 @@
+# Implementation Plan: Sportolo v1 Core Platform
+
+**Branch**: `001-define-sportolo-v1` | **Date**: 2026-02-17 | **Spec**: `/Users/bhoranyi/Personal/sportolo2/specs/001-define-sportolo-v1/spec.md`  
+**Input**: Feature specification from `/Users/bhoranyi/Personal/sportolo2/specs/001-define-sportolo-v1/spec.md`
+
+## Summary
+
+Deliver the API + responsive web slice for Sportolo v1 with deterministic planning/versioning, deterministic session/sync behavior, deterministic DSL guardrails and immutable canonical IR, authoritative immutable fatigue history, deterministic adherence analytics, explicit two-a-day warning-only gap logic (no intra-day decay), exercise-catalog management, integration import/export dedup workflows, coach/team privacy/comment surfaces, subscription entitlement support, and compliance flows (medical disclaimer plus data export/delete), with tightened deterministic guardrails/invariants (`FR-065` through `FR-068`) so model behavior and core records are unambiguous and testable.
+
+## Technical Context
+
+**Language/Version**: Python 3.11+ (API), TypeScript 5.6+ (web)  
+**Primary Dependencies**: FastAPI, SQLAlchemy, Alembic, PostgreSQL driver, Next.js 15, React 19, Tailwind CSS, shadcn/ui, Aceternity UI
+**Storage**: PostgreSQL (authoritative operational store + immutable/versioned history records)  
+**Testing**: pytest (unit/integration/contract), frontend unit/integration tests, OpenAPI contract validation  
+**Target Platform**: Linux-hosted API + responsive web browsers (desktop/mobile web); native mobile app out of current slice  
+**Project Type**: Web application (backend + frontend)  
+**Performance Goals**: p95 <= 2s Today/Calendar load, p95 <= 1s workout logging acknowledgment, p95 <= 2s weekly audit update, p95 <= 60s reconnect sync completion for 95% of sessions, DSL compile target <= 2s with 5s hard stop  
+**Constraints**: Deterministic fatigue/sync/analytics/progression outcomes; immutable historical records with lineage; no randomness in scoring/progression; no user overrides for fatigue decay parameters/base weights; no external plan-write authority; two-a-day `time-between` is warning-only in v1; production-ready frontend runtime (`build`+`start`) required; responsive web required  
+**Scale/Scope**: v1 slice for plan authoring/versioning, workout/session logging, fatigue history/recompute, adherence flags, deterministic invariants for completed sessions/planned workouts, exercise catalog operations, integrations ingest/export with deterministic dedup resolution, coach/team role workflows, subscription entitlement checks, and compliance export/delete/disclaimer operations
+**UI**: Use Aceternity + shadcn/ui + Tailwind as the default visual system, preserve modern visual quality, and require browser verification (`agent-browser` + `chrome-devtools-mcp`) for every changed screen before release.
+
+## UI Composition Contract (Required)
+
+Aceternity is mandatory for designated v1 routes. Each route below MUST include at least one listed Aceternity component in shipped UI:
+Aceternity-first composition rule: use Aceternity templates, then Aceternity blocks, then Aceternity components wherever possible before introducing custom UI primitives.
+Frontend skill invocation rule (required): any frontend implementation, refactor, or review task MUST invoke `frontend-design`, `refactoring-ui`, `vercel-react-best-practices`, and `web-design-guidelines`.
+
+Fallback rule: if a mapped Aceternity component cannot be used (technical incompatibility or missing asset), implementation MUST document the reason in browser verification evidence and use a shadcn equivalent that preserves the same interaction intent.
+If Aceternity rule is behind pro access, download by using chrome. 
+
+Theme reproducibility rule (required): apply `@ss-themes/midnight-bloom` across frontend surfaces and keep installation reproducible with authenticated shadcn CLI steps:
+
+1. shadcn token is definied in env vars. SHADCN_TOKEN.
+2. Ensure `/Users/bhoranyi/Personal/sportolo2/frontend/components.json` defines the registry alias:
+   ```json
+   {
+     "registries": {
+       "@ss-themes": "https://www.shadcn.io/registry"
+     }
+   }
+   ```
+3. Run theme install from `/Users/bhoranyi/Personal/sportolo2/frontend`:
+   ```bash
+   pnpm dlx shadcn@latest add @ss-themes/midnight-bloom
+   ```
+4. If alias resolution fails, use direct registry URL:
+   ```bash
+   pnpm dlx shadcn@latest add https://www.shadcn.io/r/midnight-bloom.json
+   ```
+5. Verify theme tokens are wired in global styles and confirm with browser evidence (`agent-browser` + `chrome-devtools-mcp`).
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+Pre-Phase 0 gate status:
+
+- [x] Spec-first scope is complete: prioritized stories, acceptance scenarios, edge cases, measurable outcomes, and explicit clarifications.
+- [x] Code quality gates are defined (linting, formatting, static analysis) with pass criteria.
+- [x] Strict TDD workflow is defined: tests first, failing evidence, then implementation.
+- [x] Testing matrix is defined for changed behavior (unit/integration/contract/regression).
+- [x] UX consistency criteria are defined for user-facing flows (success/loading/empty/error + accessibility checks).
+- [x] Performance targets, thresholds, and validation method are defined for critical paths.
+- [x] Frontend production/runtime gates are defined (`npm run build`, `npm run start`, browser verification evidence).
+- [x] Any requested gate exception is logged in Complexity Tracking with approver and rationale.
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+/Users/bhoranyi/Personal/sportolo2/specs/001-define-sportolo-v1/
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+├── contracts/
+│   └── openapi.yaml
+└── tasks.md   # generated by /speckit.tasks
+```
+
+### Source Code (repository root)
+
+```text
+/Users/bhoranyi/Personal/sportolo2/
+├── backend/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── models/
+│   │   ├── services/
+│   │   └── domain/
+│   ├── migrations/
+│   └── tests/
+│       ├── contract/
+│       ├── integration/
+│       └── unit/
+└── frontend/
+    ├── src/
+    │   ├── app/
+    │   ├── components/
+    │   ├── features/
+    │   └── services/
+    └── tests/
+        ├── integration/
+        └── unit/
+```
+
+**Structure Decision**: Use explicit backend/frontend separation for FastAPI + Next.js responsive web delivery. Native mobile code is intentionally excluded from this implementation slice.
+
+## Phase 0: Research Output
+
+Research captured in `/Users/bhoranyi/Personal/sportolo2/specs/001-define-sportolo-v1/research.md` resolves technical unknowns/clarifications, including:
+
+- Deterministic plan versioning and forward-only restore semantics.
+- Session state model and partial/abandoned fatigue contribution rules.
+- Retroactive check-in recomputation with immutable fatigue history lineage.
+- Authoritative fatigue persistence model using immutable versioned daily snapshots.
+- Deterministic offline sync conflict precedence and tie-breaks.
+- DSL guardrail limits, timeout behavior, and validation failure handling.
+- Canonical IR immutability with late athlete-baseline binding and immutable resolved prescriptions.
+- Progression-failure deterministic handling with advisory-default + optional template auto-adjust.
+- Integration dedup hierarchy with explicit ambiguous-resolution path.
+- Recruitment derivation is strict (`max(neural, mechanical)`), no direct classification override.
+- Deterministic adherence flag thresholds aligned to `FR-063` and `SC-004`.
+- Two-a-day time-gap policy is warning-only with no intra-day decay in v1 (`FR-064`).
+- New deterministic tightening (`FR-065`–`FR-068`): non-editable fatigue model parameters, no randomness in scoring/progression, completed-session invariants, and required mesocycle parent for planned workouts.
+- Exercise catalog seeding/dedupe strategy and user-scope isolation semantics.
+- Subscription entitlement boundary for coach-unlimited-athlete support and feature-gate readiness.
+- Compliance workflow model for medical disclaimer surfacing and deterministic data export/delete request handling.
+
+No unresolved `NEEDS CLARIFICATION` markers remain.
+
+## Phase 1: Design and Contracts Output
+
+Artifacts generated and aligned with the spec:
+
+- Data model: `/Users/bhoranyi/Personal/sportolo2/specs/001-define-sportolo-v1/data-model.md`
+- API contract: `/Users/bhoranyi/Personal/sportolo2/specs/001-define-sportolo-v1/contracts/openapi.yaml`
+- Delivery quickstart: `/Users/bhoranyi/Personal/sportolo2/specs/001-define-sportolo-v1/quickstart.md`
+
+Design highlights:
+
+- Immutable/versioned entities for plan structures, fatigue snapshots, recomputation events, sync conflicts, IR artifacts, and resolved prescriptions.
+- Deterministic session/sync/DSL/progression/recompute/adherence outcomes and two-a-day warning semantics represented in entities and validations.
+- Explicit contract semantics for no-randomness indicators, read-only fatigue model parameters, completed-session required data, and planned-workout parent invariants.
+- Catalog/billing/compliance contract surfaces for exercise catalog operations, entitlement reads, and privacy export/delete/disclaimer workflows.
+- Team/coach contract alignment for team calendar visibility and coach comment flows.
+- Phase 8 includes explicit closure tasks for FR-033 parity verification, FR-026 provider matrix coverage, FR-010 trigger matrix tests, and PRF-004 network-profile performance validation.
+- Explicit route-to-component Aceternity mapping is mandatory for `/planner`, `/workouts/[workoutId]/execute`, `/today`, and `/calendar` with evidence-backed fallback exceptions only.
+- For upcoming iterations, UI delivery should prioritize Aceternity templates/blocks/components in that order wherever feasible.
+- Frontend work requires explicit use of `frontend-design`, `refactoring-ui`, `vercel-react-best-practices`, and `web-design-guidelines`.
+
+## Agent Context Update
+
+Run command:
+
+```bash
+/Users/bhoranyi/Personal/sportolo2/.specify/scripts/bash/update-agent-context.sh codex
+```
+
+Result is expected to update agent-specific context for the chosen stack (FastAPI, PostgreSQL/Alembic, Next.js/React/Tailwind/shadcn).
+
+## Constitution Check (Post-Design Re-evaluation)
+
+Post-Phase 1 gate status:
+
+- [x] Spec-first scope remains complete and reflected in design artifacts.
+- [x] Code quality gates are explicitly documented in quickstart and remain mandatory.
+- [x] Strict TDD sequencing is explicitly required in quickstart/testing workflow.
+- [x] Testing matrix spans unit, integration, contract, regression for changed behaviors.
+- [x] UX consistency checks remain defined for success/loading/empty/error + accessibility.
+- [x] Performance thresholds and pass/fail blocking rules are defined and testable.
+- [x] No gate exceptions requested.
+
+## Complexity Tracking
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| None | N/A | N/A |
