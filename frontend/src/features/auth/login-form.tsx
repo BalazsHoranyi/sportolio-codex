@@ -19,6 +19,22 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canSubmit =
+    !submitting && email.trim().length > 0 && password.length > 0;
+
+  function handleEmailChange(value: string) {
+    setEmail(value);
+    if (error) {
+      setError(null);
+    }
+  }
+
+  function handlePasswordChange(value: string) {
+    setPassword(value);
+    if (error) {
+      setError(null);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,7 +90,7 @@ export function LoginForm({
           autoCapitalize="none"
           autoCorrect="off"
           placeholder="youremail@yourdomain.com"
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(event) => handleEmailChange(event.target.value)}
           required
         />
       </div>
@@ -90,8 +106,8 @@ export function LoginForm({
           type="password"
           value={password}
           autoComplete="current-password"
-          placeholder="Create a password"
-          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Enter your password"
+          onChange={(event) => handlePasswordChange(event.target.value)}
           required
         />
       </div>
@@ -102,7 +118,7 @@ export function LoginForm({
         </p>
       ) : null}
 
-      <button className="auth-submit" type="submit" disabled={submitting}>
+      <button className="auth-submit" type="submit" disabled={!canSubmit}>
         {submitting ? "Signing in…" : "Sign in"}
       </button>
 
@@ -116,7 +132,9 @@ export function LoginForm({
         <button
           className="auth-social-button"
           type="button"
-          aria-label="Continue with Google"
+          aria-label="Continue with Google (coming soon)"
+          title="Google sign-in is coming soon"
+          disabled
         >
           <svg
             width="29"
@@ -159,7 +177,9 @@ export function LoginForm({
         <button
           className="auth-social-button"
           type="button"
-          aria-label="Continue with Facebook"
+          aria-label="Continue with Facebook (coming soon)"
+          title="Facebook sign-in is coming soon"
+          disabled
         >
           <svg
             width="29"
@@ -194,7 +214,9 @@ export function LoginForm({
         <button
           className="auth-social-button"
           type="button"
-          aria-label="Continue with Apple"
+          aria-label="Continue with Apple (coming soon)"
+          title="Apple sign-in is coming soon"
+          disabled
         >
           <svg
             width="29"
@@ -223,6 +245,9 @@ export function LoginForm({
           </svg>
         </button>
       </div>
+      <p className="auth-social-note" role="status" aria-live="polite">
+        Single sign-on options are coming soon.
+      </p>
 
       <p className="auth-hint">
         Demo login: <strong>{demoEmail}</strong> /{" "}

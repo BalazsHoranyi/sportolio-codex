@@ -742,7 +742,7 @@ h1 {
 }
 
 .auth-submit:disabled {
-  cursor: progress;
+  cursor: not-allowed;
   opacity: 0.72;
 }
 
@@ -796,6 +796,13 @@ h1 {
   transform: translateY(-1px);
 }
 
+.auth-social-button:disabled {
+  background: oklch(0.25 0.01 40);
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
 .auth-social-button:focus-visible {
   outline: 2px solid oklch(0.42 0.17 40);
   outline-offset: 2px;
@@ -804,6 +811,12 @@ h1 {
 .auth-social-button svg {
   height: 1.45rem;
   width: 1.45rem;
+}
+
+.auth-social-note {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  margin: 0;
 }
 
 .auth-error {

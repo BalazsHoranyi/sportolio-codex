@@ -39,3 +39,5 @@
 - Invalid credentials display the generic non-leaky error: `Invalid email or password.`
 - Logout returns users to `/login`, and session checks continue enforcing protected-route access rules after refresh.
 - Chrome DevTools MCP pass confirmed desktop/mobile rendering quality for the Aceternity-structured login screen and authenticated home/calendar surfaces.
+- Removed misleading self-referential `Sign up` CTA from login and replaced it with a clear demo credential onboarding note.
+- Marked social sign-in controls as disabled with explicit "coming soon" messaging to avoid dead-click UX.

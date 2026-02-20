@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 
 import { LoginForm } from "../../features/auth/login-form";
 import { primaryDemoCredential } from "../../features/auth/credentials";
@@ -49,7 +48,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             />
 
             <p className="auth-signup-note">
-              Already have an account? <Link href="/login">Sign up</Link>
+              New to Sportolo? Use the demo credentials above to explore.
             </p>
           </div>
 
