@@ -59,36 +59,42 @@ export function LoginForm({
 
   return (
     <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <label className="auth-label" htmlFor="email">
-        Email address
-      </label>
-      <input
-        id="email"
-        name="email"
-        className="auth-input"
-        type="email"
-        value={email}
-        autoComplete="email"
-        spellCheck={false}
-        autoCapitalize="none"
-        autoCorrect="off"
-        onChange={(event) => setEmail(event.target.value)}
-        required
-      />
+      <div className="auth-field">
+        <label className="auth-label" htmlFor="email">
+          Email
+        </label>
+        <input
+          id="email"
+          name="email"
+          className="auth-input"
+          type="email"
+          value={email}
+          autoComplete="email"
+          spellCheck={false}
+          autoCapitalize="none"
+          autoCorrect="off"
+          placeholder="youremail@yourdomain.com"
+          onChange={(event) => setEmail(event.target.value)}
+          required
+        />
+      </div>
 
-      <label className="auth-label" htmlFor="password">
-        Password
-      </label>
-      <input
-        id="password"
-        name="password"
-        className="auth-input"
-        type="password"
-        value={password}
-        autoComplete="current-password"
-        onChange={(event) => setPassword(event.target.value)}
-        required
-      />
+      <div className="auth-field">
+        <label className="auth-label" htmlFor="password">
+          Password
+        </label>
+        <input
+          id="password"
+          name="password"
+          className="auth-input"
+          type="password"
+          value={password}
+          autoComplete="current-password"
+          placeholder="Create a password"
+          onChange={(event) => setPassword(event.target.value)}
+          required
+        />
+      </div>
 
       {error ? (
         <p className="auth-error" role="status" aria-live="polite">
@@ -97,8 +103,126 @@ export function LoginForm({
       ) : null}
 
       <button className="auth-submit" type="submit" disabled={submitting}>
-        {submitting ? "Signing in…" : "Continue to dashboard"}
+        {submitting ? "Signing in…" : "Sign in"}
       </button>
+
+      <div className="auth-divider" aria-hidden="true">
+        <div />
+        <span>or</span>
+        <div />
+      </div>
+
+      <div className="auth-social-grid">
+        <button
+          className="auth-social-button"
+          type="button"
+          aria-label="Continue with Google"
+        >
+          <svg
+            width="29"
+            height="29"
+            viewBox="0 0 29 29"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <g clipPath="url(#google-clip)">
+              <path
+                d="M25.1018 15.1176C25.1018 14.1999 25.0273 13.5302 24.8662 12.8358H14.3867V16.9779H20.5379C20.4139 18.0072 19.7443 19.5575 18.256 20.5991L18.2352 20.7378L21.5486 23.3047L21.7781 23.3276C23.8864 21.3805 25.1018 18.5157 25.1018 15.1176Z"
+                fill="#4285F4"
+              />
+              <path
+                d="M14.3851 26.0311C17.3986 26.0311 19.9285 25.0389 21.7765 23.3276L18.2544 20.5991C17.3118 21.2564 16.0468 21.7153 14.3851 21.7153C11.4335 21.7153 8.92835 19.7683 8.03534 17.0771L7.90444 17.0882L4.45912 19.7546L4.41406 19.8799C6.24949 23.5259 10.0196 26.0311 14.3851 26.0311Z"
+                fill="#34A853"
+              />
+              <path
+                d="M8.03837 17.0772C7.80275 16.3827 7.66638 15.6385 7.66638 14.8697C7.66638 14.1007 7.80275 13.3567 8.02598 12.6622L8.01973 12.5143L4.53123 9.80505L4.4171 9.85934C3.66063 11.3724 3.22656 13.0714 3.22656 14.8697C3.22656 16.6679 3.66063 18.3669 4.4171 19.8799L8.03837 17.0772Z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M14.3851 8.02383C16.4809 8.02383 17.8947 8.92915 18.7008 9.68571L21.8508 6.61007C19.9162 4.81182 17.3986 3.70807 14.3851 3.70807C10.0196 3.70807 6.24949 6.21319 4.41406 9.85926L8.02294 12.6621C8.92835 9.97092 11.4335 8.02383 14.3851 8.02383Z"
+                fill="#EB4335"
+              />
+            </g>
+            <defs>
+              <clipPath id="google-clip">
+                <rect
+                  width="22.4"
+                  height="22.4"
+                  fill="white"
+                  transform="translate(2.96875 3.7081)"
+                />
+              </clipPath>
+            </defs>
+          </svg>
+        </button>
+        <button
+          className="auth-social-button"
+          type="button"
+          aria-label="Continue with Facebook"
+        >
+          <svg
+            width="29"
+            height="29"
+            viewBox="0 0 29 29"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <g clipPath="url(#facebook-clip)">
+              <path
+                d="M26.1656 13.9749C26.1656 7.7893 21.1512 2.77488 14.9656 2.77488C8.78004 2.77488 3.76562 7.7893 3.76562 13.9749C3.76562 19.2274 7.38165 23.6347 12.26 24.845V17.3974H9.95044V13.9749H12.26V12.5001C12.26 8.68798 13.9851 6.92107 17.7277 6.92107C18.4373 6.92107 19.6616 7.06017 20.1625 7.19932V10.3019C19.8981 10.2741 19.439 10.2601 18.8685 10.2601C17.0321 10.2601 16.3225 10.9558 16.3225 12.7645V13.9749H19.9808L19.3523 17.3974H16.3225V25.0928C21.8681 24.423 26.1656 19.7011 26.1656 13.9749Z"
+                fill="#0866FF"
+              />
+              <path
+                d="M19.3511 17.3974L19.9796 13.9749H16.3213V12.7644C16.3213 10.9558 17.0308 10.2602 18.8673 10.2602C19.4378 10.2602 19.8969 10.274 20.1612 10.3019V7.19933C19.6604 7.06018 18.436 6.92103 17.7265 6.92103C13.9839 6.92103 12.2587 8.68799 12.2587 12.5001V13.9749H9.94922V17.3974H12.2587V24.845C13.1253 25.06 14.0314 25.1749 14.9644 25.1749C15.4238 25.1749 15.8764 25.1466 16.3213 25.0928V17.3974H19.3511Z"
+                fill="white"
+              />
+            </g>
+            <defs>
+              <clipPath id="facebook-clip">
+                <rect
+                  width="22.4"
+                  height="22.4"
+                  fill="white"
+                  transform="translate(3.76562 2.77499)"
+                />
+              </clipPath>
+            </defs>
+          </svg>
+        </button>
+        <button
+          className="auth-social-button"
+          type="button"
+          aria-label="Continue with Apple"
+        >
+          <svg
+            width="29"
+            height="29"
+            viewBox="0 0 29 29"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <g clipPath="url(#apple-clip)">
+              <path
+                d="M22.673 11.3443C22.5431 11.4451 20.2493 12.7375 20.2493 15.6115C20.2493 18.9356 23.168 20.1116 23.2554 20.1407C23.2419 20.2124 22.7917 21.7513 21.7165 23.3193C20.7578 24.6991 19.7565 26.0767 18.2333 26.0767C16.7101 26.0767 16.3181 25.1919 14.5597 25.1919C12.8461 25.1919 12.2368 26.1059 10.8435 26.1059C9.45025 26.1059 8.47809 24.8291 7.36033 23.2611C6.06561 21.4198 5.01953 18.5593 5.01953 15.8444C5.01953 11.4899 7.85089 9.18042 10.6375 9.18042C12.1181 9.18042 13.3523 10.1526 14.2819 10.1526C15.1667 10.1526 16.5466 9.12218 18.2311 9.12218C18.8695 9.12218 21.1632 9.18042 22.673 11.3443ZM17.4314 7.27866C18.128 6.4521 18.6208 5.30522 18.6208 4.15834C18.6208 3.9993 18.6074 3.83802 18.5783 3.7081C17.4448 3.75066 16.0963 4.46298 15.2832 5.40602C14.6448 6.13178 14.049 7.27866 14.049 8.44122C14.049 8.61594 14.0781 8.79066 14.0915 8.84666C14.1632 8.8601 14.2797 8.87578 14.3962 8.87578C15.4131 8.87578 16.6922 8.19482 17.4314 7.27866Z"
+                fill="currentColor"
+              />
+            </g>
+            <defs>
+              <clipPath id="apple-clip">
+                <rect
+                  width="18.2336"
+                  height="22.4"
+                  fill="white"
+                  transform="translate(5.01953 3.7081)"
+                />
+              </clipPath>
+            </defs>
+          </svg>
+        </button>
+      </div>
 
       <p className="auth-hint">
         Demo login: <strong>{demoEmail}</strong> /{" "}
