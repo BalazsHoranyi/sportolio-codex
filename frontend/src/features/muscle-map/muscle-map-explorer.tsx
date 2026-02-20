@@ -18,6 +18,8 @@ interface MuscleMapCardProps {
   totalUsageLabel: string;
   mapData: ExtendedBodyPart[];
   legend: MuscleLegendEntry[];
+  primaryFocus?: MuscleLegendEntry | null;
+  secondaryFocus?: MuscleLegendEntry | null;
 }
 
 function MuscleMapCard({
@@ -26,6 +28,8 @@ function MuscleMapCard({
   totalUsageLabel,
   mapData,
   legend,
+  primaryFocus,
+  secondaryFocus,
 }: MuscleMapCardProps) {
   return (
     <article className="muscle-map-card">
@@ -34,6 +38,22 @@ function MuscleMapCard({
         <h3>{subtitle}</h3>
         <p className="muscle-map-total">{totalUsageLabel}</p>
       </header>
+      {primaryFocus || secondaryFocus ? (
+        <dl className="muscle-map-focus" aria-label={`${title} focus summary`}>
+          {primaryFocus ? (
+            <div>
+              <dt>Primary focus</dt>
+              <dd>{primaryFocus.label}</dd>
+            </div>
+          ) : null}
+          {secondaryFocus ? (
+            <div>
+              <dt>Secondary focus</dt>
+              <dd>{secondaryFocus.label}</dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
       {mapData.length === 0 ? (
         <p className="muscle-map-empty">
           No mapped muscles available for this selection.
@@ -155,6 +175,8 @@ export function MuscleMapExplorer({ response }: MuscleMapExplorerProps) {
           totalUsageLabel={`Total usage ${model.exerciseTotalUsage.toFixed(1)}`}
           mapData={model.exerciseMap}
           legend={model.exerciseLegend}
+          primaryFocus={model.exercisePrimaryFocus}
+          secondaryFocus={model.exerciseSecondaryFocus}
         />
         <MuscleMapCard
           title="Routine map"

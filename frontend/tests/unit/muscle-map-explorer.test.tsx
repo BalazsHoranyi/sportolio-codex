@@ -72,6 +72,10 @@ describe("MuscleMapExplorer", () => {
     expect(html).toContain("gluteal:4");
     expect(html).toContain("quadriceps:3");
     expect(html).toContain("lower-back:3");
+    expect(html).toContain("Primary focus");
+    expect(html).toContain("Glutes");
+    expect(html).toContain("Secondary focus");
+    expect(html).toContain("Quads");
   });
 
   it("does not fall back to static sample response data when API data is unavailable", () => {

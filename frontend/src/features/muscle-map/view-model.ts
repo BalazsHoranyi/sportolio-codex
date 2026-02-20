@@ -43,6 +43,8 @@ export interface MuscleMapViewModel {
   exerciseMap: ExtendedBodyPart[];
   routineMap: ExtendedBodyPart[];
   microcycleMap: ExtendedBodyPart[];
+  exercisePrimaryFocus: MuscleLegendEntry | null;
+  exerciseSecondaryFocus: MuscleLegendEntry | null;
   exerciseLegend: MuscleLegendEntry[];
   routineLegend: MuscleLegendEntry[];
   microcycleLegend: MuscleLegendEntry[];
@@ -130,6 +132,15 @@ function toLegendEntries(muscleUsage: MuscleUsageMap): MuscleLegendEntry[] {
     }));
 }
 
+function deriveExerciseFocus(
+  legend: MuscleLegendEntry[],
+): Pick<MuscleMapViewModel, "exercisePrimaryFocus" | "exerciseSecondaryFocus"> {
+  return {
+    exercisePrimaryFocus: legend[0] ?? null,
+    exerciseSecondaryFocus: legend[1] ?? null,
+  };
+}
+
 function selectRoutine(
   routines: RoutineUsageSummary[],
   routineId?: string,
@@ -173,6 +184,8 @@ export function createMuscleMapViewModel(
     microcycleSummary.microcycleName ??
     microcycleSummary.microcycleId ??
     "No microcycle data";
+  const exerciseLegend = toLegendEntries(exerciseUsage);
+  const exerciseFocus = deriveExerciseFocus(exerciseLegend);
 
   return {
     routineOptions,
@@ -188,7 +201,9 @@ export function createMuscleMapViewModel(
     exerciseMap: mapMuscleUsageToBodyParts(exerciseUsage),
     routineMap: mapMuscleUsageToBodyParts(routineUsage),
     microcycleMap: mapMuscleUsageToBodyParts(microcycleSummary.muscleUsage),
-    exerciseLegend: toLegendEntries(exerciseUsage),
+    exercisePrimaryFocus: exerciseFocus.exercisePrimaryFocus,
+    exerciseSecondaryFocus: exerciseFocus.exerciseSecondaryFocus,
+    exerciseLegend,
     routineLegend: toLegendEntries(routineUsage),
     microcycleLegend: toLegendEntries(microcycleSummary.muscleUsage),
   };

@@ -33,5 +33,6 @@
 
 ## Result
 
-- Home onboarding plus new muscle-map explorer validated on desktop/mobile, including deterministic routine/exercise selector updates across all defined personas.
+- Home onboarding plus muscle-map explorer validated on desktop/mobile, including deterministic routine/exercise selector updates across all defined personas.
+- Exercise card `Primary focus` and `Secondary focus` labels validated across persona selections, with deterministic top-muscle ordering.
 - Verified production runtime without `SPORTOLO_API_BASE_URL` still renders deterministic sample muscle maps (no empty-state dead end); route remains interactive and selector updates remain deterministic.

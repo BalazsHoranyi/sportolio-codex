@@ -108,6 +108,7 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
     - Expose aggregation output through `POST /v1/athletes/{athleteId}/muscle-usage/aggregate`.
     - Ensure unknown exercise mappings and workload validation paths are deterministic and test-covered.
     - Render exercise/routine/microcycle muscle maps in the web UI with deterministic key-to-anatomy mapping and update behavior when routine/exercise selection changes.
+    - Surface deterministic exercise-level `Primary focus` and `Secondary focus` labels from muscle usage payload ordering.
 
 ## Testing (Failing-First)
 

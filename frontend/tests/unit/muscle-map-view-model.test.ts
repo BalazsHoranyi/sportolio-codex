@@ -97,6 +97,8 @@ describe("createMuscleMapViewModel", () => {
       { slug: "lower-back", intensity: 2 },
       { slug: "quadriceps", intensity: 4 },
     ]);
+    expect(viewModel.exercisePrimaryFocus?.label).toBe("Quads");
+    expect(viewModel.exerciseSecondaryFocus?.label).toBe("Glutes");
   });
 
   it("updates selected exercise when routine selection changes", () => {
@@ -115,6 +117,8 @@ describe("createMuscleMapViewModel", () => {
       { slug: "hamstring", intensity: 3 },
       { slug: "quadriceps", intensity: 4 },
     ]);
+    expect(viewModel.exercisePrimaryFocus?.label).toBe("Quads");
+    expect(viewModel.exerciseSecondaryFocus?.label).toBe("Calves");
   });
 
   it("returns safe fallback selections for empty API payload arrays", () => {
@@ -142,5 +146,7 @@ describe("createMuscleMapViewModel", () => {
     expect(viewModel.exerciseMap).toEqual([]);
     expect(viewModel.routineMap).toEqual([]);
     expect(viewModel.microcycleMap).toEqual([]);
+    expect(viewModel.exercisePrimaryFocus).toBeNull();
+    expect(viewModel.exerciseSecondaryFocus).toBeNull();
   });
 });
