@@ -1,7 +1,12 @@
 import type { MicrocycleUsageRequest, MuscleUsageApiResponse } from "./types";
 
-const DEFAULT_API_BASE_URL = process.env.SPORTOLO_API_BASE_URL;
-const DEFAULT_ATHLETE_ID = process.env.SPORTOLO_DEMO_ATHLETE_ID ?? "athlete-1";
+function defaultApiBaseUrl(): string | undefined {
+  return process.env.SPORTOLO_API_BASE_URL;
+}
+
+function defaultAthleteId(): string {
+  return process.env.SPORTOLO_DEMO_ATHLETE_ID ?? "athlete-1";
+}
 
 interface LoadMuscleUsageResponseOptions {
   request: MicrocycleUsageRequest;
@@ -35,17 +40,21 @@ function isMuscleUsageApiResponse(
 
 export async function loadMuscleUsageResponse({
   request,
-  athleteId = DEFAULT_ATHLETE_ID,
-  apiBaseUrl = DEFAULT_API_BASE_URL,
+  athleteId,
+  apiBaseUrl,
   fetchImpl = fetch,
 }: LoadMuscleUsageResponseOptions): Promise<
   MuscleUsageApiResponse | undefined
 > {
-  if (!apiBaseUrl) {
+  const resolvedApiBaseUrl = apiBaseUrl ?? defaultApiBaseUrl();
+  if (!resolvedApiBaseUrl) {
     return undefined;
   }
 
-  const endpoint = toEndpoint(apiBaseUrl, athleteId);
+  const endpoint = toEndpoint(
+    resolvedApiBaseUrl,
+    athleteId ?? defaultAthleteId(),
+  );
   const response = await fetchImpl(endpoint, {
     method: "POST",
     headers: {

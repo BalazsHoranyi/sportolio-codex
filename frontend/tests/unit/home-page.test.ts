@@ -1,8 +1,23 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
 import HomePage from "../../src/app/page";
+import { muscleUsageSample } from "../../src/features/muscle-map/sample-data";
+import type { MuscleUsageApiResponse } from "../../src/features/muscle-map/types";
+
+const { loadMuscleUsageResponseMock } = vi.hoisted(() => ({
+  loadMuscleUsageResponseMock:
+    vi.fn<() => Promise<MuscleUsageApiResponse | undefined>>(),
+}));
+
+vi.mock("../../src/features/muscle-map/api", () => ({
+  loadMuscleUsageResponse: loadMuscleUsageResponseMock,
+}));
 
 describe("HomePage", () => {
+  beforeEach(() => {
+    loadMuscleUsageResponseMock.mockResolvedValue(undefined);
+  });
+
   async function renderHomePage() {
     return renderToStaticMarkup(await HomePage());
   }
@@ -72,5 +87,63 @@ describe("HomePage", () => {
     expect(html).toContain("Exercise map");
     expect(html).toContain("Routine map");
     expect(html).toContain("Microcycle map");
+  });
+
+  it("renders deterministic sample muscle map data when API data is unavailable", async () => {
+    const html = await renderHomePage();
+
+    expect(html).toContain("Back Squat");
+    expect(html).toContain("Lower + Push");
+    expect(html).toContain("Base Week 1");
+    expect(html).not.toContain("No routines available");
+  });
+
+  it("renders API-provided muscle map data when load succeeds", async () => {
+    loadMuscleUsageResponseMock.mockResolvedValueOnce({
+      ...muscleUsageSample,
+      exerciseSummaries: [
+        {
+          routineId: "routine-1",
+          exerciseId: "ex-1",
+          exerciseName: "API Squat",
+          workload: 200,
+          totalUsage: 200,
+          muscleUsage: {
+            quads: 100,
+            glutes: 70,
+            spinal_erectors: 30,
+          },
+        },
+      ],
+      routineSummaries: [
+        {
+          routineId: "routine-1",
+          routineName: "API Lower",
+          totalUsage: 200,
+          muscleUsage: {
+            quads: 100,
+            glutes: 70,
+            spinal_erectors: 30,
+          },
+        },
+      ],
+      microcycleSummary: {
+        microcycleId: "micro-api",
+        microcycleName: "API Week",
+        routineCount: 1,
+        totalUsage: 200,
+        muscleUsage: {
+          quads: 100,
+          glutes: 70,
+          spinal_erectors: 30,
+        },
+      },
+    });
+
+    const html = await renderHomePage();
+
+    expect(html).toContain("API Squat");
+    expect(html).toContain("API Lower");
+    expect(html).toContain("API Week");
   });
 });

@@ -2,7 +2,12 @@ import React from "react";
 
 import { loadMuscleUsageResponse } from "../features/muscle-map/api";
 import { MuscleMapExplorer } from "../features/muscle-map/muscle-map-explorer";
-import { muscleUsageRequestSample } from "../features/muscle-map/sample-data";
+import {
+  muscleUsageRequestSample,
+  muscleUsageSample,
+} from "../features/muscle-map/sample-data";
+
+export const dynamic = "force-dynamic";
 
 const launchPaths = [
   {
@@ -45,11 +50,13 @@ const integrationEndpoint =
 
 async function loadHomePageMuscleUsage() {
   try {
-    return await loadMuscleUsageResponse({
+    const response = await loadMuscleUsageResponse({
       request: muscleUsageRequestSample,
     });
+
+    return response ?? muscleUsageSample;
   } catch {
-    return undefined;
+    return muscleUsageSample;
   }
 }
 

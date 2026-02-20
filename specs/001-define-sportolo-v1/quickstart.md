@@ -191,6 +191,15 @@ npm run build
 npm run start
 ```
 
+Optional live muscle-map API wiring for the home-page explorer:
+
+```bash
+export SPORTOLO_API_BASE_URL=http://127.0.0.1:8000
+export SPORTOLO_DEMO_ATHLETE_ID=athlete-1
+```
+
+If `SPORTOLO_API_BASE_URL` is not set or the API call fails, the explorer renders deterministic local sample data instead of an empty map.
+
 Repository-level gates from `/Users/bhoranyi/Personal/sportolo2`:
 
 ```bash
