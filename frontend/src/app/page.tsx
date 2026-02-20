@@ -66,6 +66,14 @@ export default async function HomePage() {
   return (
     <main className="home-shell" id="main-content">
       <div id="top" />
+      <div className="auth-banner" role="status" aria-live="polite">
+        <p>Authenticated session active</p>
+        <form action="/api/auth/logout?redirect=/login" method="post">
+          <button className="button button-secondary" type="submit">
+            Logout
+          </button>
+        </form>
+      </div>
       <a className="skip-link" href="#main-content">
         Skip to Main Content
       </a>

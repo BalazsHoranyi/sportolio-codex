@@ -192,6 +192,12 @@ npm run build
 npm run start
 ```
 
+Required auth runtime secret (production):
+
+```bash
+export SPORTOLO_AUTH_SECRET='<strong-random-secret>'
+```
+
 Optional live muscle-map API wiring for the home-page explorer:
 
 ```bash
