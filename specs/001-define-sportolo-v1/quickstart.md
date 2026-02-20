@@ -97,11 +97,16 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
      - do not apply intra-day fatigue decay adjustments from time-between in v1.
 
 13. **Deterministic control/invariant workflows**
-   - Implement FR-065 to FR-068:
-     - enforce non-editable fatigue decay parameters and base weights in user-facing workflows,
-     - enforce no-randomness rule for fatigue/progression computation paths,
-     - enforce completed-session invariants (completion timestamp, resolved prescription/IR lineage, actual load data),
-     - enforce planned-workout mesocycle-parent invariant (no orphan planned workouts).
+    - Implement FR-065 to FR-068:
+      - enforce non-editable fatigue decay parameters and base weights in user-facing workflows,
+      - enforce no-randomness rule for fatigue/progression computation paths,
+      - enforce completed-session invariants (completion timestamp, resolved prescription/IR lineage, actual load data),
+      - enforce planned-workout mesocycle-parent invariant (no orphan planned workouts).
+
+14. **Muscle usage attribution workflows**
+    - Implement deterministic exercise -> routine -> microcycle aggregation for visualization support.
+    - Expose aggregation output through `POST /v1/athletes/{athleteId}/muscle-usage/aggregate`.
+    - Ensure unknown exercise mappings and workload validation paths are deterministic and test-covered.
 
 ## Testing (Failing-First)
 
@@ -123,6 +128,7 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
   - completed-session invariant validation (timestamp + resolved prescription + actual load) is enforced,
   - planned-workout parent invariant is enforced,
   - adherence flag threshold evaluation (FR-063) for all overtraining/undertraining trigger paths,
+  - muscle usage weighting and exercise->routine->microcycle rollup determinism,
   - deterministic progression-failure trigger evaluation and policy application rules.
 - Integration:
   - offline dual-client same-workout conflicts,
@@ -143,7 +149,7 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
   - fallback dedup tolerance behavior is deterministic, and multi-candidate fallback enters pending resolution state until user resolves,
   - over-limit and timeout compile requests return deterministic validation errors.
 - Contract:
-  - OpenAPI conformance for compile/translate, prescription resolve/read, sync ingest/conflict resolution, session finalize, progression-failure outcome read, integration dedup resolution, check-in update, recalculation listing, adherence analytics reads, two-a-day warning/no-intra-day-decay fields, and invariant/no-randomness model-policy fields.
+  - OpenAPI conformance for compile/translate, prescription resolve/read, sync ingest/conflict resolution, session finalize, progression-failure outcome read, integration dedup resolution, check-in update, recalculation listing, adherence analytics reads, muscle-usage aggregation reads, two-a-day warning/no-intra-day-decay fields, and invariant/no-randomness model-policy fields.
 - Web:
   - success/loading/empty/error states,
   - responsive layouts for mobile/desktop web,
