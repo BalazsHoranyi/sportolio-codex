@@ -1,5 +1,14 @@
 import React from "react";
 
+import { loadMuscleUsageResponse } from "../features/muscle-map/api";
+import { MuscleMapExplorer } from "../features/muscle-map/muscle-map-explorer";
+import {
+  muscleUsageRequestSample,
+  muscleUsageSample,
+} from "../features/muscle-map/sample-data";
+
+export const dynamic = "force-dynamic";
+
 const launchPaths = [
   {
     id: "path-athlete",
@@ -39,7 +48,21 @@ const nextSteps = [
 const integrationEndpoint =
   "POST /v1/athletes/{athleteId}/muscle-usage/aggregate";
 
-export default function HomePage() {
+async function loadHomePageMuscleUsage() {
+  try {
+    const response = await loadMuscleUsageResponse({
+      request: muscleUsageRequestSample,
+    });
+
+    return response ?? muscleUsageSample;
+  } catch {
+    return muscleUsageSample;
+  }
+}
+
+export default async function HomePage() {
+  const muscleUsageResponse = await loadHomePageMuscleUsage();
+
   return (
     <main className="home-shell" id="main-content">
       <div id="top" />
@@ -135,6 +158,8 @@ export default function HomePage() {
           </ul>
         </article>
       </section>
+
+      <MuscleMapExplorer response={muscleUsageResponse} />
 
       <section
         id="integration"

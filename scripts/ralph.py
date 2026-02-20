@@ -43,6 +43,7 @@ COMPLETION:
 """
 
 PROMISE_RE = re.compile(r"<promise>\s*([^<]+?)\s*</promise>", re.IGNORECASE)
+LINEAR_TICKET_RE = re.compile(r"\b([A-Za-z]+-\d+)\b")
 
 
 @dataclass
@@ -126,6 +127,24 @@ def get_pr_number(cwd: Path, branch: str) -> str | None:
     return None
 
 
+def infer_linear_ticket(cwd: Path, branch: str, pr_number: str | None) -> str | None:
+    candidates: list[str] = [branch]
+    if pr_number:
+        pr_title = run_text_command(
+            ["gh", "pr", "view", pr_number, "--json", "title", "--jq", ".title"],
+            cwd,
+            allow_fail=True,
+        )
+        if pr_title:
+            candidates.append(pr_title)
+
+    for text in candidates:
+        match = LINEAR_TICKET_RE.search(text or "")
+        if match:
+            return match.group(1).upper()
+    return None
+
+
 def get_pr_base_branch(cwd: Path, pr_number: str | None) -> str:
     if pr_number:
         out = run_text_command(
@@ -136,6 +155,27 @@ def get_pr_base_branch(cwd: Path, pr_number: str | None) -> str:
         if out and out != "null":
             return out
     return "main"
+
+
+def get_pr_state(cwd: Path, pr_number: str) -> str | None:
+    state = run_text_command(
+        ["gh", "pr", "view", pr_number, "--json", "state", "--jq", ".state"],
+        cwd,
+        allow_fail=True,
+    )
+    if not state:
+        return None
+    return state.strip().upper()
+
+
+def ensure_pr_merged(cwd: Path, pr_number: str) -> None:
+    state = get_pr_state(cwd, pr_number)
+    if state == "MERGED":
+        return
+    run_text_command(["gh", "pr", "merge", pr_number, "--merge", "--delete-branch"], cwd)
+    state = get_pr_state(cwd, pr_number)
+    if state != "MERGED":
+        raise RuntimeError(f"PR #{pr_number} is not merged (current state: {state or 'UNKNOWN'}).")
 
 
 def resolve_base_ref(cwd: Path, base_branch: str) -> str:
@@ -168,8 +208,10 @@ def build_ui_review_prompt(
     branch: str,
     repo_slug: str | None,
     pr_number: str | None,
+    linear_ticket: str | None,
     changed_files: list[str],
 ) -> str:
+    ticket_value = linear_ticket or "UNKNOWN"
     changed = "\n".join(f"- {f}" for f in changed_files[:200]) or "- (not available)"
     return textwrap.dedent(
         f"""
@@ -178,6 +220,7 @@ def build_ui_review_prompt(
         Context:
         - Repository: {repo_slug or "UNKNOWN"}
         - PR number: {pr_number or "UNKNOWN"}
+        - Linear ticket: {ticket_value}
         - Changed files:
         {changed}
 
@@ -186,6 +229,8 @@ def build_ui_review_prompt(
         - Explore flows by clicking, typing, dragging (where relevant), navigating, and trying edge interactions.
         - Check intuitive UX, full functionality of changed areas, and obvious broken states.
         - Assess visual polish from a designer UI/UX perspective.
+        - Validate the changed flows against Linear issue `{ticket_value}` acceptance criteria.
+        - If any required acceptance criterion for `{ticket_value}` is not fully satisfied, output exactly: <promise>UI-Changes Requested</promise>
         - Provide concrete feedback with severity and actionable fixes.
         - If no updates are required, output exactly: <promise>UI-LGTM</promise>
         - If updates are required, output exactly: <promise>UI-Changes Requested</promise>
@@ -212,9 +257,16 @@ def build_ui_fix_prompt(branch: str, ui_review_output: str) -> str:
     ).strip()
 
 
-def build_review_prompt(skill_path: str, branch: str, repo_slug: str | None, pr_number: str | None) -> str:
+def build_review_prompt(
+    skill_path: str,
+    branch: str,
+    repo_slug: str | None,
+    pr_number: str | None,
+    linear_ticket: str | None,
+) -> str:
     repo_value = repo_slug or "UNKNOWN"
     pr_value = pr_number or "UNKNOWN"
+    ticket_value = linear_ticket or "UNKNOWN"
     return textwrap.dedent(
         f"""
         Use [$reviewing-pr-local]({skill_path}) to run a FULL review for the pushed branch.
@@ -223,10 +275,13 @@ def build_review_prompt(skill_path: str, branch: str, repo_slug: str | None, pr_
         - Branch: {branch}
         - Repository: {repo_value}
         - PR number: {pr_value}
+        - Linear ticket: {ticket_value}
 
         Requirements:
         - Follow the skill workflow exactly.
         - Use a full review (not incremental).
+        - Validate completion against Linear issue `{ticket_value}` scope + acceptance criteria.
+        - If any acceptance criterion for `{ticket_value}` is incomplete, output exactly: <promise>Changes Requested</promise>
         - If no updates are required, output exactly: <promise>LGTM</promise>
         - If updates are required, output exactly: <promise>Changes Requested</promise>
         """
@@ -252,10 +307,11 @@ def build_fix_prompt(branch: str, review_output: str) -> str:
     ).strip()
 
 
-def build_close_linear_prompt(branch: str) -> str:
+def build_close_linear_prompt(branch: str, pr_number: str) -> str:
     return textwrap.dedent(
         f"""
-        Review is now approved for branch `{branch}`.
+        Review is approved and PR is merged for branch `{branch}`.
+        PR number: {pr_number}
 
         Close out the related Linear issue and comment with:
         - what changed
@@ -298,6 +354,7 @@ def main() -> int:
     branch = get_current_branch(cwd)
     repo_slug = get_repo_slug(cwd)
     pr_number = get_pr_number(cwd, branch)
+    linear_ticket = infer_linear_ticket(cwd, branch, pr_number)
 
     if impl_promise == "COMPLETE":
         # Only truly complete when no feature branch / no PR exists.
@@ -321,6 +378,7 @@ def main() -> int:
                     branch=branch,
                     repo_slug=repo_slug,
                     pr_number=pr_number,
+                    linear_ticket=linear_ticket,
                     changed_files=changed_files,
                 ),
                 cwd=cwd,
@@ -363,9 +421,16 @@ def main() -> int:
         branch = get_current_branch(cwd)
         repo_slug = get_repo_slug(cwd)
         pr_number = get_pr_number(cwd, branch)
+        linear_ticket = infer_linear_ticket(cwd, branch, pr_number)
 
         review_result = run_codex(
-            build_review_prompt(args.review_skill_path, branch, repo_slug, pr_number),
+            build_review_prompt(
+                args.review_skill_path,
+                branch,
+                repo_slug,
+                pr_number,
+                linear_ticket,
+            ),
             cwd=cwd,
             codex_bin=args.codex_bin,
             label=f"Full review #{review_loop}",
@@ -377,8 +442,17 @@ def main() -> int:
         review_promise = parse_promise(review_result.output)
 
         if review_promise == "LGTM":
+            if not pr_number:
+                print("Cannot close Linear issue: no PR found for current branch.", file=sys.stderr)
+                return 6
+            try:
+                ensure_pr_merged(cwd, pr_number)
+            except RuntimeError as exc:
+                print(f"Cannot close Linear issue before merge: {exc}", file=sys.stderr)
+                return 7
+
             close_result = run_codex(
-                build_close_linear_prompt(branch),
+                build_close_linear_prompt(branch, pr_number),
                 cwd=cwd,
                 codex_bin=args.codex_bin,
                 label="Close Linear issue",

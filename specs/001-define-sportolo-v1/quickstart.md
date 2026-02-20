@@ -107,6 +107,8 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
     - Implement deterministic exercise -> routine -> microcycle aggregation for visualization support.
     - Expose aggregation output through `POST /v1/athletes/{athleteId}/muscle-usage/aggregate`.
     - Ensure unknown exercise mappings and workload validation paths are deterministic and test-covered.
+    - Render exercise/routine/microcycle muscle maps in the web UI with deterministic key-to-anatomy mapping and update behavior when routine/exercise selection changes.
+    - Surface deterministic exercise-level `Primary focus` and `Secondary focus` labels from muscle usage payload ordering.
 
 ## Testing (Failing-First)
 
@@ -189,6 +191,15 @@ npm run dev
 npm run build
 npm run start
 ```
+
+Optional live muscle-map API wiring for the home-page explorer:
+
+```bash
+export SPORTOLO_API_BASE_URL=http://127.0.0.1:8000
+export SPORTOLO_DEMO_ATHLETE_ID=athlete-1
+```
+
+If `SPORTOLO_API_BASE_URL` is not set or the API call fails, the explorer renders deterministic local sample data instead of an empty map.
 
 Repository-level gates from `/Users/bhoranyi/Personal/sportolo2`:
 
