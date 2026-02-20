@@ -5,7 +5,7 @@ import { primaryDemoCredential } from "../../features/auth/credentials";
 import { sanitizeRedirectTarget } from "../../features/auth/redirect";
 
 type SearchParams = {
-  next?: string;
+  next?: string | string[];
 };
 
 interface LoginPageProps {
@@ -14,7 +14,10 @@ interface LoginPageProps {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const nextPath = sanitizeRedirectTarget(resolvedSearchParams?.next);
+  const rawNextPath = resolvedSearchParams?.next;
+  const nextPath = sanitizeRedirectTarget(
+    Array.isArray(rawNextPath) ? rawNextPath[0] : rawNextPath,
+  );
 
   return (
     <main className="auth-shell">

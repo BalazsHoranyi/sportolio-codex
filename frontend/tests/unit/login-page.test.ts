@@ -36,4 +36,16 @@ describe("LoginPage", () => {
     expect(html).not.toContain("Already have an account?");
     expect(html).not.toContain(">Sign up<");
   });
+
+  it("handles repeated next query params without crashing", async () => {
+    const html = renderToStaticMarkup(
+      await LoginPage({
+        searchParams: Promise.resolve({
+          next: ["/calendar?week=2026-W08", "/planner"],
+        }),
+      }),
+    );
+
+    expect(html).toContain("Welcome back!");
+  });
 });
