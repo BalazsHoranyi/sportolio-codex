@@ -1,7 +1,7 @@
 # UI Browser Verification
 
 - Date: February 20, 2026
-- Routes: `/` and `/#muscle-map`
+- Routes: `/login`, `/`, and protected deep-link redirect via `/calendar`
 - Browser tooling: `agent-browser` + `chrome-devtools-mcp`
 - Devices: Desktop (1440px), Mobile (390px)
 
@@ -24,15 +24,17 @@
 
 ## Persona Coverage
 
-- Diego (competitive triathlete): selected `Pull + Run` + `Running Easy`; verified exercise/routine/microcycle maps all render and update.
-- Evan (powerlifter with minimal cardio): selected `Lower + Push` + `Bench Press`; verified upper-body emphasis appears in exercise map.
-- Hybrid athlete (600lb DL + 4 W/kg target): selected `Pull + Run` + `Barbell Row`; verified map swap behavior and deterministic legend updates.
-- Lena (busy hybrid generalist): selected `Lower + Push` + `Back Squat`; verified default path discoverability and map readability.
-- Nora (masters endurance + longevity strength): selected `Pull + Run` + `Running Easy`; verified low-friction selector usage and responsive readability.
-- Priya (marathoner adding strength): selected `Pull + Run` + `Running Easy`; verified leg-focused map visibility for run-support context.
+- Diego (competitive triathlete): attempted protected route while logged out, verified redirect to `/login?next=...`, logged in with persona credentials, and confirmed redirect completion to intended route.
+- Evan (powerlifter with minimal cardio): verified login success path on desktop/mobile and authenticated access to protected surface.
+- Hybrid athlete (600lb DL + 4 W/kg target): verified login flow and refresh-stable authenticated state on desktop/mobile.
+- Lena (busy hybrid generalist): verified mobile login form usability, error-safe flow, and authenticated landing behavior.
+- Nora (masters endurance + longevity strength): verified protected-route redirect, login completion, and continued access on desktop/mobile.
+- Priya (marathoner adding strength): verified login completion from protected deep-link and post-auth route access on desktop/mobile.
 
 ## Result
 
-- Home onboarding plus muscle-map explorer validated on desktop/mobile, including deterministic routine/exercise selector updates across all defined personas.
-- Exercise card `Primary focus` and `Secondary focus` labels validated across persona selections, with deterministic top-muscle ordering.
-- Verified production runtime without `SPORTOLO_API_BASE_URL` still renders deterministic sample muscle maps (no empty-state dead end); route remains interactive and selector updates remain deterministic.
+- All required persona screenshots were refreshed for this auth-gating release (`home-*` and `persona-*` artifacts).
+- Unauthenticated access to protected routes redirects to login with preserved `next` target.
+- Valid credentials establish authenticated session and route back to intended destination.
+- Logout returns user to `/login`, and session checks continue enforcing protected-route access rules after refresh.
+- Chrome DevTools MCP pass confirmed desktop/mobile rendering for login + authenticated home surfaces and validated auth-banner visibility in authenticated state.
