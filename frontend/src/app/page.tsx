@@ -6,7 +6,8 @@ const launchPaths = [
     title: "Athlete",
     detail:
       "Log sessions, monitor fatigue trends, and keep endurance + strength work coordinated.",
-    cta: "Review athlete flow",
+    timeEstimate: "2-min kickoff",
+    cta: "Open athlete flow",
     href: "#athlete-flow",
   },
   {
@@ -14,7 +15,8 @@ const launchPaths = [
     title: "Coach",
     detail:
       "Audit weekly adherence and compare athlete load profiles without manual spreadsheet work.",
-    cta: "Review coach flow",
+    timeEstimate: "3-min kickoff",
+    cta: "Open coach flow",
     href: "#coach-flow",
   },
   {
@@ -22,7 +24,8 @@ const launchPaths = [
     title: "Engineering",
     detail:
       "Connect the new muscle-usage endpoint and validate deterministic aggregation behavior.",
-    cta: "Review integration flow",
+    timeEstimate: "4-min kickoff",
+    cta: "Open integration flow",
     href: "#integration",
   },
 ];
@@ -33,11 +36,14 @@ const nextSteps = [
   "Run the muscle-usage aggregation check before syncing your next microcycle.",
 ];
 
+const integrationEndpoint =
+  "POST /v1/athletes/{athleteId}/muscle-usage/aggregate";
+
 export default function HomePage() {
   return (
     <main className="home-shell" id="main-content">
-      <a className="skip-link" href="#start-here">
-        Skip to Start Section
+      <a className="skip-link" href="#main-content">
+        Skip to Main Content
       </a>
       <div className="home-background" aria-hidden="true" />
 
@@ -84,11 +90,20 @@ export default function HomePage() {
           <h3>Choose your launch path</h3>
           <div className="path-cards">
             {launchPaths.map((path) => (
-              <article className="path-card" id={path.id} key={path.id}>
+              <a
+                className="path-card path-card-link"
+                href={path.href}
+                id={path.id}
+                key={path.id}
+                aria-describedby={`${path.id}-detail ${path.id}-meta`}
+              >
                 <h4>{path.title}</h4>
-                <p>{path.detail}</p>
-                <a href={path.href}>{path.cta}</a>
-              </article>
+                <p id={`${path.id}-detail`}>{path.detail}</p>
+                <p className="path-meta" id={`${path.id}-meta`}>
+                  {path.timeEstimate}
+                </p>
+                <span className="path-cta">{path.cta}</span>
+              </a>
             ))}
           </div>
         </div>
@@ -126,6 +141,9 @@ export default function HomePage() {
         <p>
           Backend muscle-usage aggregation is available and ready for frontend
           consumption.
+        </p>
+        <p className="integration-endpoint">
+          <code>{integrationEndpoint}</code>
         </p>
         <ol>
           <li>Run the API service and confirm contract alignment.</li>
