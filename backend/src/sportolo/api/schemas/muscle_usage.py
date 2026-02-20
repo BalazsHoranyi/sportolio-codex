@@ -60,7 +60,7 @@ class MicrocycleUsageResponse(CamelModel):
     microcycle_summary: MicrocycleUsageSummary
 
 
-class ValidationErrorResponse(BaseModel):
+class ValidationError(BaseModel):
     code: Literal[
         "DSL_SOURCE_TOO_LARGE",
         "DSL_NESTING_DEPTH_EXCEEDED",
@@ -74,6 +74,6 @@ class ValidationErrorResponse(BaseModel):
         "ORPHAN_PLANNED_WORKOUT",
     ]
     message: str
-    phase: Literal["parse", "validate", "compile", "guardrail"] | None = None
+    phase: Literal["parse", "validate", "compile", "guardrail"] = "validate"
     line: int | None = None
     column: int | None = None

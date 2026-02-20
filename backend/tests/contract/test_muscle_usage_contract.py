@@ -78,3 +78,14 @@ def test_aggregate_muscle_usage_openapi_metadata_matches_contract() -> None:
             "schema": {"title": "Athleteid", "type": "string"},
         }
     ]
+    assert operation["responses"]["422"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/ValidationError"
+    }
+
+
+def test_validation_error_openapi_schema_matches_contract_component_name_and_phase_type() -> None:
+    schemas = app.openapi()["components"]["schemas"]
+
+    assert "ValidationError" in schemas
+    assert "ValidationErrorResponse" not in schemas
+    assert schemas["ValidationError"]["properties"]["phase"]["type"] == "string"

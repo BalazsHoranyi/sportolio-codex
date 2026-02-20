@@ -3,7 +3,7 @@ from fastapi import APIRouter, Path
 from sportolo.api.schemas.muscle_usage import (
     MicrocycleUsageRequest,
     MicrocycleUsageResponse,
-    ValidationErrorResponse,
+    ValidationError,
 )
 from sportolo.services.muscle_usage_service import MuscleUsageService
 
@@ -15,7 +15,7 @@ service = MuscleUsageService()
     "/v1/athletes/{athleteId}/muscle-usage/aggregate",
     response_model=MicrocycleUsageResponse,
     operation_id="aggregateMuscleUsage",
-    responses={422: {"model": ValidationErrorResponse}},
+    responses={422: {"model": ValidationError}},
 )
 async def aggregate_muscle_usage(
     request: MicrocycleUsageRequest,
