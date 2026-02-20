@@ -58,3 +58,23 @@ def test_aggregate_muscle_usage_rejects_non_positive_workload() -> None:
     response = client.post("/v1/athletes/athlete-1/muscle-usage/aggregate", json=payload)
 
     assert response.status_code == 422
+    assert response.json() == {
+        "code": "DSL_VALIDATION_ERROR",
+        "message": "Input should be greater than 0",
+        "phase": "validate",
+    }
+
+
+def test_aggregate_muscle_usage_openapi_metadata_matches_contract() -> None:
+    operation = app.openapi()["paths"]["/v1/athletes/{athleteId}/muscle-usage/aggregate"]["post"]
+
+    assert operation["operationId"] == "aggregateMuscleUsage"
+    assert operation["tags"] == ["Analytics"]
+    assert operation["parameters"] == [
+        {
+            "in": "path",
+            "name": "athleteId",
+            "required": True,
+            "schema": {"title": "Athleteid", "type": "string"},
+        }
+    ]

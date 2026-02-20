@@ -1,22 +1,25 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Path
 
-from sportolo.api.schemas.muscle_usage import MicrocycleUsageRequest, MicrocycleUsageResponse
+from sportolo.api.schemas.muscle_usage import (
+    MicrocycleUsageRequest,
+    MicrocycleUsageResponse,
+    ValidationErrorResponse,
+)
 from sportolo.services.muscle_usage_service import MuscleUsageService
 
-router = APIRouter(tags=["muscle-usage"])
+router = APIRouter(tags=["Analytics"])
 service = MuscleUsageService()
 
 
 @router.post(
-    "/v1/athletes/{athlete_id}/muscle-usage/aggregate",
+    "/v1/athletes/{athleteId}/muscle-usage/aggregate",
     response_model=MicrocycleUsageResponse,
+    operation_id="aggregateMuscleUsage",
+    responses={422: {"model": ValidationErrorResponse}},
 )
 async def aggregate_muscle_usage(
-    athlete_id: str,
     request: MicrocycleUsageRequest,
+    athlete_id: str = Path(alias="athleteId"),
 ) -> MicrocycleUsageResponse:
     del athlete_id
-    try:
-        return service.aggregate_microcycle(request)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return service.aggregate_microcycle(request)

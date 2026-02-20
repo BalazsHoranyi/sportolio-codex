@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -56,3 +58,22 @@ class MicrocycleUsageResponse(CamelModel):
     exercise_summaries: list[ExerciseUsageSummary]
     routine_summaries: list[RoutineUsageSummary]
     microcycle_summary: MicrocycleUsageSummary
+
+
+class ValidationErrorResponse(BaseModel):
+    code: Literal[
+        "DSL_SOURCE_TOO_LARGE",
+        "DSL_NESTING_DEPTH_EXCEEDED",
+        "IR_NODE_LIMIT_EXCEEDED",
+        "LOOP_ITERATION_LIMIT_EXCEEDED",
+        "DSL_COMPILE_TIMEOUT",
+        "DSL_VALIDATION_ERROR",
+        "FATIGUE_MODEL_READ_ONLY",
+        "RANDOMNESS_NOT_ALLOWED",
+        "COMPLETED_SESSION_INVARIANT_VIOLATION",
+        "ORPHAN_PLANNED_WORKOUT",
+    ]
+    message: str
+    phase: Literal["parse", "validate", "compile", "guardrail"] | None = None
+    line: int | None = None
+    column: int | None = None
