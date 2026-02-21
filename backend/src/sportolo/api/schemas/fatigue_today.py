@@ -8,6 +8,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validato
 SessionState = Literal["planned", "in_progress", "completed", "partial", "abandoned"]
 BoundarySource = Literal["sleep_event", "local_midnight"]
 WorkoutType = Literal["hybrid", "strength", "endurance"]
+ScoreThresholdState = Literal["low", "moderate", "high"]
 
 
 def _to_camel(value: str) -> str:
@@ -53,6 +54,8 @@ class CombinedScore(CamelModel):
 
 class SessionFatigueInput(CamelModel):
     session_id: str
+    session_label: str | None = None
+    session_href: str | None = None
     state: SessionState
     ended_at: AwareDatetime | None = None
     fatigue_axes: FatigueAxes
@@ -97,6 +100,30 @@ class RolloverBoundary(CamelModel):
     timezone: str
 
 
+class ExplainabilityContributor(CamelModel):
+    session_id: str
+    label: str
+    href: str
+    contribution_magnitude: float = Field(ge=0)
+    contribution_share: float = Field(ge=0, le=1)
+
+
+class ScoreExplainability(CamelModel):
+    score_value: float = Field(ge=0)
+    threshold_state: ScoreThresholdState
+    axis_meaning: str
+    decision_hint: str
+    contributors: list[ExplainabilityContributor] = Field(default_factory=list, max_length=3)
+
+
+class TodayExplainability(CamelModel):
+    neural: ScoreExplainability
+    metabolic: ScoreExplainability
+    mechanical: ScoreExplainability
+    recruitment: ScoreExplainability
+    combined: ScoreExplainability
+
+
 class TodayAccumulationResponse(CamelModel):
     as_of: AwareDatetime
     boundary: RolloverBoundary
@@ -104,3 +131,4 @@ class TodayAccumulationResponse(CamelModel):
     excluded_session_ids: list[str]
     accumulated_fatigue: FatigueAxes
     combined_score: CombinedScore
+    explainability: TodayExplainability

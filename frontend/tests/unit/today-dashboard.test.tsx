@@ -56,6 +56,83 @@ function buildSnapshot(
         capacityGatedScore: 5.3333,
       },
     },
+    explainability: {
+      neural: {
+        scoreValue: 8,
+        thresholdState: "high",
+        axisMeaning: "Neural readiness.",
+        decisionHint: "Back off high-skill work.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 8,
+            contributionShare: 1,
+          },
+        ],
+      },
+      metabolic: {
+        scoreValue: 4,
+        thresholdState: "moderate",
+        axisMeaning: "Metabolic strain.",
+        decisionHint: "Consolidate hard work.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 4,
+            contributionShare: 1,
+          },
+        ],
+      },
+      mechanical: {
+        scoreValue: 3,
+        thresholdState: "low",
+        axisMeaning: "Mechanical strain.",
+        decisionHint: "Proceed as planned.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 3,
+            contributionShare: 1,
+          },
+        ],
+      },
+      recruitment: {
+        scoreValue: 5,
+        thresholdState: "moderate",
+        axisMeaning: "Recruitment demand.",
+        decisionHint: "Watch high-threshold stacking.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 5,
+            contributionShare: 1,
+          },
+        ],
+      },
+      combined: {
+        scoreValue: 5.3333,
+        thresholdState: "moderate",
+        axisMeaning: "Combined risk.",
+        decisionHint: "Monitor readiness.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 5.3333,
+            contributionShare: 1,
+          },
+        ],
+      },
+    },
     ...overrides,
   };
 }
@@ -139,5 +216,72 @@ describe("TodayDashboard", () => {
     expect(
       screen.getByText(/no completed contributors inside today's boundary/i),
     ).toBeTruthy();
+  });
+
+  it("renders explainability share labels and axis tooltip hints from backend payload", () => {
+    render(
+      <TodayDashboard
+        snapshot={buildSnapshot({
+          explainability: {
+            neural: {
+              scoreValue: 8,
+              thresholdState: "high",
+              axisMeaning: "Neural readiness.",
+              decisionHint: "Back off high-skill work.",
+              contributors: [
+                {
+                  sessionId: "completed-before-boundary",
+                  label: "Heavy lower session",
+                  href: "/calendar?sessionId=completed-before-boundary",
+                  contributionMagnitude: 8,
+                  contributionShare: 1,
+                },
+              ],
+            },
+            metabolic: {
+              scoreValue: 4,
+              thresholdState: "moderate",
+              axisMeaning: "Metabolic strain.",
+              decisionHint: "Consolidate hard work.",
+              contributors: [],
+            },
+            mechanical: {
+              scoreValue: 3,
+              thresholdState: "low",
+              axisMeaning: "Mechanical strain.",
+              decisionHint: "Proceed as planned.",
+              contributors: [],
+            },
+            recruitment: {
+              scoreValue: 5,
+              thresholdState: "moderate",
+              axisMeaning: "Recruitment demand.",
+              decisionHint: "Watch high-threshold stacking.",
+              contributors: [],
+            },
+            combined: {
+              scoreValue: 5.3333,
+              thresholdState: "moderate",
+              axisMeaning: "Combined risk.",
+              decisionHint: "Monitor readiness.",
+              contributors: [
+                {
+                  sessionId: "completed-before-boundary",
+                  label: "Heavy lower session",
+                  href: "/calendar?sessionId=completed-before-boundary",
+                  contributionMagnitude: 5.3333,
+                  contributionShare: 1,
+                },
+              ],
+            },
+          },
+        })}
+      />,
+    );
+
+    expect(screen.getByText("100%")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Neural gauge").getAttribute("title"),
+    ).toContain("Neural readiness");
   });
 });

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, time, timedelta
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 from sportolo.api.schemas.fatigue_today import (
@@ -9,12 +10,16 @@ from sportolo.api.schemas.fatigue_today import (
     CombinedScore,
     CombinedScoreDebug,
     CombinedScoreWeights,
+    ExplainabilityContributor,
     FatigueAxes,
     RolloverBoundary,
+    ScoreExplainability,
+    ScoreThresholdState,
     SessionFatigueInput,
     SleepEventInput,
     TodayAccumulationRequest,
     TodayAccumulationResponse,
+    TodayExplainability,
     WorkoutType,
 )
 
@@ -47,6 +52,30 @@ class TodayAccumulationService:
     }
 
     _COMBINED_SCORE_INTERPRETATION = "probability next hard session degrades adaptation"
+    _AXIS_MEANINGS = {
+        "neural": (
+            "Neural reflects central-drive and coordination readiness "
+            "for precision or high-skill work."
+        ),
+        "metabolic": (
+            "Metabolic reflects substrate and energetic strain from recent work density."
+        ),
+        "mechanical": (
+            "Mechanical reflects force and tissue load accumulation that drives soreness and risk."
+        ),
+        "recruitment": (
+            "Recruitment reflects high-threshold motor-unit demand "
+            "derived from neural and mechanical stress."
+        ),
+        "combined": (
+            "Combined estimates the probability that the next hard session degrades adaptation."
+        ),
+    }
+    _DECISION_HINTS = {
+        "low": "Load is low. Keep planned quality if execution is crisp.",
+        "moderate": "Load is building. Consolidate hard work and monitor drift.",
+        "high": "Load is high. Consider reducing intensity or moving hard work.",
+    }
 
     def compute_today_accumulation(
         self, request: TodayAccumulationRequest
@@ -67,11 +96,13 @@ class TodayAccumulationService:
             "mechanical": 0.0,
             "recruitment": 0.0,
         }
+        included_sessions: list[SessionFatigueInput] = []
         included_session_ids: list[str] = []
         excluded_session_ids: list[str] = []
 
         for session in request.sessions:
             if self._is_included(session, boundary_end_utc):
+                included_sessions.append(session)
                 included_session_ids.append(session.session_id)
                 totals = self._accumulate_axes(totals, session.fatigue_axes)
             else:
@@ -84,6 +115,11 @@ class TodayAccumulationService:
             sleep=request.system_capacity.sleep,
             fuel=request.system_capacity.fuel,
             stress=request.system_capacity.stress,
+        )
+        explainability = self._build_explainability(
+            accumulated_fatigue=accumulated_fatigue,
+            combined_score=combined_score,
+            included_sessions=included_sessions,
         )
 
         return TodayAccumulationResponse(
@@ -98,6 +134,7 @@ class TodayAccumulationService:
             excluded_session_ids=excluded_session_ids,
             accumulated_fatigue=accumulated_fatigue,
             combined_score=combined_score,
+            explainability=explainability,
         )
 
     def _resolve_boundary_end(
@@ -241,3 +278,158 @@ class TodayAccumulationService:
             mechanical=round(weights["mechanical"], 4),
             recruitment=round(weights["recruitment"], 4),
         )
+
+    def _build_explainability(
+        self,
+        *,
+        accumulated_fatigue: FatigueAxes,
+        combined_score: CombinedScore,
+        included_sessions: list[SessionFatigueInput],
+    ) -> TodayExplainability:
+        return TodayExplainability(
+            neural=self._build_axis_explainability(
+                axis_key="neural",
+                score_value=accumulated_fatigue.neural,
+                included_sessions=included_sessions,
+            ),
+            metabolic=self._build_axis_explainability(
+                axis_key="metabolic",
+                score_value=accumulated_fatigue.metabolic,
+                included_sessions=included_sessions,
+            ),
+            mechanical=self._build_axis_explainability(
+                axis_key="mechanical",
+                score_value=accumulated_fatigue.mechanical,
+                included_sessions=included_sessions,
+            ),
+            recruitment=self._build_axis_explainability(
+                axis_key="recruitment",
+                score_value=accumulated_fatigue.recruitment,
+                included_sessions=included_sessions,
+            ),
+            combined=self._build_combined_explainability(
+                score_value=combined_score.value,
+                combined_score=combined_score,
+                included_sessions=included_sessions,
+            ),
+        )
+
+    def _build_axis_explainability(
+        self,
+        *,
+        axis_key: str,
+        score_value: float,
+        included_sessions: list[SessionFatigueInput],
+    ) -> ScoreExplainability:
+        contributors = self._top_contributors(
+            included_sessions=included_sessions,
+            magnitude_getter=lambda session: getattr(session.fatigue_axes, axis_key),
+        )
+        threshold_state = self._threshold_state(score_value)
+        return ScoreExplainability(
+            score_value=round(score_value, 4),
+            threshold_state=threshold_state,
+            axis_meaning=self._AXIS_MEANINGS[axis_key],
+            decision_hint=self._DECISION_HINTS[threshold_state],
+            contributors=contributors,
+        )
+
+    def _build_combined_explainability(
+        self,
+        *,
+        score_value: float,
+        combined_score: CombinedScore,
+        included_sessions: list[SessionFatigueInput],
+    ) -> ScoreExplainability:
+        modifiers = self._WORKOUT_TYPE_MODIFIERS[combined_score.debug.workout_type]
+        effective_weights = self._renormalized_effective_weights(modifiers)
+        neural_gate_factor = combined_score.debug.neural_gate_factor
+        capacity_gate_factor = combined_score.debug.capacity_gate_factor
+        contributors = self._top_contributors(
+            included_sessions=included_sessions,
+            magnitude_getter=lambda session: self._combined_session_contribution(
+                session=session,
+                effective_weights=effective_weights,
+                neural_gate_factor=neural_gate_factor,
+                capacity_gate_factor=capacity_gate_factor,
+            ),
+        )
+        threshold_state = self._threshold_state(score_value)
+        return ScoreExplainability(
+            score_value=round(score_value, 4),
+            threshold_state=threshold_state,
+            axis_meaning=self._AXIS_MEANINGS["combined"],
+            decision_hint=self._DECISION_HINTS[threshold_state],
+            contributors=contributors,
+        )
+
+    def _top_contributors(
+        self,
+        *,
+        included_sessions: list[SessionFatigueInput],
+        magnitude_getter,
+    ) -> list[ExplainabilityContributor]:
+        ranked_candidates: list[tuple[SessionFatigueInput, float]] = []
+        for session in included_sessions:
+            magnitude = round(max(0.0, float(magnitude_getter(session))), 4)
+            if magnitude <= 0:
+                continue
+            ranked_candidates.append((session, magnitude))
+
+        ranked_candidates.sort(key=lambda item: (-item[1], item[0].session_id))
+        top_candidates = ranked_candidates[:3]
+        if not top_candidates:
+            return []
+
+        top_total = round(sum(item[1] for item in top_candidates), 4)
+        shares: list[float] = []
+        remaining_share = 1.0
+        for index, (_, magnitude) in enumerate(top_candidates):
+            if index == len(top_candidates) - 1:
+                share = max(0.0, round(remaining_share, 4))
+            elif top_total == 0:
+                share = 0.0
+            else:
+                share = round(magnitude / top_total, 4)
+                remaining_share = round(remaining_share - share, 4)
+            shares.append(share)
+
+        contributors: list[ExplainabilityContributor] = []
+        for (session, magnitude), share in zip(top_candidates, shares, strict=True):
+            contributors.append(
+                ExplainabilityContributor(
+                    session_id=session.session_id,
+                    label=session.session_label or session.session_id,
+                    href=session.session_href or f"/calendar?sessionId={quote(session.session_id)}",
+                    contribution_magnitude=round(magnitude, 4),
+                    contribution_share=round(share, 4),
+                )
+            )
+        return contributors
+
+    @staticmethod
+    def _combined_session_contribution(
+        *,
+        session: SessionFatigueInput,
+        effective_weights: dict[str, float],
+        neural_gate_factor: float,
+        capacity_gate_factor: float,
+    ) -> float:
+        base_weighted = round(
+            (
+                session.fatigue_axes.metabolic * effective_weights["metabolic"]
+                + session.fatigue_axes.mechanical * effective_weights["mechanical"]
+                + session.fatigue_axes.recruitment * effective_weights["recruitment"]
+            ),
+            4,
+        )
+        neural_gated = round(base_weighted * neural_gate_factor, 4)
+        return round(neural_gated * capacity_gate_factor, 4)
+
+    @staticmethod
+    def _threshold_state(value: float) -> ScoreThresholdState:
+        if value >= 7:
+            return "high"
+        if value >= 4:
+            return "moderate"
+        return "low"

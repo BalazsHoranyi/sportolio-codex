@@ -2062,14 +2062,23 @@ h1 {
 }
 
 .today-chip {
+  align-items: center;
   background: var(--midnight-bloom-component-color-080);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink-strong);
+  display: inline-flex;
   font-size: 0.8rem;
   font-weight: 600;
+  gap: 0.4rem;
   padding: 0.45rem 0.7rem;
   text-decoration: none;
+}
+
+.today-chip span[aria-label$="contribution share"] {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .today-chip:hover {

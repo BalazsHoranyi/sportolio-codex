@@ -23,6 +23,8 @@ export const todayAccumulationRequestSample: TodayAccumulationRequest = {
   sessions: [
     {
       sessionId: "completed-before-boundary",
+      sessionLabel: "Heavy lower session",
+      sessionHref: "/calendar?sessionId=completed-before-boundary",
       state: "completed",
       endedAt: "2026-02-20T10:00:00Z",
       fatigueAxes: {
@@ -34,6 +36,8 @@ export const todayAccumulationRequestSample: TodayAccumulationRequest = {
     },
     {
       sessionId: "planned-before-boundary",
+      sessionLabel: "Planned tempo run",
+      sessionHref: "/calendar?sessionId=planned-before-boundary",
       state: "planned",
       endedAt: "2026-02-20T09:30:00Z",
       fatigueAxes: {
@@ -88,6 +92,92 @@ export const todayAccumulationResponseSample: TodayAccumulationResponse = {
       neuralGatedScore: 4.8929,
       capacityGateFactor: 1.09,
       capacityGatedScore: 5.3333,
+    },
+  },
+  explainability: {
+    neural: {
+      scoreValue: 8,
+      thresholdState: "high",
+      axisMeaning:
+        "Neural reflects central-drive and coordination readiness for precision or high-skill work.",
+      decisionHint:
+        "Load is high. Consider reducing intensity or moving hard work.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 8,
+          contributionShare: 1,
+        },
+      ],
+    },
+    metabolic: {
+      scoreValue: 4,
+      thresholdState: "moderate",
+      axisMeaning:
+        "Metabolic reflects substrate and energetic strain from recent work density.",
+      decisionHint:
+        "Load is building. Consolidate hard work and monitor drift.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 4,
+          contributionShare: 1,
+        },
+      ],
+    },
+    mechanical: {
+      scoreValue: 3,
+      thresholdState: "low",
+      axisMeaning:
+        "Mechanical reflects force and tissue load accumulation that drives soreness and risk.",
+      decisionHint: "Load is low. Keep planned quality if execution is crisp.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 3,
+          contributionShare: 1,
+        },
+      ],
+    },
+    recruitment: {
+      scoreValue: 5,
+      thresholdState: "moderate",
+      axisMeaning:
+        "Recruitment reflects high-threshold motor-unit demand derived from neural and mechanical stress.",
+      decisionHint:
+        "Load is building. Consolidate hard work and monitor drift.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 5,
+          contributionShare: 1,
+        },
+      ],
+    },
+    combined: {
+      scoreValue: 5.3333,
+      thresholdState: "moderate",
+      axisMeaning:
+        "Combined estimates the probability that the next hard session degrades adaptation.",
+      decisionHint:
+        "Load is building. Consolidate hard work and monitor drift.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 5.3333,
+          contributionShare: 1,
+        },
+      ],
     },
   },
 };

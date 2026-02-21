@@ -11,12 +11,14 @@ export interface AxisGaugeViewModel {
   value: number;
   percent: number;
   thresholdState: ThresholdState;
+  tooltip: string;
 }
 
 export interface WhyThisLink {
   sessionId: string;
   label: string;
   href: string;
+  shareLabel?: string;
 }
 
 export interface TodayDashboardViewModel {
@@ -85,10 +87,33 @@ function defaultSessionHref(sessionId: string): string {
   return `/calendar?sessionId=${encodeURIComponent(sessionId)}`;
 }
 
+function toShareLabel(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function buildGaugeTooltip(axisMeaning: string, decisionHint: string): string {
+  return `${axisMeaning} ${decisionHint}`.trim();
+}
+
 function buildWhyThisLinks(
+  snapshot: TodayAccumulationResponse,
   includedSessionIds: string[],
   contributors?: TodayContributorSession[],
 ): WhyThisLink[] {
+  const explainabilityContributors =
+    snapshot.explainability.combined.contributors;
+  if (explainabilityContributors.length > 0) {
+    const includedSet = new Set(includedSessionIds);
+    return explainabilityContributors
+      .filter((contributor) => includedSet.has(contributor.sessionId))
+      .map((contributor) => ({
+        sessionId: contributor.sessionId,
+        label: contributor.label,
+        href: contributor.href ?? defaultSessionHref(contributor.sessionId),
+        shareLabel: toShareLabel(contributor.contributionShare),
+      }));
+  }
+
   if (!contributors || contributors.length === 0) {
     return includedSessionIds.map((sessionId) => ({
       sessionId,
@@ -132,6 +157,10 @@ export function buildTodayDashboardViewModel(
         value: neural,
         percent: (neural / 10) * 100,
         thresholdState: toThresholdState(neural),
+        tooltip: buildGaugeTooltip(
+          snapshot.explainability.neural.axisMeaning,
+          snapshot.explainability.neural.decisionHint,
+        ),
       },
       {
         id: "metabolic",
@@ -139,6 +168,10 @@ export function buildTodayDashboardViewModel(
         value: metabolic,
         percent: (metabolic / 10) * 100,
         thresholdState: toThresholdState(metabolic),
+        tooltip: buildGaugeTooltip(
+          snapshot.explainability.metabolic.axisMeaning,
+          snapshot.explainability.metabolic.decisionHint,
+        ),
       },
       {
         id: "mechanical",
@@ -146,6 +179,10 @@ export function buildTodayDashboardViewModel(
         value: mechanical,
         percent: (mechanical / 10) * 100,
         thresholdState: toThresholdState(mechanical),
+        tooltip: buildGaugeTooltip(
+          snapshot.explainability.mechanical.axisMeaning,
+          snapshot.explainability.mechanical.decisionHint,
+        ),
       },
     ],
     recruitmentValue: recruitment,
@@ -156,6 +193,10 @@ export function buildTodayDashboardViewModel(
     capacityFactor,
     capacityState,
     capacityLabel: toCapacityLabel(capacityState),
-    whyThisLinks: buildWhyThisLinks(snapshot.includedSessionIds, contributors),
+    whyThisLinks: buildWhyThisLinks(
+      snapshot,
+      snapshot.includedSessionIds,
+      contributors,
+    ),
   };
 }

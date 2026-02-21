@@ -71,6 +71,7 @@ export function TodayDashboard({
                   aria-label={`${gauge.label} gauge`}
                   className="today-gauge-track"
                   role="img"
+                  title={gauge.tooltip}
                 >
                   <span style={{ width: `${gauge.percent}%` }} />
                 </div>
@@ -147,7 +148,12 @@ export function TodayDashboard({
             {viewModel.whyThisLinks.length > 0 ? (
               viewModel.whyThisLinks.map((link) => (
                 <a className="today-chip" href={link.href} key={link.sessionId}>
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.shareLabel ? (
+                    <span aria-label={`${link.label} contribution share`}>
+                      {link.shareLabel}
+                    </span>
+                  ) : null}
                 </a>
               ))
             ) : (
