@@ -42,15 +42,35 @@ def test_blueprint_additions_are_present_without_duplicate_collisions() -> None:
     catalog = service.list_exercises()
 
     expected_blueprint_stems = {
+        "Ab Wheel Rollout",
+        "Back Extension",
+        "Cable Pull-Through",
+        "Copenhagen Plank",
+        "Cuban Press",
+        "Dead Bug",
+        "Dorsiflexion",
+        "External Rotation",
+        "Glute-Ham Raise",
         "Split Squat",
+        "Hip Adduction",
         "Good Morning",
-        "Shrug",
+        "Hanging Leg Raise",
+        "Hip Abduction",
+        "Internal Rotation",
+        "Landmine Press",
+        "Offset Carry",
+        "Pronation/Supination",
         "Pallof Press",
         "Pullover",
+        "Reverse Wrist Curl",
+        "Shoulder Press",
+        "Shrug",
         "Side Plank",
-        "Hanging Leg Raise",
-        "Back Extension",
-        "Hip Abduction",
+        "Stationary Split Squat",
+        "Straight-Arm Pulldown",
+        "Tibialis Raise",
+        "Triceps Pressdown",
+        "Wrist Curl",
     }
     canonical_names = {entry.canonical_name for entry in catalog}
     ids = [entry.id for entry in catalog]
@@ -78,6 +98,62 @@ def test_legacy_equipment_prefixed_alias_search_still_resolves() -> None:
 
     assert split_squat_search[0].canonical_name == "Split Squat"
     assert good_morning_search[0].canonical_name == "Good Morning"
+
+
+def test_sprt71_alias_queries_resolve_expected_canonical_entries() -> None:
+    service = ExerciseCatalogService()
+
+    query_to_expected = {
+        "rfess": "Split Squat",
+        "stationary split squat": "Stationary Split Squat",
+        "hyperextension": "Back Extension",
+        "military press": "Shoulder Press",
+        "pressdown": "Triceps Pressdown",
+        "straight arm pulldown": "Straight-Arm Pulldown",
+        "ghr": "Glute-Ham Raise",
+        "adductor machine": "Hip Adduction",
+        "wrist curl": "Wrist Curl",
+        "reverse wrist curl": "Reverse Wrist Curl",
+        "cuban press": "Cuban Press",
+        "dead bug": "Dead Bug",
+        "ab wheel": "Ab Wheel Rollout",
+        "offset carry": "Offset Carry",
+    }
+
+    for query, expected in query_to_expected.items():
+        matches = service.list_exercises(search=query)
+        assert matches, f"Expected at least one match for query: {query}"
+        assert matches[0].canonical_name == expected
+
+
+def test_sprt71_backfill_entries_include_complete_equipment_and_muscle_metadata() -> None:
+    service = ExerciseCatalogService()
+    catalog = {entry.canonical_name: entry for entry in service.list_exercises()}
+
+    assert {"quads", "glutes", "hamstrings"} <= set(catalog["Split Squat"].region_tags)
+    assert {"landmine", "barbell", "dumbbell"} <= set(catalog["Split Squat"].equipment_options)
+    assert {"quads", "glutes", "hamstrings"} <= set(catalog["Stationary Split Squat"].region_tags)
+    assert {"bodyweight", "dumbbell", "barbell"} <= set(
+        catalog["Stationary Split Squat"].equipment_options
+    )
+    assert {"hamstrings", "glutes", "spinal_erectors"} <= set(
+        catalog["Cable Pull-Through"].region_tags
+    )
+    assert catalog["Cable Pull-Through"].equipment_options == ("cable", "band")
+    assert {"glutes", "hip_stabilizers"} <= set(catalog["Hip Abduction"].region_tags)
+    assert {"machine", "cable", "band"} <= set(catalog["Hip Abduction"].equipment_options)
+    assert {"adductors", "hip_stabilizers"} <= set(catalog["Hip Adduction"].region_tags)
+    assert {"machine", "cable", "band"} <= set(catalog["Hip Adduction"].equipment_options)
+    assert {"calves", "tibialis_anterior"} <= set(catalog["Tibialis Raise"].region_tags)
+    assert {"machine", "band", "bodyweight"} <= set(catalog["Tibialis Raise"].equipment_options)
+    assert {"front_delts", "triceps", "upper_chest"} <= set(catalog["Landmine Press"].region_tags)
+    assert catalog["Landmine Press"].equipment_options == ("landmine", "barbell")
+    assert {"triceps", "elbow_extensors"} <= set(catalog["Triceps Pressdown"].region_tags)
+    assert catalog["Triceps Pressdown"].equipment_options == ("cable", "band")
+    assert {"lats", "triceps", "rear_delts"} <= set(catalog["Straight-Arm Pulldown"].region_tags)
+    assert catalog["Straight-Arm Pulldown"].equipment_options == ("cable", "band")
+    assert {"core", "obliques"} <= set(catalog["Dead Bug"].region_tags)
+    assert {"core", "obliques", "grip"} <= set(catalog["Offset Carry"].region_tags)
 
 
 def test_search_and_filters_are_deterministic() -> None:
