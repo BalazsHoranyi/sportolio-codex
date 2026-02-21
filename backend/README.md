@@ -86,3 +86,30 @@ Behavior:
   - plus existing `regionTags` and `equipmentOptions`.
 - Seed validation rejects malformed entries during catalog build (empty canonical name, missing equipment, missing primary muscle data, unknown equipment tokens, duplicate canonical names, duplicate IDs).
 - Seed generation is deterministic across environments because blueprint expansion and build ordering are stable and normalization-based.
+
+## Wahoo push + execution history sync API
+
+`SPRT-46` introduces deterministic Wahoo workout push and history reconciliation endpoints:
+
+- `POST /v1/athletes/{athleteId}/integrations/wahoo/workouts/push`
+- `POST /v1/athletes/{athleteId}/integrations/wahoo/execution-history/sync`
+
+Push behavior:
+
+- Requires `idempotencyKey`, `plannedWorkoutId`, trainer metadata, and structured steps.
+- Returns deterministic `externalWorkoutId` mapping for accepted pushes.
+- Trainer IDs that begin with `offline` or `fail` return deterministic failed push status (`trainer_unreachable`) without creating side effects.
+- Non-Wahoo trainer IDs return deterministic failed push status (`unsupported_trainer`) without creating side effects.
+- Reusing the same `idempotencyKey` with the same payload replays the original response.
+- Reusing the same `idempotencyKey` with a different payload is rejected as validation failure.
+
+Sync behavior:
+
+- Reconciles provider history against pushed `externalWorkoutId -> plannedWorkoutId` mappings.
+- Returns deterministic per-entry reconciliation metadata including `dedupStatus`, `sequenceNumber`, and import IDs.
+- Suppresses duplicates by `externalActivityId` and preserves ordering across retries.
+- Emits deterministic pipeline dispatch metadata for new imports:
+  - `fatigue`
+  - `analytics`
+- Enqueues each new dispatch through the integration dispatch sink so fatigue/analytics pipelines can process imports.
+- Sync retries with the same `idempotencyKey` replay the exact prior response and do not duplicate dispatch side effects.
