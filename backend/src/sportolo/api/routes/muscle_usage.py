@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Path
+from typing import Annotated
 
+from fastapi import APIRouter, Depends, Path
+
+from sportolo.api.dependencies import get_muscle_usage_service
+from sportolo.api.schemas.common import ValidationError
 from sportolo.api.schemas.muscle_usage import (
     MicrocycleUsageRequest,
     MicrocycleUsageResponse,
-    ValidationError,
 )
 from sportolo.services.muscle_usage_service import MuscleUsageService
 
 router = APIRouter(tags=["Analytics"])
-service = MuscleUsageService()
 
 
 @router.post(
@@ -19,6 +21,7 @@ service = MuscleUsageService()
 )
 async def aggregate_muscle_usage(
     request: MicrocycleUsageRequest,
+    service: Annotated[MuscleUsageService, Depends(get_muscle_usage_service)],
     athlete_id: str = Path(alias="athleteId"),
 ) -> MicrocycleUsageResponse:
     del athlete_id

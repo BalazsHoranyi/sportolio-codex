@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from sportolo.api.dependencies import get_exercise_catalog_service
+from sportolo.api.schemas.common import ValidationError
 from sportolo.api.schemas.exercise_catalog import (
     ExerciseCatalogItem,
     ExerciseCatalogListResponse,
@@ -11,11 +13,9 @@ from sportolo.api.schemas.exercise_catalog import (
     ExerciseCatalogMatchMetadata,
     ExerciseCatalogPagination,
 )
-from sportolo.api.schemas.muscle_usage import ValidationError
 from sportolo.services.exercise_catalog_service import ExerciseCatalogService
 
 router = APIRouter(tags=["Catalog"])
-service = ExerciseCatalogService()
 
 
 @router.get(
@@ -25,6 +25,7 @@ service = ExerciseCatalogService()
     responses={422: {"model": ValidationError}},
 )
 async def list_exercises(
+    service: Annotated[ExerciseCatalogService, Depends(get_exercise_catalog_service)],
     scope: Literal["global", "user", "all"] = Query(default="all"),
     search: str | None = Query(default=None),
     equipment: str | None = Query(default=None),

@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Path
+from typing import Annotated
 
+from fastapi import APIRouter, Depends, Path
+
+from sportolo.api.dependencies import get_exercise_zone_mapping_service
+from sportolo.api.schemas.common import ValidationError
 from sportolo.api.schemas.exercise_zone_mapping import (
     AxisEffectMappingRequest,
     AxisEffectMappingResponse,
 )
-from sportolo.api.schemas.muscle_usage import ValidationError
 from sportolo.services.exercise_zone_mapping_service import ExerciseZoneMappingService
 
 router = APIRouter(tags=["Scoring"])
-service = ExerciseZoneMappingService()
 
 
 @router.post(
@@ -21,6 +23,7 @@ service = ExerciseZoneMappingService()
 )
 async def map_exercise_zone_axis_effects(
     request: AxisEffectMappingRequest,
+    service: Annotated[ExerciseZoneMappingService, Depends(get_exercise_zone_mapping_service)],
     athlete_id: str = Path(alias="athleteId"),
 ) -> AxisEffectMappingResponse:
     return service.map_axis_effects(athlete_id=athlete_id, request=request)

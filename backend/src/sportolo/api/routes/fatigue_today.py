@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Path
+from typing import Annotated
 
+from fastapi import APIRouter, Depends, Path
+
+from sportolo.api.dependencies import get_today_accumulation_service
+from sportolo.api.schemas.common import ValidationError
 from sportolo.api.schemas.fatigue_today import TodayAccumulationRequest, TodayAccumulationResponse
-from sportolo.api.schemas.muscle_usage import ValidationError
 from sportolo.services.today_accumulation_service import TodayAccumulationService
 
 router = APIRouter(tags=["Fatigue"])
-service = TodayAccumulationService()
 
 
 @router.post(
@@ -16,6 +18,7 @@ service = TodayAccumulationService()
 )
 async def compute_today_accumulation(
     request: TodayAccumulationRequest,
+    service: Annotated[TodayAccumulationService, Depends(get_today_accumulation_service)],
     athlete_id: str = Path(alias="athleteId"),
 ) -> TodayAccumulationResponse:
     del athlete_id
