@@ -1681,6 +1681,293 @@ h1 {
   margin: 0;
 }
 
+.routine-page {
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: clamp(1.4rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem)
+    clamp(3rem, 7vw, 5rem);
+}
+
+.routine-flow-shell {
+  background:
+    radial-gradient(
+      circle at 88% 8%,
+      oklch(0.95 0.05 46 / 0.45),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 4% 94%,
+      oklch(0.95 0.04 204 / 0.35),
+      transparent 44%
+    ),
+    var(--bg-panel);
+  overflow: hidden;
+}
+
+.routine-flow-header {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.routine-flow-copy {
+  margin: 0;
+  max-width: 64ch;
+}
+
+.routine-flow-mode-tabs {
+  background: oklch(0.96 0.02 68 / 0.9);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 1.4rem;
+  padding: 0.3rem;
+}
+
+.routine-flow-tab {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  min-height: 2.4rem;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.routine-flow-tab:hover {
+  transform: translateY(-1px);
+}
+
+.routine-flow-tab-active {
+  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
+  color: oklch(0.98 0.01 74);
+}
+
+.routine-flow-tab:focus-visible,
+.routine-flow-pill:focus-visible,
+.routine-flow-action:focus-visible,
+.routine-flow-link:focus-visible,
+.routine-flow-result:focus-visible,
+.routine-flow-input:focus-visible,
+.routine-flow-select:focus-visible,
+.routine-flow-textarea:focus-visible {
+  outline: 2px solid oklch(0.42 0.17 40);
+  outline-offset: 2px;
+}
+
+.routine-flow-path-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.routine-flow-pill {
+  background: oklch(0.95 0.02 66);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-strong);
+  cursor: pointer;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  min-height: 2rem;
+  padding: 0.2rem 0.8rem;
+}
+
+.routine-flow-pill-active {
+  background: oklch(0.9 0.06 63);
+  border-color: oklch(0.83 0.09 50);
+}
+
+.routine-flow-visual-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1.2fr 0.8fr;
+  margin-top: 1rem;
+}
+
+.routine-flow-panel {
+  background: oklch(0.98 0.01 74 / 0.9);
+  border: 1px solid var(--line);
+  border-radius: 0.95rem;
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.routine-flow-panel h2 {
+  font-size: 1.2rem;
+}
+
+.routine-flow-panel h3 {
+  font-size: 1rem;
+  margin-top: 0.35rem;
+}
+
+.routine-flow-helper {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.routine-flow-status {
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  margin: 0;
+}
+
+.routine-flow-input,
+.routine-flow-select,
+.routine-flow-textarea {
+  background: oklch(0.99 0.01 76);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  color: var(--ink-strong);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.92rem;
+  margin-top: 0.35rem;
+  padding: 0.56rem 0.65rem;
+  width: 100%;
+}
+
+.routine-flow-textarea {
+  min-height: 16rem;
+  resize: vertical;
+}
+
+.routine-flow-results,
+.routine-flow-selection-list,
+.routine-flow-interval-list,
+.routine-flow-error ul {
+  display: grid;
+  gap: 0.52rem;
+  margin: 0;
+  padding: 0;
+}
+
+.routine-flow-results,
+.routine-flow-selection-list,
+.routine-flow-interval-list {
+  list-style: none;
+}
+
+.routine-flow-result {
+  background: oklch(0.97 0.02 67);
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  color: var(--ink-strong);
+  cursor: pointer;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  width: 100%;
+}
+
+.routine-flow-result small {
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+}
+
+.routine-flow-empty {
+  border: 1px dashed var(--line);
+  border-radius: 0.65rem;
+  color: var(--ink-muted);
+  margin: 0;
+  padding: 0.72rem 0.8rem;
+}
+
+.routine-flow-selection-list li,
+.routine-flow-interval-list li {
+  align-items: start;
+  background: oklch(0.96 0.02 68);
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  display: flex;
+  gap: 0.7rem;
+  justify-content: space-between;
+  padding: 0.65rem 0.7rem;
+}
+
+.routine-flow-selection-list li p {
+  color: var(--ink-strong);
+  font-weight: 700;
+  margin: 0;
+}
+
+.routine-flow-selection-list li small {
+  color: var(--ink-muted);
+}
+
+.routine-flow-link {
+  background: transparent;
+  border: 0;
+  color: var(--accent-deep);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0;
+}
+
+.routine-flow-action {
+  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
+  border: 0;
+  border-radius: 999px;
+  color: oklch(0.98 0.01 74);
+  cursor: pointer;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  justify-self: start;
+  min-height: 2.1rem;
+  padding: 0.3rem 0.9rem;
+}
+
+.routine-flow-interval-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.routine-flow-preview-panel {
+  align-content: start;
+}
+
+.routine-flow-dsl {
+  background: oklch(0.96 0.02 64);
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  font-size: 0.82rem;
+  margin: 0;
+  max-height: 28rem;
+  overflow: auto;
+  padding: 0.8rem;
+}
+
+.routine-flow-error {
+  background: oklch(0.95 0.06 34 / 0.42);
+  border: 1px solid oklch(0.77 0.12 30);
+  border-radius: 0.7rem;
+  color: oklch(0.39 0.14 28);
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.routine-flow-error h3 {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
 @media (max-width: 980px) {
   .auth-grid {
     grid-template-columns: 1fr;
@@ -1817,6 +2104,14 @@ h1 {
 
   .calendar-tooltip-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .routine-flow-visual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .routine-flow-interval-grid {
+    grid-template-columns: 1fr;
   }
 }
 
