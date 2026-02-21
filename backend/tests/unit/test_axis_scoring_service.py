@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from datetime import UTC, datetime
 
 from sportolo.api.schemas.axis_scoring import (
@@ -33,6 +34,14 @@ def _session(
     )
 
 
+def _expected_log_spike(*, raw_load: float, reference_load: float) -> float:
+    if raw_load <= 0:
+        return 1.0
+
+    normalized = min(1.0, math.log1p(raw_load) / math.log1p(reference_load))
+    return round(1.0 + (9.0 * normalized), 4)
+
+
 def test_compute_axis_series_maps_spikes_and_derives_recruitment() -> None:
     service = AxisScoringService()
     request = AxisSeriesRequest(
@@ -60,6 +69,44 @@ def test_compute_axis_series_maps_spikes_and_derives_recruitment() -> None:
     assert 1.0 <= spike.metabolic <= 10.0
     assert 1.0 <= spike.mechanical <= 10.0
     assert spike.recruitment == max(spike.neural, spike.mechanical)
+
+
+def test_axis_spike_scoring_uses_log_scale_reference_normalization() -> None:
+    service = AxisScoringService()
+    references = service._SPIKE_LOG_REFERENCE_LOADS
+    request = AxisSeriesRequest(
+        as_of=datetime(2026, 2, 20, 20, 0, tzinfo=UTC),
+        timezone="America/New_York",
+        lookback_days=2,
+        sessions=[
+            _session(
+                session_id="session-log-shape",
+                state="completed",
+                ended_at=datetime(2026, 2, 20, 12, 0, tzinfo=UTC),
+                neural=references["neural"] / 2,
+                metabolic=references["metabolic"] / 2,
+                mechanical=references["mechanical"] / 2,
+            )
+        ],
+    )
+
+    result = service.compute_axis_series(request)
+    spike = result.session_spikes[0]
+    assert spike.neural == _expected_log_spike(
+        raw_load=references["neural"] / 2,
+        reference_load=references["neural"],
+    )
+    assert spike.metabolic == _expected_log_spike(
+        raw_load=references["metabolic"] / 2,
+        reference_load=references["metabolic"],
+    )
+    assert spike.mechanical == _expected_log_spike(
+        raw_load=references["mechanical"] / 2,
+        reference_load=references["mechanical"],
+    )
+
+    for axis, reference_load in references.items():
+        assert service._score_spike(raw_load=reference_load, axis=axis) == 10.0
 
 
 def test_neural_decay_sleep_and_rest_triggers_reduce_carry() -> None:

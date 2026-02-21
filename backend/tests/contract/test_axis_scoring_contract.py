@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from copy import deepcopy
 
 from fastapi.testclient import TestClient
@@ -7,6 +8,9 @@ from fastapi.testclient import TestClient
 from sportolo.main import app
 
 ENDPOINT = "/v1/athletes/athlete-1/fatigue/axis-series"
+NEURAL_REFERENCE_LOAD = 40.0
+METABOLIC_REFERENCE_LOAD = 35.0
+MECHANICAL_REFERENCE_LOAD = 50.0
 
 
 def _payload() -> dict[str, object]:
@@ -50,6 +54,14 @@ def _payload() -> dict[str, object]:
     }
 
 
+def _expected_log_spike(*, raw_load: float, reference_load: float) -> float:
+    if raw_load <= 0:
+        return 1.0
+
+    normalized = min(1.0, math.log1p(raw_load) / math.log1p(reference_load))
+    return round(1.0 + (9.0 * normalized), 4)
+
+
 def test_axis_scoring_contract_response_shape_and_invariants() -> None:
     client = TestClient(app)
 
@@ -74,6 +86,64 @@ def test_axis_scoring_contract_response_shape_and_invariants() -> None:
         assert 1.0 <= day["metabolic"] <= 10.0
         assert 1.0 <= day["mechanical"] <= 10.0
         assert day["recruitment"] == max(day["neural"], day["mechanical"])
+
+
+def test_axis_scoring_contract_uses_log_spike_mapping() -> None:
+    client = TestClient(app)
+    payload = {
+        "asOf": "2026-02-20T23:00:00Z",
+        "timezone": "America/New_York",
+        "lookbackDays": 2,
+        "sleepEvents": [],
+        "sessions": [
+            {
+                "sessionId": "log-shape-check",
+                "state": "completed",
+                "endedAt": "2026-02-20T15:00:00Z",
+                "rawLoad": {
+                    "neural": NEURAL_REFERENCE_LOAD / 2,
+                    "metabolic": METABOLIC_REFERENCE_LOAD / 2,
+                    "mechanical": MECHANICAL_REFERENCE_LOAD / 2,
+                },
+            },
+            {
+                "sessionId": "reference-saturation-check",
+                "state": "completed",
+                "endedAt": "2026-02-20T16:00:00Z",
+                "rawLoad": {
+                    "neural": NEURAL_REFERENCE_LOAD,
+                    "metabolic": METABOLIC_REFERENCE_LOAD,
+                    "mechanical": MECHANICAL_REFERENCE_LOAD,
+                },
+            },
+        ],
+    }
+
+    response = client.post(ENDPOINT, json=payload)
+
+    assert response.status_code == 200
+    spikes = response.json()["sessionSpikes"]
+    half_load_spike = next(spike for spike in spikes if spike["sessionId"] == "log-shape-check")
+    reference_spike = next(
+        spike for spike in spikes if spike["sessionId"] == "reference-saturation-check"
+    )
+    assert half_load_spike["neural"] == _expected_log_spike(
+        raw_load=NEURAL_REFERENCE_LOAD / 2,
+        reference_load=NEURAL_REFERENCE_LOAD,
+    )
+    assert half_load_spike["metabolic"] == _expected_log_spike(
+        raw_load=METABOLIC_REFERENCE_LOAD / 2,
+        reference_load=METABOLIC_REFERENCE_LOAD,
+    )
+    assert half_load_spike["mechanical"] == _expected_log_spike(
+        raw_load=MECHANICAL_REFERENCE_LOAD / 2,
+        reference_load=MECHANICAL_REFERENCE_LOAD,
+    )
+
+    assert reference_spike["neural"] == 10.0
+    assert reference_spike["metabolic"] == 10.0
+    assert reference_spike["mechanical"] == 10.0
+    assert reference_spike["recruitment"] == 10.0
 
 
 def test_axis_scoring_contract_is_deterministic_for_identical_payloads() -> None:

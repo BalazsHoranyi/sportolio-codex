@@ -17,10 +17,10 @@ class AxisScoringService:
 
     _POLICY_VERSION = "v1-axis-decay"
 
-    _SPIKE_COEFFICIENTS = {
-        "neural": 0.085,
-        "metabolic": 0.1,
-        "mechanical": 0.07,
+    _SPIKE_LOG_REFERENCE_LOADS = {
+        "neural": 40.0,
+        "metabolic": 35.0,
+        "mechanical": 50.0,
     }
 
     _METABOLIC_DAILY_DECAY = 0.5
@@ -161,8 +161,9 @@ class AxisScoringService:
         if raw_load <= 0:
             return 1.0
 
-        coefficient = self._SPIKE_COEFFICIENTS[axis]
-        score = 1.0 + (9.0 * (1.0 - math.exp(-coefficient * raw_load)))
+        reference_load = self._SPIKE_LOG_REFERENCE_LOADS[axis]
+        normalized = min(1.0, math.log1p(raw_load) / math.log1p(reference_load))
+        score = 1.0 + (9.0 * normalized)
         return self._round(min(10.0, score))
 
     def _decay_neural(
