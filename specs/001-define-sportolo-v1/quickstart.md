@@ -117,6 +117,13 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
     - Include global and regional contributions in output payloads.
     - For unknown strength exercises or missing endurance zone metrics, return safe fallback values with explicit confidence/fallback metadata.
 
+16. **Axis scoring and decay engine workflows**
+    - Implement deterministic session spike scoring onto 1.0-10.0 bounded scale.
+    - Expose rolling axis output through `POST /v1/athletes/{athleteId}/fatigue/axis-series`.
+    - Neural decay must be stepwise and trigger-aware (sleep/rest context).
+    - Metabolic decay must clear faster than mechanical in daily carry behavior.
+    - Recruitment must be derived from neural/mechanical constraints with no independent decay stream.
+
 ## Testing (Failing-First)
 
 - Unit:
@@ -140,6 +147,7 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
   - muscle usage weighting and exercise->routine->microcycle rollup determinism,
   - deterministic progression-failure trigger evaluation and policy application rules.
   - exercise/zone mapping determinism and `HR -> power -> pace` inference precedence,
+  - axis-series spike scoring/decay determinism (neural stepwise, metabolic fast exponential, mechanical long-tail),
   - unknown mapping fallback confidence/metadata behavior for safe degradation.
 - Integration:
   - offline dual-client same-workout conflicts,
@@ -160,7 +168,7 @@ Deliver the clarified v1 API + responsive web scope with deterministic planning,
   - fallback dedup tolerance behavior is deterministic, and multi-candidate fallback enters pending resolution state until user resolves,
   - over-limit and timeout compile requests return deterministic validation errors.
 - Contract:
-  - OpenAPI conformance for compile/translate, prescription resolve/read, sync ingest/conflict resolution, session finalize, progression-failure outcome read, integration dedup resolution, check-in update, recalculation listing, adherence analytics reads, muscle-usage aggregation reads, exercise/zone axis-effect mapping reads, two-a-day warning/no-intra-day-decay fields, and invariant/no-randomness model-policy fields.
+  - OpenAPI conformance for compile/translate, prescription resolve/read, sync ingest/conflict resolution, session finalize, progression-failure outcome read, integration dedup resolution, check-in update, recalculation listing, adherence analytics reads, muscle-usage aggregation reads, exercise/zone axis-effect mapping reads, fatigue axis-series reads, two-a-day warning/no-intra-day-decay fields, and invariant/no-randomness model-policy fields.
 - Web:
   - success/loading/empty/error states,
   - responsive layouts for mobile/desktop web,

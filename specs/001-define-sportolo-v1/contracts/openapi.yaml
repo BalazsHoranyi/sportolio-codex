@@ -628,6 +628,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/FatigueSnapshot'
 
+  /v1/athletes/{athleteId}/fatigue/axis-series:
+    post:
+      tags: [Fatigue]
+      summary: Compute deterministic rolling axis spikes and daily decay series
+      operationId: computeAxisSeries
+      parameters:
+        - $ref: '#/components/parameters/AthleteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AxisSeriesRequest'
+      responses:
+        '200':
+          description: Rolling axis scoring and decay series
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AxisSeriesResponse'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
   /v1/athletes/{athleteId}/fatigue/model-policy:
     get:
       tags: [Fatigue]
@@ -2239,6 +2266,132 @@ components:
         latestComputedVersion:
           type: integer
           nullable: true
+
+    AxisRawLoad:
+      type: object
+      required: [neural, metabolic, mechanical]
+      properties:
+        neural:
+          type: number
+          minimum: 0
+        metabolic:
+          type: number
+          minimum: 0
+        mechanical:
+          type: number
+          minimum: 0
+
+    AxisSessionInput:
+      type: object
+      required: [sessionId, state, rawLoad]
+      properties:
+        sessionId:
+          type: string
+        state:
+          type: string
+          enum: [planned, in_progress, completed, partial, abandoned]
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        rawLoad:
+          $ref: '#/components/schemas/AxisRawLoad'
+
+    SleepEventInput:
+      type: object
+      required: [sleepEndedAt]
+      properties:
+        sleepEndedAt:
+          type: string
+          format: date-time
+
+    AxisSeriesRequest:
+      type: object
+      required: [asOf, timezone]
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          description: Valid IANA timezone name.
+        lookbackDays:
+          type: integer
+          minimum: 1
+          maximum: 30
+          default: 7
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AxisSessionInput'
+        sleepEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SleepEventInput'
+
+    AxisSessionSpike:
+      type: object
+      required: [sessionId, endedAt, localDate, neural, metabolic, mechanical, recruitment]
+      properties:
+        sessionId:
+          type: string
+        endedAt:
+          type: string
+          format: date-time
+        localDate:
+          type: string
+          format: date
+        neural:
+          type: number
+        metabolic:
+          type: number
+        mechanical:
+          type: number
+        recruitment:
+          type: number
+          description: Derived value computed as max(neural, mechanical); no independent decay stream.
+
+    AxisDailyScore:
+      type: object
+      required: [date, neural, metabolic, mechanical, recruitment, sleepEventApplied, restDay]
+      properties:
+        date:
+          type: string
+          format: date
+        neural:
+          type: number
+        metabolic:
+          type: number
+        mechanical:
+          type: number
+        recruitment:
+          type: number
+        sleepEventApplied:
+          type: boolean
+        restDay:
+          type: boolean
+
+    AxisSeriesResponse:
+      type: object
+      required: [asOf, timezone, lookbackDays, policyVersion, sessionSpikes, dailySeries]
+      properties:
+        asOf:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        lookbackDays:
+          type: integer
+        policyVersion:
+          type: string
+        sessionSpikes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AxisSessionSpike'
+        dailySeries:
+          type: array
+          items:
+            $ref: '#/components/schemas/AxisDailyScore'
 
     FatigueSnapshot:
       type: object
