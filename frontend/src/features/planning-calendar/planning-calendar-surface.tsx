@@ -77,6 +77,14 @@ function nowIsoTimestamp(): string {
   return new Date().toISOString();
 }
 
+function isCompactCalendarViewport(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.innerWidth <= 768;
+}
+
 function normalizeCalendarDate(value: string): string | undefined {
   if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
     return value.slice(0, 10);
@@ -94,6 +102,9 @@ export function PlanningCalendarSurface({
   initialState,
   onMutation,
 }: PlanningCalendarSurfaceProps) {
+  const [isCompactViewport, setIsCompactViewport] = useState<boolean>(() =>
+    isCompactCalendarViewport(),
+  );
   const [planningState, setPlanningState] = useState<PlanningCalendarState>(
     initialState ?? createInitialPlanningCalendarState(),
   );
@@ -112,6 +123,17 @@ export function PlanningCalendarSurface({
   const mutationCounterRef = useRef(0);
   const addedWorkoutCounterRef = useRef(0);
   const draggingWorkoutIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const onResize = () => {
+      setIsCompactViewport(isCompactCalendarViewport());
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
 
   useEffect(() => {
     setKeyboardMoveTargets((previous) => {
@@ -370,6 +392,9 @@ export function PlanningCalendarSurface({
   const keyboardAddLabel = `Add recovery ride to ${formatLongDateLabel(
     keyboardAddTargetDate,
   )}`;
+  const defaultCalendarView = isCompactViewport
+    ? "dayGridMonth"
+    : "timeGridWeek";
 
   return (
     <section
@@ -424,13 +449,24 @@ export function PlanningCalendarSurface({
         </aside>
 
         <div className="planning-calendar-main">
+          <div
+            ref={removeDropZoneRef}
+            className="planning-remove-zone"
+            aria-label="Workout remove zone"
+          >
+            Drop here to remove workout
+          </div>
+
           <FullCalendar
+            key={defaultCalendarView}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="timeGridWeek"
+            initialView={defaultCalendarView}
             headerToolbar={{
               left: "prev,next today",
               center: "title",
-              right: "timeGridWeek,dayGridMonth",
+              right: isCompactViewport
+                ? "dayGridMonth,timeGridWeek"
+                : "timeGridWeek,dayGridMonth",
             }}
             editable
             eventStartEditable
@@ -443,14 +479,6 @@ export function PlanningCalendarSurface({
             eventDragStart={handleEventDragStart}
             eventDragStop={handleEventDragStop}
           />
-
-          <div
-            ref={removeDropZoneRef}
-            className="planning-remove-zone"
-            aria-label="Workout remove zone"
-          >
-            Drop here to remove workout
-          </div>
         </div>
       </div>
 

@@ -40,6 +40,9 @@ export default async function CalendarPage({
 
   return (
     <main className="calendar-page" id="main-content">
+      <a className="skip-link" href="#calendar-main">
+        Skip to Main Content
+      </a>
       <div className="auth-banner" role="status" aria-live="polite">
         <p>Authenticated session active</p>
         <div className="today-nav-actions">
@@ -62,9 +65,6 @@ export default async function CalendarPage({
           </form>
         </div>
       </div>
-      <a className="skip-link" href="#calendar-main">
-        Skip to Main Content
-      </a>
 
       <section
         className="calendar-header"

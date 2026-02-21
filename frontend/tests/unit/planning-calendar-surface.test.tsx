@@ -143,4 +143,38 @@ describe("PlanningCalendarSurface", () => {
       }),
     ).toBeTruthy();
   });
+
+  it("defaults to month view on narrow viewports for mobile readability", () => {
+    const originalWidth = window.innerWidth;
+    try {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: 390,
+        writable: true,
+      });
+
+      render(<PlanningCalendarSurface />);
+
+      expect(fullCalendarPropsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          initialView: "dayGridMonth",
+        }),
+      );
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: originalWidth,
+        writable: true,
+      });
+    }
+  });
+
+  it("renders remove zone before calendar so drag-remove target stays visible", () => {
+    const { container } = render(<PlanningCalendarSurface />);
+
+    const calendarMain = container.querySelector(".planning-calendar-main");
+    expect(calendarMain).toBeTruthy();
+    const firstElement = calendarMain?.firstElementChild;
+    expect(firstElement?.className).toContain("planning-remove-zone");
+  });
 });
