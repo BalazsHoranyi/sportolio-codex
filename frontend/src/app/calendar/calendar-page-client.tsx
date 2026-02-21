@@ -30,46 +30,7 @@ export function CalendarPageClient({
   }, []);
 
   return (
-    <main className="calendar-page" id="main-content">
-      <a className="skip-link" href="#calendar-main">
-        Skip to Main Content
-      </a>
-      <div className="auth-banner" role="status" aria-live="polite">
-        <p>Authenticated session active</p>
-        <div className="today-nav-actions">
-          <a className="button button-secondary" href="/">
-            Home
-          </a>
-          <a className="button button-secondary" href="/planner">
-            Planner
-          </a>
-          <a className="button button-secondary" href="/routine">
-            Routine
-          </a>
-          <a className="button button-secondary" href="/today">
-            Today
-          </a>
-          <form action="/api/auth/logout?redirect=/login" method="post">
-            <button className="button button-secondary" type="submit">
-              Logout
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <section
-        className="calendar-header"
-        id="calendar-main"
-        aria-labelledby="calendar-title"
-      >
-        <p className="eyebrow">Calendar</p>
-        <h1 id="calendar-title">Weekly audit</h1>
-        <p>
-          7-day fatigue trade-off review for neural, metabolic, and mechanical
-          load.
-        </p>
-      </section>
-
+    <>
       <p className="calendar-recompute-summary" aria-live="polite">
         Audit recompute events applied: {mutations.length}
       </p>
@@ -102,6 +63,6 @@ export function CalendarPageClient({
           </div>
         </section>
       ) : null}
-    </main>
+    </>
   );
 }

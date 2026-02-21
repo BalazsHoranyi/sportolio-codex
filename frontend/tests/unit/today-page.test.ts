@@ -14,7 +14,7 @@ vi.mock("../../src/features/today/api", () => ({
 import TodayPage from "../../src/app/today/page";
 
 describe("TodayPage", () => {
-  it("renders today dashboard sections when snapshot data loads", async () => {
+  it("renders today dashboard inside the shared authenticated shell", async () => {
     loadTodaySnapshotMock.mockResolvedValueOnce({
       asOf: "2026-02-20T15:00:00Z",
       boundary: {
@@ -63,12 +63,13 @@ describe("TodayPage", () => {
 
     const html = renderToStaticMarkup(await TodayPage());
 
+    expect(html).toContain("Today");
+    expect(html).toContain("Daily readiness and execution context.");
     expect(html).toContain("Today fatigue snapshot");
     expect(html).toContain("Combined fatigue score");
     expect(html).toContain("System capacity");
-    expect(html).toContain("Why this today");
-    expect(html).toContain('href="/planner"');
-    expect(html).toContain("completed-before-boundary");
+    expect(html).toContain('aria-current="page"');
+    expect(html.match(/<h1\b/g)?.length).toBe(1);
   });
 
   it("falls back to deterministic sample data when API loader returns undefined", async () => {

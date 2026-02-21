@@ -1,12 +1,14 @@
 # UI Browser Verification
 
 - Date: February 21, 2026
-- Routes: `/login?next=/planner`, `/planner`
+- Ticket: `SPRT-73`
+- Routes: `/`, `/today`, `/calendar`, `/planner`, `/routine`, `/analytics`, `/settings`
 - Browser tooling: `agent-browser` + `chrome-devtools-mcp`
 - Devices: Desktop (1440px), Mobile (390px / iPhone 14)
 
 ## Evidence Artifacts
 
+- Baseline release artifacts (required by verification gate):
 - home-desktop-after.png
 - home-mobile-after.png
 - persona-diego-desktop.png
@@ -22,18 +24,50 @@
 - persona-priya-desktop.png
 - persona-priya-mobile.png
 
+- SPRT-73 route validation (`chrome-devtools-mcp`):
+- sprt73-devtools-home-desktop.png
+- sprt73-devtools-home-mobile.png
+- sprt73-devtools-today-desktop.png
+- sprt73-devtools-today-mobile.png
+- sprt73-devtools-calendar-desktop.png
+- sprt73-devtools-calendar-mobile.png
+- sprt73-devtools-planner-desktop.png
+- sprt73-devtools-planner-mobile.png
+- sprt73-devtools-routine-desktop.png
+- sprt73-devtools-routine-mobile.png
+- sprt73-devtools-analytics-desktop.png
+- sprt73-devtools-analytics-mobile.png
+- sprt73-devtools-settings-desktop.png
+- sprt73-devtools-settings-mobile.png
+
+- SPRT-73 persona validation (`agent-browser`):
+- sprt73-persona-diego-desktop.png
+- sprt73-persona-diego-mobile.png
+- sprt73-persona-evan-desktop.png
+- sprt73-persona-evan-mobile.png
+- sprt73-persona-hybrid-desktop.png
+- sprt73-persona-hybrid-mobile.png
+- sprt73-persona-lena-desktop.png
+- sprt73-persona-lena-mobile.png
+- sprt73-persona-nora-desktop.png
+- sprt73-persona-nora-mobile.png
+- sprt73-persona-priya-desktop.png
+- sprt73-persona-priya-mobile.png
+
 ## Persona Coverage
 
-- Diego (competitive triathlete): completed planner flow to review and validated microcycle muscle-map summary, drill-down links, and deterministic total usage visibility on desktop/mobile.
-- Evan (powerlifter with minimal cardio): validated review summary emphasizes strength-oriented workout contribution and preserves non-blocking advisory messaging on desktop/mobile.
-- Hybrid athlete (600lb DL + 4 W/kg target): confirmed review includes muscle-map + routine/exercise contribution drill-down for high-signal hybrid session wording on desktop/mobile.
-- Lena (busy hybrid generalist): validated review summary remains readable and actionable with minimal setup and simple workout labels on desktop/mobile.
-- Nora (masters endurance + longevity strength): verified review step surfaces clear contribution context and no-block overlap messaging for recovery-aware planning on desktop/mobile.
-- Priya (marathoner adding strength): validated planner review provides explicit routine/exercise drill-down context for runner-strength durability session planning on desktop/mobile.
+- Diego (competitive triathlete): logged in and verified shared shell + active nav state across focused pages on desktop/mobile.
+- Evan (powerlifter with minimal cardio): validated navigation consistency and single-purpose page copy on desktop/mobile.
+- Hybrid athlete (600lb DL + 4 W/kg target): confirmed top-level route transitions remain clear and deterministic on desktop/mobile.
+- Lena (busy hybrid generalist): validated mobile navigation usability and page-purpose clarity without mixed concerns.
+- Nora (masters endurance + longevity strength): verified route purpose copy and shell consistency on desktop/mobile.
+- Priya (marathoner adding strength): validated auth-to-today entry and consistent nav affordances across screens on desktop/mobile.
 
 ## Result
 
-- `/planner` review now exposes deterministic microcycle muscle-map summary and total usage.
-- Drill-down links from the summary jump directly to routine and exercise contribution sections.
-- High-overlap handling remains visual/advisory only and does not block progression or publish actions.
+- Navbar is visible and consistent across authenticated routes in scope.
+- Top-level nav routes correctly and active state is rendered on desktop and mobile patterns.
+- `/today` remains focused on daily readiness/execution context.
+- `/calendar` remains focused on schedule/audit timeline context.
+- `/planner`, `/routine`, `/analytics`, and `/settings` remain single-purpose with clear title/supporting copy.
 - Browser checks using `agent-browser` and `chrome-devtools-mcp` passed for all personas in `user_profiles` across desktop and mobile.

@@ -1,6 +1,7 @@
 import React from "react";
 
 import { CalendarPageClient } from "./calendar-page-client";
+import { AuthenticatedAppShell } from "../../components/navigation/authenticated-app-shell";
 import { loadWeeklyAuditResponse } from "../../features/calendar-audit/api";
 import { weeklyAuditResponseSample } from "../../features/calendar-audit/sample-data";
 import {
@@ -38,6 +39,15 @@ export default async function CalendarPage({
   const weeklyAudit = loadedWeeklyAudit ?? weeklyAuditResponseSample;
 
   return (
-    <CalendarPageClient weeklyAudit={weeklyAudit} sessionFocus={sessionFocus} />
+    <AuthenticatedAppShell
+      activeItem="calendar"
+      title="Calendar"
+      description="Schedule and audit timeline context."
+    >
+      <CalendarPageClient
+        weeklyAudit={weeklyAudit}
+        sessionFocus={sessionFocus}
+      />
+    </AuthenticatedAppShell>
   );
 }

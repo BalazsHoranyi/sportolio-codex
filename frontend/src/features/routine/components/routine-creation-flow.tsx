@@ -993,7 +993,7 @@ export function RoutineCreationFlow() {
     >
       <header className="routine-flow-header">
         <p className="eyebrow">Planning</p>
-        <h1 id="routine-flow-title">Routine creation flow</h1>
+        <h2 id="routine-flow-title">Routine creation flow</h2>
         <p className="routine-flow-copy">
           Build routines in visual mode for speed, then fine-tune with DSL when
           you need precise control.

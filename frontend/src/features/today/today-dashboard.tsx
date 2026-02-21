@@ -21,7 +21,7 @@ export function TodayDashboard({
     <section className="today-shell" aria-label="Today fatigue dashboard">
       <header className="today-header">
         <p className="eyebrow">Today</p>
-        <h1>Today fatigue snapshot</h1>
+        <h2>Today fatigue snapshot</h2>
         <p>Completed-only carryover from the current boundary window.</p>
       </header>
 
