@@ -83,6 +83,25 @@ vi.mock(
         >
           Emit no-op mutation
         </button>
+        <button
+          type="button"
+          onClick={() =>
+            onMutation?.({
+              mutationId: "mutation-test-out-of-window-1",
+              type: "workout_moved",
+              workoutId: "workout-strength-a",
+              title: "Heavy lower",
+              fromDate: "2026-03-01",
+              toDate: "2026-03-02",
+              source: "drag_drop",
+              occurredAt: "2026-02-21T09:03:00.000Z",
+              workoutType: "strength",
+              intensity: "hard",
+            })
+          }
+        >
+          Emit out-of-window mutation
+        </button>
       </>
     ),
   }),
@@ -170,6 +189,29 @@ describe("CalendarPageClient integration", () => {
     );
 
     expect(screen.queryByText(/calendar recompute warning/i)).toBeNull();
+    expect(screen.getByTestId("weekly-audit-neural-feb17").textContent).toBe(
+      before,
+    );
+    expect(screen.getByText(/Audit recompute events applied: 0/i)).toBeTruthy();
+  });
+
+  it("surfaces a warning and preserves chart values when move dates are outside loaded week points", async () => {
+    const user = userEvent.setup();
+
+    render(<CalendarPageClient weeklyAudit={weeklyAuditResponseSample} />);
+
+    const before = screen.getByTestId("weekly-audit-neural-feb17").textContent;
+    expect(before).toBe("7.40");
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /emit out-of-window mutation/i,
+      }),
+    );
+
+    expect(
+      screen.getByText(/outside the loaded weekly audit window/i),
+    ).toBeTruthy();
     expect(screen.getByTestId("weekly-audit-neural-feb17").textContent).toBe(
       before,
     );

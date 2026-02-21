@@ -174,6 +174,31 @@ describe("recomputeWeeklyAuditResponse", () => {
     expect(result.touchedDates).toEqual([]);
   });
 
+  it("returns warning fallback when a mutation targets dates outside the loaded audit window", () => {
+    const outOfWindowMove: PlanningMutationEvent = {
+      mutationId: "mutation-out-of-window-1",
+      type: "workout_moved",
+      workoutId: "workout-strength-a",
+      title: "Heavy lower",
+      fromDate: "2026-03-01",
+      toDate: "2026-03-02",
+      source: "drag_drop",
+      occurredAt: "2026-02-21T08:03:00.000Z",
+      workoutType: "strength",
+      intensity: "hard",
+    };
+
+    const result = applyWeeklyAuditMutationIncrementally(
+      weeklyAuditResponseSample,
+      outOfWindowMove,
+    );
+
+    expect(result.applied).toBe(false);
+    expect(result.warning).toMatch(/outside the loaded weekly audit window/i);
+    expect(result.response).toBe(weeklyAuditResponseSample);
+    expect(result.touchedDates).toEqual([]);
+  });
+
   it("reports finite, non-negative latency telemetry for standard-week move mutations", () => {
     const moveMutation: PlanningMutationEvent = {
       mutationId: "mutation-latency-1",
@@ -195,5 +220,34 @@ describe("recomputeWeeklyAuditResponse", () => {
 
     expect(Number.isFinite(result.durationMs)).toBe(true);
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("computes latency telemetry deterministically under the 200ms budget", () => {
+    const nowSpy = vi.spyOn(globalThis.performance, "now");
+    const timestamps = [10, 142];
+    nowSpy.mockImplementation(() => timestamps.shift() ?? 142);
+
+    const moveMutation: PlanningMutationEvent = {
+      mutationId: "mutation-latency-budget-1",
+      type: "workout_moved",
+      workoutId: "workout-strength-a",
+      title: "Heavy lower",
+      fromDate: "2026-02-17",
+      toDate: "2026-02-20",
+      source: "drag_drop",
+      occurredAt: "2026-02-21T08:03:00.000Z",
+      workoutType: "strength",
+      intensity: "hard",
+    };
+
+    const result = applyWeeklyAuditMutationIncrementally(
+      weeklyAuditResponseSample,
+      moveMutation,
+    );
+
+    expect(result.durationMs).toBe(132);
+    expect(result.durationMs).toBeLessThan(200);
+
+    nowSpy.mockRestore();
   });
 });

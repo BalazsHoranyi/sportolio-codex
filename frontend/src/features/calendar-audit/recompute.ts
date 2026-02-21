@@ -320,10 +320,15 @@ export function applyWeeklyAuditMutationIncrementally(
   }
 
   if (!nextPoints || touchedDates.size === 0) {
+    const attemptedDates = operations.map((operation) => operation.date);
+
     return toResult({
       startedAtMs,
       response,
       applied: false,
+      warning: `Calendar recompute could not be applied for dates outside the loaded weekly audit window: ${attemptedDates.join(
+        ", ",
+      )}.`,
     });
   }
 
