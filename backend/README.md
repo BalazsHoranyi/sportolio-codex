@@ -99,6 +99,7 @@ Push behavior:
 - Requires `idempotencyKey`, `plannedWorkoutId`, trainer metadata, and structured steps.
 - Returns deterministic `externalWorkoutId` mapping for accepted pushes.
 - Trainer IDs that begin with `offline` or `fail` return deterministic failed push status (`trainer_unreachable`) without creating side effects.
+- Non-Wahoo trainer IDs return deterministic failed push status (`unsupported_trainer`) without creating side effects.
 - Reusing the same `idempotencyKey` with the same payload replays the original response.
 - Reusing the same `idempotencyKey` with a different payload is rejected as validation failure.
 
@@ -110,4 +111,5 @@ Sync behavior:
 - Emits deterministic pipeline dispatch metadata for new imports:
   - `fatigue`
   - `analytics`
+- Enqueues each new dispatch through the integration dispatch sink so fatigue/analytics pipelines can process imports.
 - Sync retries with the same `idempotencyKey` replay the exact prior response and do not duplicate dispatch side effects.

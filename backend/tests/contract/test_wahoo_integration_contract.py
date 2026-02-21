@@ -72,6 +72,14 @@ def test_wahoo_push_contract_supports_success_and_failure_paths() -> None:
             trainer_id="offline-kickr",
         ),
     )
+    unsupported = client.post(
+        PUSH_ENDPOINT,
+        json=_push_payload(
+            idempotency_key="contract-push-3",
+            planned_workout_id="planned-c",
+            trainer_id="garmin-edge-1040",
+        ),
+    )
 
     assert success.status_code == 200
     assert success.json()["status"] == "accepted"
@@ -82,6 +90,53 @@ def test_wahoo_push_contract_supports_success_and_failure_paths() -> None:
     assert failure.json()["status"] == "failed"
     assert failure.json()["externalWorkoutId"] is None
     assert failure.json()["failureReason"] == "trainer_unreachable"
+
+    assert unsupported.status_code == 200
+    assert unsupported.json()["status"] == "failed"
+    assert unsupported.json()["externalWorkoutId"] is None
+    assert unsupported.json()["failureReason"] == "unsupported_trainer"
+
+
+def test_wahoo_contract_rejects_idempotency_payload_drift_with_validation_error() -> None:
+    client = TestClient(app)
+    first_push = client.post(
+        PUSH_ENDPOINT,
+        json=_push_payload(
+            idempotency_key="contract-push-drift",
+            planned_workout_id="planned-a",
+        ),
+    )
+    drifted_push = client.post(
+        PUSH_ENDPOINT,
+        json=_push_payload(
+            idempotency_key="contract-push-drift",
+            planned_workout_id="planned-b",
+        ),
+    )
+    first_sync = client.post(
+        SYNC_ENDPOINT,
+        json={
+            "idempotencyKey": "contract-sync-drift",
+            "startedAfter": "2026-02-21T00:00:00+00:00",
+        },
+    )
+    drifted_sync = client.post(
+        SYNC_ENDPOINT,
+        json={
+            "idempotencyKey": "contract-sync-drift",
+            "startedAfter": "2026-02-22T00:00:00+00:00",
+        },
+    )
+
+    assert first_push.status_code == 200
+    assert drifted_push.status_code == 422
+    assert drifted_push.json()["code"] == "DSL_VALIDATION_ERROR"
+    assert "idempotency" in drifted_push.json()["message"]
+
+    assert first_sync.status_code == 200
+    assert drifted_sync.status_code == 422
+    assert drifted_sync.json()["code"] == "DSL_VALIDATION_ERROR"
+    assert "idempotency" in drifted_sync.json()["message"]
 
 
 def test_wahoo_sync_contract_reconciles_history_and_is_idempotent() -> None:

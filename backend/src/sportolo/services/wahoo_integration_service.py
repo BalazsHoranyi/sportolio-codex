@@ -4,6 +4,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Protocol
 
 from pydantic import BaseModel
 
@@ -52,17 +53,38 @@ class _StoredActivity:
     duration_seconds: int
 
 
+class PipelineDispatchSink(Protocol):
+    def enqueue(self, athlete_id: str, dispatch: PipelineDispatch) -> None: ...
+
+
+class InMemoryPipelineDispatchSink:
+    def __init__(self) -> None:
+        self._dispatch_log_by_athlete: dict[str, list[PipelineDispatch]] = {}
+
+    def enqueue(self, athlete_id: str, dispatch: PipelineDispatch) -> None:
+        self._dispatch_log_by_athlete.setdefault(athlete_id, []).append(
+            dispatch.model_copy(deep=True)
+        )
+
+    def reset(self) -> None:
+        self._dispatch_log_by_athlete = {}
+
+
 class WahooIntegrationService:
     _DEFAULT_HISTORY_START = datetime(2026, 1, 1, tzinfo=UTC)
+    _WAHOO_TRAINER_PREFIXES = ("wahoo", "kickr", "elemnt", "bolt", "roam")
 
-    def __init__(self) -> None:
+    def __init__(self, dispatch_sink: PipelineDispatchSink | None = None) -> None:
+        self._dispatch_sink = dispatch_sink or InMemoryPipelineDispatchSink()
+        self._reset_state()
+
+    def _reset_state(self) -> None:
         self._push_replays: dict[tuple[str, str], _PushReplay] = {}
         self._sync_replays: dict[tuple[str, str], _SyncReplay] = {}
         self._planned_to_external: dict[tuple[str, str], str] = {}
         self._external_to_planned: dict[tuple[str, str], str] = {}
         self._provider_history_by_athlete: dict[str, list[_ProviderHistoryRecord]] = {}
         self._activity_by_key: dict[tuple[str, str], _StoredActivity] = {}
-        self._dispatch_log_by_athlete: dict[str, list[PipelineDispatch]] = {}
 
         self._push_counter = 0
         self._sync_counter = 0
@@ -72,7 +94,9 @@ class WahooIntegrationService:
         self._dispatch_counter = 0
 
     def reset_for_testing(self) -> None:
-        self.__init__()
+        self._reset_state()
+        if isinstance(self._dispatch_sink, InMemoryPipelineDispatchSink):
+            self._dispatch_sink.reset()
 
     def push_workout(
         self,
@@ -94,7 +118,8 @@ class WahooIntegrationService:
         total_duration_seconds = sum(step.duration_seconds for step in request.steps)
         received_at = datetime.now(tz=UTC)
 
-        if self._trainer_unreachable(request.trainer_id):
+        failure_reason = self._push_failure_reason(request.trainer_id)
+        if failure_reason is not None:
             response = WahooWorkoutPushResponse(
                 push_id=push_id,
                 status="failed",
@@ -104,7 +129,7 @@ class WahooIntegrationService:
                 step_count=len(request.steps),
                 total_duration_seconds=total_duration_seconds,
                 received_at=received_at,
-                failure_reason="trainer_unreachable",
+                failure_reason=failure_reason,
             )
             self._push_replays[replay_key] = _PushReplay(
                 fingerprint=request_fingerprint,
@@ -315,13 +340,17 @@ class WahooIntegrationService:
                 status="queued",
             )
             dispatches.append(dispatch)
-            self._dispatch_log_by_athlete.setdefault(athlete_id, []).append(dispatch)
+            self._dispatch_sink.enqueue(athlete_id, dispatch)
         return dispatches
 
     @staticmethod
-    def _trainer_unreachable(trainer_id: str) -> bool:
+    def _push_failure_reason(trainer_id: str) -> str | None:
         normalized = trainer_id.strip().lower()
-        return normalized.startswith("offline") or normalized.startswith("fail")
+        if normalized.startswith("offline") or normalized.startswith("fail"):
+            return "trainer_unreachable"
+        if not normalized.startswith(WahooIntegrationService._WAHOO_TRAINER_PREFIXES):
+            return "unsupported_trainer"
+        return None
 
     @staticmethod
     def _deterministic_external_workout_id(

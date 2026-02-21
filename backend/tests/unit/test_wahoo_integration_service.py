@@ -5,11 +5,20 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from sportolo.api.schemas.wahoo_integration import (
+    PipelineDispatch,
     WahooExecutionHistorySyncRequest,
     WahooWorkoutPushRequest,
     WahooWorkoutStep,
 )
 from sportolo.services.wahoo_integration_service import WahooIntegrationService
+
+
+class _RecordingDispatchSink:
+    def __init__(self) -> None:
+        self.enqueued: list[tuple[str, PipelineDispatch]] = []
+
+    def enqueue(self, athlete_id: str, dispatch: PipelineDispatch) -> None:
+        self.enqueued.append((athlete_id, dispatch.model_copy(deep=True)))
 
 
 def _push_request(
@@ -103,8 +112,34 @@ def test_push_workout_failure_for_unreachable_trainer_is_non_destructive() -> No
     assert sync_response.pipeline_dispatches == []
 
 
-def test_sync_execution_history_reconciles_links_and_dispatches_pipelines() -> None:
+def test_push_workout_failure_for_unsupported_trainer_is_non_destructive() -> None:
     service = WahooIntegrationService()
+    failed_push = service.push_workout(
+        "athlete-1",
+        _push_request(
+            idempotency_key="push-key-unsupported",
+            planned_workout_id="planned-unsupported",
+            trainer_id="garmin-edge-540",
+        ),
+    )
+
+    assert failed_push.status == "failed"
+    assert failed_push.external_workout_id is None
+    assert failed_push.failure_reason == "unsupported_trainer"
+
+    sync_response = service.sync_execution_history(
+        "athlete-1",
+        WahooExecutionHistorySyncRequest(idempotency_key="sync-after-unsupported"),
+    )
+
+    assert sync_response.imported_count == 0
+    assert sync_response.entries == []
+    assert sync_response.pipeline_dispatches == []
+
+
+def test_sync_execution_history_reconciles_links_and_dispatches_pipelines() -> None:
+    sink = _RecordingDispatchSink()
+    service = WahooIntegrationService(dispatch_sink=sink)
     start_a = datetime(2026, 2, 21, 6, 0, tzinfo=UTC)
     start_b = start_a + timedelta(days=1)
 
@@ -146,6 +181,13 @@ def test_sync_execution_history_reconciles_links_and_dispatches_pipelines() -> N
         "fatigue",
         "analytics",
     }
+    assert [athlete for athlete, _ in sink.enqueued] == [
+        "athlete-1",
+        "athlete-1",
+        "athlete-1",
+        "athlete-1",
+    ]
+    assert [dispatch for _, dispatch in sink.enqueued] == first_sync.pipeline_dispatches
 
     replay = service.sync_execution_history(
         "athlete-1",
