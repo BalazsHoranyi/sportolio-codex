@@ -2403,6 +2403,63 @@ h1 {
   margin: 0;
 }
 
+.planner-template-panel,
+.planner-template-timeline {
+  background: oklch(0.965 0.018 67 / 0.94);
+  border: 1px solid oklch(0.88 0.02 62);
+  border-radius: 0.74rem;
+  display: grid;
+  gap: 0.58rem;
+  padding: 0.72rem 0.78rem;
+}
+
+.planner-template-header {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.planner-template-header h3 {
+  margin: 0;
+}
+
+.planner-template-controls {
+  align-items: end;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.planner-template-controls .planner-flow-action {
+  min-width: 9.25rem;
+}
+
+.planner-template-timeline-list {
+  display: grid;
+  gap: 0.42rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.planner-template-timeline-list li {
+  background: oklch(0.98 0.012 75);
+  border: 1px solid oklch(0.89 0.016 62);
+  border-radius: 0.6rem;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.5rem 0.56rem;
+}
+
+.planner-template-timeline-list li strong {
+  color: var(--ink-strong);
+  font-size: 0.84rem;
+}
+
+.planner-template-timeline-list li small {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
 .planner-flow-grid {
   display: grid;
   gap: 0.65rem;
@@ -3235,6 +3292,15 @@ h1 {
 
   .planner-flow-grid-two {
     grid-template-columns: 1fr;
+  }
+
+  .planner-template-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-template-controls .planner-flow-action {
+    min-width: 0;
+    width: 100%;
   }
 
   .planner-review-grid {

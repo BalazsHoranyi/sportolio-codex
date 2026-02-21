@@ -5,6 +5,12 @@ import Body from "react-muscle-highlighter";
 
 import { evaluatePlannerAdvisories } from "../advisory";
 import {
+  applyMacroTemplate,
+  buildMacroTimelinePreview,
+  getMacroTemplates,
+  type PlannerMacroTemplateId,
+} from "../macro-templates";
+import {
   buildMicrocycleReflowProjection,
   deriveMesocycleStrategySet,
   type MesocycleStrategyResult,
@@ -54,6 +60,9 @@ const plannerReviewMapColors = [
   "#d96c2a",
   "#8f3608",
 ] as const;
+const macroTemplateProfiles = getMacroTemplates();
+const defaultMacroTemplateId: PlannerMacroTemplateId =
+  macroTemplateProfiles[0]?.id ?? "powerlifting_5k";
 
 function formatToken(value: string): string {
   return value
@@ -270,10 +279,31 @@ export function CycleCreationFlow() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] =
+    useState<PlannerMacroTemplateId>(defaultMacroTemplateId);
+  const [autoSyncTimeline, setAutoSyncTimeline] = useState(false);
 
   const currentStep = stepSequence[currentStepIndex]?.key ?? "macro";
+  const selectedTemplate =
+    macroTemplateProfiles.find(
+      (template) => template.id === selectedTemplateId,
+    ) ?? macroTemplateProfiles[0];
 
   const advisories = useMemo(() => evaluatePlannerAdvisories(draft), [draft]);
+  const macroTimelinePreview = useMemo(
+    () =>
+      buildMacroTimelinePreview(draft, {
+        leadWeeks: selectedTemplate?.leadWeeks,
+        cooldownWeeks: selectedTemplate?.cooldownWeeks,
+        minimumWeeks: selectedTemplate?.minimumWeeks,
+      }),
+    [
+      draft,
+      selectedTemplate?.cooldownWeeks,
+      selectedTemplate?.leadWeeks,
+      selectedTemplate?.minimumWeeks,
+    ],
+  );
   const strategyResults = useMemo(
     () => deriveMesocycleStrategySet(draft.mesocycles),
     [draft.mesocycles],
@@ -304,6 +334,31 @@ export function CycleCreationFlow() {
     setStatusMessage("Restored saved draft.");
   }, []);
 
+  useEffect(() => {
+    if (!autoSyncTimeline) {
+      return;
+    }
+
+    setDraft((previous) => {
+      if (
+        previous.startDate === macroTimelinePreview.suggestedStartDate &&
+        previous.endDate === macroTimelinePreview.suggestedEndDate
+      ) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        startDate: macroTimelinePreview.suggestedStartDate,
+        endDate: macroTimelinePreview.suggestedEndDate,
+      };
+    });
+  }, [
+    autoSyncTimeline,
+    macroTimelinePreview.suggestedEndDate,
+    macroTimelinePreview.suggestedStartDate,
+  ]);
+
   function updateDraft(update: (previous: PlannerDraft) => PlannerDraft) {
     setDraft((previous) => update(previous));
   }
@@ -318,7 +373,32 @@ export function CycleCreationFlow() {
     setDraft(createInitialPlannerDraft());
     setCurrentStepIndex(0);
     setValidationErrors([]);
+    setAutoSyncTimeline(false);
+    setSelectedTemplateId(defaultMacroTemplateId);
     setStatusMessage("Draft cleared.");
+  }
+
+  function applySelectedTemplate() {
+    const nextDraft = applyMacroTemplate({
+      draft,
+      templateId: selectedTemplateId,
+    });
+
+    setDraft(nextDraft);
+    setAutoSyncTimeline(true);
+    setValidationErrors([]);
+    setStatusMessage(
+      `${selectedTemplate?.label ?? "Template"} applied. Macro dates will auto-sync to goal/event anchors until you disable sync.`,
+    );
+  }
+
+  function alignMacroTimelineToAnchors() {
+    updateDraft((previous) => ({
+      ...previous,
+      startDate: macroTimelinePreview.suggestedStartDate,
+      endDate: macroTimelinePreview.suggestedEndDate,
+    }));
+    setStatusMessage("Macro timeline aligned to current goal/event anchors.");
   }
 
   function goBack() {
@@ -640,6 +720,116 @@ export function CycleCreationFlow() {
             stay predictable.
           </p>
 
+          <section className="planner-template-panel">
+            <div className="planner-template-header">
+              <h3>Hybrid profile templates</h3>
+              <p className="planner-flow-empty">
+                Choose a profile to generate a fast macro-cycle starting point
+                from goals and event anchors.
+              </p>
+            </div>
+
+            <div className="planner-template-controls">
+              <label htmlFor="macro-template-profile">
+                Macro template profile
+                <select
+                  id="macro-template-profile"
+                  className="planner-flow-select"
+                  name="macroTemplateProfile"
+                  value={selectedTemplateId}
+                  onChange={(event) =>
+                    setSelectedTemplateId(
+                      event.target.value as PlannerMacroTemplateId,
+                    )
+                  }
+                >
+                  {macroTemplateProfiles.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button
+                className="planner-flow-action"
+                type="button"
+                onClick={applySelectedTemplate}
+              >
+                Apply template
+              </button>
+            </div>
+
+            <p className="planner-flow-empty">
+              {selectedTemplate?.shortDescription}
+            </p>
+
+            <label
+              className="planner-flow-toggle"
+              htmlFor="planner-auto-sync-timeline"
+            >
+              <input
+                id="planner-auto-sync-timeline"
+                name="autoSyncTimeline"
+                type="checkbox"
+                checked={autoSyncTimeline}
+                onChange={(event) => {
+                  const enabled = event.target.checked;
+                  setAutoSyncTimeline(enabled);
+                  if (enabled) {
+                    alignMacroTimelineToAnchors();
+                  }
+                }}
+              />
+              Auto-sync macro dates to goal/event anchors
+            </label>
+          </section>
+
+          <section className="planner-template-timeline" aria-live="polite">
+            <h3>Macro timeline preview</h3>
+            <p className="planner-flow-empty">
+              Recommended window: {macroTimelinePreview.suggestedStartDate} to{" "}
+              {macroTimelinePreview.suggestedEndDate} (
+              {macroTimelinePreview.totalWeeks} weeks)
+            </p>
+            <p className="planner-flow-empty">
+              Anchors: {macroTimelinePreview.anchorSummary.goalAnchors} goals ·{" "}
+              {macroTimelinePreview.anchorSummary.eventAnchors} events
+            </p>
+            <p className="planner-flow-empty">
+              Earliest anchor:{" "}
+              {macroTimelinePreview.anchorSummary.earliestAnchorDate ??
+                "Not set"}{" "}
+              · Latest anchor:{" "}
+              {macroTimelinePreview.anchorSummary.latestAnchorDate ?? "Not set"}
+            </p>
+
+            <button
+              className="planner-flow-link"
+              type="button"
+              onClick={alignMacroTimelineToAnchors}
+            >
+              Use recommended dates
+            </button>
+
+            {macroTimelinePreview.mesocycleBands.length > 0 ? (
+              <ul
+                className="planner-template-timeline-list"
+                aria-label="Macro timeline mesocycles"
+              >
+                {macroTimelinePreview.mesocycleBands.map((band) => (
+                  <li key={band.mesocycleId}>
+                    <strong>{band.name}</strong>
+                    <small>
+                      {band.startDate} to {band.endDate} ({band.durationWeeks}{" "}
+                      weeks)
+                    </small>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+
           <div className="planner-flow-grid planner-flow-grid-two">
             <label htmlFor="plan-name">
               Plan name
@@ -665,12 +855,13 @@ export function CycleCreationFlow() {
                 name="startDate"
                 type="date"
                 value={draft.startDate}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setAutoSyncTimeline(false);
                   updateDraft((previous) => ({
                     ...previous,
                     startDate: event.target.value,
-                  }))
-                }
+                  }));
+                }}
               />
             </label>
 
@@ -682,12 +873,13 @@ export function CycleCreationFlow() {
                 name="endDate"
                 type="date"
                 value={draft.endDate}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setAutoSyncTimeline(false);
                   updateDraft((previous) => ({
                     ...previous,
                     endDate: event.target.value,
-                  }))
-                }
+                  }));
+                }}
               />
             </label>
           </div>

@@ -125,6 +125,66 @@ describe("CycleCreationFlow", () => {
     expect(screen.getByText(/spring half marathon/i)).toBeTruthy();
   });
 
+  it("applies a macro template and keeps generated fields editable", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "triathlon_strength",
+    );
+    await user.click(screen.getByRole("button", { name: /apply template/i }));
+
+    expect(
+      (screen.getByLabelText(/plan name/i) as HTMLInputElement).value,
+    ).toBe("Triathlon + Strength Build");
+    expect(
+      (screen.getAllByLabelText(/goal title/i)[0] as HTMLInputElement).value,
+    ).toContain("Triathlon");
+
+    await user.clear(screen.getByLabelText(/plan name/i));
+    await user.type(screen.getByLabelText(/plan name/i), "Custom tri build");
+    expect(
+      (screen.getByLabelText(/plan name/i) as HTMLInputElement).value,
+    ).toBe("Custom tri build");
+
+    await user.clear(screen.getAllByLabelText(/goal title/i)[0]);
+    await user.type(
+      screen.getAllByLabelText(/goal title/i)[0],
+      "Custom A race",
+    );
+    expect(
+      (screen.getAllByLabelText(/goal title/i)[0] as HTMLInputElement).value,
+    ).toBe("Custom A race");
+  });
+
+  it("updates macro timeline dates when an event date moves after template apply", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "powerlifting_5k",
+    );
+    await user.click(screen.getByRole("button", { name: /apply template/i }));
+
+    const endDateInput = screen.getByLabelText(
+      /target end date/i,
+    ) as HTMLInputElement;
+    const initialEndDate = endDateInput.value;
+
+    await user.clear(screen.getByLabelText(/event date/i));
+    await user.type(screen.getByLabelText(/event date/i), "2026-08-15");
+
+    await waitFor(() => {
+      expect(
+        (screen.getByLabelText(/target end date/i) as HTMLInputElement).value,
+      ).not.toBe(initialEndDate);
+    });
+  });
+
   it("requires explicit unique priorities for multiple goals", async () => {
     const user = userEvent.setup();
 
