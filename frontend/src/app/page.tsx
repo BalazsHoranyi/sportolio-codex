@@ -91,6 +91,9 @@ export default async function HomePage() {
           <a className="button button-primary" href="#start-here">
             Start here
           </a>
+          <a className="button button-secondary" href="/today">
+            Open Today
+          </a>
           <a className="button button-secondary" href="#integration">
             See integration checklist
           </a>
