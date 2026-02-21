@@ -22,6 +22,17 @@ describe("auth middleware", () => {
     );
   });
 
+  it("protects newly added top-level routes with the same login redirect contract", async () => {
+    const request = new NextRequest("http://localhost/analytics?window=30d");
+
+    const response = await middleware(request);
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/login?next=%2Fanalytics%3Fwindow%3D30d",
+    );
+  });
+
   it("allows authenticated access to protected routes", async () => {
     const token = await createSessionToken({
       userId: "user-diego-tri",

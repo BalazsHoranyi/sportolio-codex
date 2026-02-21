@@ -3,11 +3,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import PlannerPage from "../../src/app/planner/page";
 
 describe("PlannerPage", () => {
-  it("renders authenticated planner route shell", async () => {
+  it("renders planner route inside shared shell with planning-focused copy", async () => {
     const html = renderToStaticMarkup(await PlannerPage());
 
-    expect(html).toContain("Authenticated session active");
+    expect(html).toContain("Planner");
+    expect(html).toContain("Cycle planning and block design context.");
     expect(html).toContain("Cycle creation flow");
     expect(html).toContain("Macro goals and events");
+    expect(html).toContain('href="/routine"');
+    expect(html).toContain("Open routine builder");
   });
 });

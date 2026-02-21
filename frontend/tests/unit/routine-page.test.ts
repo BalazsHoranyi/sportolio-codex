@@ -3,13 +3,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import RoutinePage from "../../src/app/routine/page";
 
 describe("RoutinePage", () => {
-  it("renders authenticated routine creation route shell", async () => {
+  it("renders routine builder workspace without mixed dashboard concerns", async () => {
     const html = renderToStaticMarkup(await RoutinePage());
 
-    expect(html).toContain("Authenticated session active");
+    expect(html).toContain("Routine Builder");
+    expect(html).toContain("Build and refine strength or endurance routines.");
     expect(html).toContain("Routine creation flow");
     expect(html).toContain("Visual");
     expect(html).toContain("DSL");
-    expect(html).toContain('href="/planner"');
+    expect(html).not.toContain("Integration checklist");
   });
 });
