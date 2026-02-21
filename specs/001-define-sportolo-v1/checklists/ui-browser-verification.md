@@ -7,6 +7,8 @@
 
 ## Evidence Artifacts
 
+- home-desktop-after.png
+- home-mobile-after.png
 - persona-diego-desktop.png
 - persona-diego-mobile.png
 - persona-evan-desktop.png
