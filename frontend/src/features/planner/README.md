@@ -26,3 +26,18 @@ Planner draft persistence in `draft-storage.ts` supports migration from legacy p
 
 - events collection
 - mesocycle strategy configuration
+
+## Review Muscle Summary
+
+`review-muscle-summary.ts` derives a deterministic microcycle muscle summary from
+planner workout drafts (`label`, `type`, `intensity`, `day`) without backend
+round-trips.
+
+The review step uses this model to render:
+
+- microcycle-level muscle map + total usage
+- high-overlap day warnings (visual/advisory only)
+- drill-down anchors into routine and exercise contribution detail lists
+
+Additions, removals, and day moves in the microcycle step immediately refresh
+review outputs through React state recomputation.
