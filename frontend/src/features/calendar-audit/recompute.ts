@@ -128,21 +128,123 @@ function resolveThresholdState(
   return "low";
 }
 
-function applyDateDelta(
-  byDate: Map<string, WeeklyAuditPoint>,
-  isoDate: string | undefined,
+export interface WeeklyAuditIncrementalMutationResult {
+  response: WeeklyAuditApiResponse;
+  applied: boolean;
+  touchedDates: string[];
+  durationMs: number;
+  warning?: string;
+}
+
+interface DeltaOperation {
+  date: string;
+  multiplier: 1 | -1;
+}
+
+function nowMs(): number {
+  return globalThis.performance?.now?.() ?? Date.now();
+}
+
+function toResult(params: {
+  startedAtMs: number;
+  response: WeeklyAuditApiResponse;
+  applied: boolean;
+  touchedDates?: string[];
+  warning?: string;
+}): WeeklyAuditIncrementalMutationResult {
+  return {
+    response: params.response,
+    applied: params.applied,
+    touchedDates: params.touchedDates ?? [],
+    durationMs: nowMs() - params.startedAtMs,
+    warning: params.warning,
+  };
+}
+
+function resolveDeltaOperations(mutation: PlanningMutationEvent): {
+  operations: DeltaOperation[];
+  warning?: string;
+} {
+  const fromDate = normalizeIsoDate(mutation.fromDate);
+  const toDate = normalizeIsoDate(mutation.toDate);
+
+  if (mutation.type === "workout_reordered") {
+    return { operations: [] };
+  }
+
+  if (mutation.type === "workout_added") {
+    if (!toDate) {
+      return {
+        operations: [],
+        warning:
+          "Calendar recompute cannot be applied: added workout is missing a valid target date.",
+      };
+    }
+
+    return {
+      operations: [
+        {
+          date: toDate,
+          multiplier: 1,
+        },
+      ],
+    };
+  }
+
+  if (mutation.type === "workout_removed") {
+    if (!fromDate) {
+      return {
+        operations: [],
+        warning:
+          "Calendar recompute cannot be applied: removed workout is missing a valid source date.",
+      };
+    }
+
+    return {
+      operations: [
+        {
+          date: fromDate,
+          multiplier: -1,
+        },
+      ],
+    };
+  }
+
+  if (mutation.type === "workout_moved") {
+    if (!fromDate || !toDate) {
+      return {
+        operations: [],
+        warning:
+          "Calendar recompute cannot be applied: moved workout requires valid source and target dates.",
+      };
+    }
+
+    if (fromDate === toDate) {
+      return { operations: [] };
+    }
+
+    return {
+      operations: [
+        {
+          date: fromDate,
+          multiplier: -1,
+        },
+        {
+          date: toDate,
+          multiplier: 1,
+        },
+      ],
+    };
+  }
+
+  return { operations: [] };
+}
+
+function applyDeltaToPoint(
+  point: WeeklyAuditPoint,
   delta: AxisLoad,
   multiplier: 1 | -1,
-) {
-  if (!isoDate) {
-    return;
-  }
-
-  const point = byDate.get(isoDate);
-  if (!point) {
-    return;
-  }
-
+): WeeklyAuditPoint {
   const completedAxes = {
     neural: clampScore(point.completedAxes.neural + delta.neural * multiplier),
     metabolic: clampScore(
@@ -160,24 +262,80 @@ function applyDateDelta(
       3,
   );
 
-  byDate.set(isoDate, {
+  return {
     ...point,
     completedAxes,
     recruitmentOverlay,
     thresholdZoneState: resolveThresholdState(completedAxes),
-  });
+  };
 }
 
-function clonePoints(points: WeeklyAuditPoint[]): WeeklyAuditPoint[] {
-  return points.map((point) => ({
-    ...point,
-    completedAxes: {
-      ...point.completedAxes,
+export function applyWeeklyAuditMutationIncrementally(
+  response: WeeklyAuditApiResponse,
+  mutation: PlanningMutationEvent,
+): WeeklyAuditIncrementalMutationResult {
+  const startedAtMs = nowMs();
+  const { operations, warning } = resolveDeltaOperations(mutation);
+
+  if (warning) {
+    return toResult({
+      startedAtMs,
+      response,
+      applied: false,
+      warning,
+    });
+  }
+
+  if (operations.length === 0) {
+    return toResult({
+      startedAtMs,
+      response,
+      applied: false,
+    });
+  }
+
+  const delta = buildDelta(mutation);
+  const dateToIndex = new Map(
+    response.points.map((point, index) => [point.date, index]),
+  );
+  let nextPoints: WeeklyAuditPoint[] | undefined;
+  const touchedDates = new Set<string>();
+
+  for (const operation of operations) {
+    const index = dateToIndex.get(operation.date);
+    if (index === undefined) {
+      continue;
+    }
+
+    if (!nextPoints) {
+      nextPoints = [...response.points];
+    }
+
+    nextPoints[index] = applyDeltaToPoint(
+      nextPoints[index] ?? response.points[index],
+      delta,
+      operation.multiplier,
+    );
+    touchedDates.add(operation.date);
+  }
+
+  if (!nextPoints || touchedDates.size === 0) {
+    return toResult({
+      startedAtMs,
+      response,
+      applied: false,
+    });
+  }
+
+  return toResult({
+    startedAtMs,
+    response: {
+      ...response,
+      points: nextPoints,
     },
-    contributors: point.contributors.map((contributor) => ({
-      ...contributor,
-    })),
-  }));
+    applied: true,
+    touchedDates: [...touchedDates],
+  });
 }
 
 export function recomputeWeeklyAuditResponse(
@@ -188,48 +346,9 @@ export function recomputeWeeklyAuditResponse(
     return response;
   }
 
-  const nextPoints = clonePoints(response.points);
-  const byDate = new Map(nextPoints.map((point) => [point.date, point]));
-
-  for (const mutation of mutations) {
-    const delta = buildDelta(mutation);
-    const fromDate = normalizeIsoDate(mutation.fromDate);
-    const toDate = normalizeIsoDate(mutation.toDate);
-
-    if (mutation.type === "workout_added") {
-      applyDateDelta(byDate, toDate, delta, 1);
-      continue;
-    }
-
-    if (mutation.type === "workout_removed") {
-      applyDateDelta(byDate, fromDate, delta, -1);
-      continue;
-    }
-
-    if (mutation.type === "workout_moved") {
-      applyDateDelta(byDate, fromDate, delta, -1);
-      applyDateDelta(byDate, toDate, delta, 1);
-      continue;
-    }
-
-    if (mutation.type === "workout_reordered") {
-      continue;
-    }
-  }
-
-  return {
-    ...response,
-    points: response.points.map(
-      (point) =>
-        byDate.get(point.date) ?? {
-          ...point,
-          completedAxes: {
-            ...point.completedAxes,
-          },
-          contributors: point.contributors.map((contributor) => ({
-            ...contributor,
-          })),
-        },
-    ),
-  };
+  return mutations.reduce(
+    (currentResponse, mutation) =>
+      applyWeeklyAuditMutationIncrementally(currentResponse, mutation).response,
+    response,
+  );
 }

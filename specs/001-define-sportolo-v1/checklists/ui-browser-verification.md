@@ -71,3 +71,28 @@
 - `/calendar` remains focused on schedule/audit timeline context.
 - `/planner`, `/routine`, `/analytics`, and `/settings` remain single-purpose with clear title/supporting copy.
 - Browser checks using `agent-browser` and `chrome-devtools-mcp` passed for all personas in `user_profiles` across desktop and mobile.
+
+## SPRT-34 Verification Addendum (February 21, 2026)
+
+- Scope: `/calendar` drag/drop move recompute path, incremental update telemetry, and fallback warning behavior.
+- Tooling: `agent-browser` persona walkthrough + `chrome-devtools-mcp` desktop/mobile interaction validation.
+
+### SPRT-34 Evidence Artifacts
+
+- `tmp/sprt34-diego-calendar.png`
+- `tmp/sprt34-evan-calendar.png`
+- `tmp/sprt34-hybrid-calendar.png`
+- `tmp/sprt34-lena-calendar.png`
+- `tmp/sprt34-nora-calendar.png`
+- `tmp/sprt34-priya-calendar.png`
+- `tmp/sprt34-devtools-calendar-desktop.png`
+- `tmp/sprt34-devtools-calendar-mobile.png`
+
+### SPRT-34 Persona Execution Notes
+
+- Diego: moved `Heavy lower` from Tuesday to Friday and confirmed recompute summary increments to `1`.
+- Evan: repeated the move flow and confirmed immediate weekly audit response update with latency telemetry.
+- Hybrid athlete: validated the move path and ensured recompute event logging remains visible and deterministic.
+- Lena: validated the same move workflow and confirmed calendar controls are operable in responsive layout.
+- Nora: repeated the move flow and confirmed updated schedule position and recompute count behavior.
+- Priya: repeated the move flow and confirmed weekly audit detail values update after the move action.
