@@ -22,6 +22,52 @@ function readThemeInlineBlock(css: string): string {
   return themeInlineBlock[1];
 }
 
+function findBlockBounds(
+  css: string,
+  selectorWithBrace: string,
+): [number, number] {
+  const selectorIndex = css.indexOf(selectorWithBrace);
+  if (selectorIndex === -1) {
+    throw new Error(`Missing ${selectorWithBrace} declaration block`);
+  }
+
+  const blockStart = selectorIndex + selectorWithBrace.length - 1;
+  if (blockStart === -1) {
+    throw new Error(`Missing opening brace for ${selectorWithBrace}`);
+  }
+
+  let depth = 0;
+  for (let index = blockStart; index < css.length; index += 1) {
+    const char = css[index];
+    if (char === "{") {
+      depth += 1;
+      continue;
+    }
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return [selectorIndex, index + 1];
+      }
+    }
+  }
+
+  throw new Error(`Missing closing brace for ${selectorWithBrace}`);
+}
+
+function stripTokenDeclarationBlocks(css: string): string {
+  const blocks = [
+    findBlockBounds(css, ":root {"),
+    findBlockBounds(css, ".dark {"),
+  ].sort((a, b) => b[0] - a[0]);
+
+  let stripped = css;
+  for (const [start, end] of blocks) {
+    stripped = stripped.slice(0, start) + stripped.slice(end);
+  }
+
+  return stripped;
+}
+
 describe("midnight bloom token contract", () => {
   it("defines standardized shadcn theme variables in :root", () => {
     const rootCss = readRootBlock(readGlobalsCss());
@@ -65,5 +111,12 @@ describe("midnight bloom token contract", () => {
       const [, targetToken, sourceToken] = match;
       expect(sourceToken).not.toBe(targetToken);
     }
+  });
+
+  it("keeps oklch literals confined to token declaration blocks", () => {
+    const css = readGlobalsCss();
+    const nonTokenCss = stripTokenDeclarationBlocks(css);
+
+    expect(nonTokenCss).not.toMatch(/oklch\(/);
   });
 });
