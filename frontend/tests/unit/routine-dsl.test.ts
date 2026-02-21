@@ -32,6 +32,7 @@ describe("routine DSL helpers", () => {
               condition: "readiness >= readiness_floor",
               exercises: [
                 {
+                  instanceId: "exercise-1",
                   exerciseId: "global-back-squat",
                   canonicalName: "Back Squat",
                   selectedEquipment: "barbell",
@@ -69,6 +70,7 @@ describe("routine DSL helpers", () => {
               condition: null,
               exercises: [
                 {
+                  instanceId: "exercise-2",
                   exerciseId: "global-pallof-press",
                   canonicalName: "Pallof Press",
                   selectedEquipment: "cable",
@@ -115,6 +117,7 @@ describe("routine DSL helpers", () => {
               condition: null,
               exercises: [
                 {
+                  instanceId: "exercise-1",
                   exerciseId: "global-bench-press",
                   canonicalName: "Bench Press",
                   selectedEquipment: "barbell",
@@ -188,6 +191,7 @@ describe("routine DSL helpers", () => {
             condition: "readiness >= 6",
             exercises: [
               {
+                instanceId: "exercise-1",
                 exerciseId: "global-split-squat",
                 canonicalName: "Split Squat",
                 selectedEquipment: "barbell",
@@ -265,6 +269,75 @@ describe("routine DSL helpers", () => {
     expect(parsed.value.strength.blocks[0]?.exercises[0]?.exerciseId).toBe(
       "global-split-squat",
     );
+    expect(parsed.value.strength.blocks[0]?.exercises[0]?.instanceId).toBe(
+      "exercise-1",
+    );
+  });
+
+  it("assigns stable per-instance ids for duplicate exercises when missing from DSL", () => {
+    const parsed = parseRoutineDsl(
+      JSON.stringify({
+        routineId: "routine-duplicate-instances",
+        routineName: "Duplicate Instances",
+        path: "strength",
+        strength: {
+          blocks: [
+            {
+              blockId: "block-1",
+              label: "Main block",
+              repeatCount: 1,
+              condition: null,
+              exercises: [
+                {
+                  exerciseId: "global-split-squat",
+                  canonicalName: "Split Squat",
+                  selectedEquipment: "barbell",
+                  regionTags: ["quads", "glutes"],
+                  condition: "side == left",
+                  sets: [
+                    {
+                      setId: "set-1",
+                      reps: 8,
+                      restSeconds: 90,
+                      timerSeconds: null,
+                      progression: null,
+                    },
+                  ],
+                },
+                {
+                  exerciseId: "global-split-squat",
+                  canonicalName: "Split Squat",
+                  selectedEquipment: "dumbbell",
+                  regionTags: ["quads", "glutes"],
+                  condition: "side == right",
+                  sets: [
+                    {
+                      setId: "set-1",
+                      reps: 10,
+                      restSeconds: 90,
+                      timerSeconds: null,
+                      progression: null,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        endurance: {
+          intervals: [],
+        },
+      }),
+    );
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) {
+      return;
+    }
+
+    const [first, second] = parsed.value.strength.blocks[0]?.exercises ?? [];
+    expect(first?.instanceId).toBe("exercise-1");
+    expect(second?.instanceId).toBe("exercise-2");
   });
 
   it("returns actionable errors for invalid JSON", () => {

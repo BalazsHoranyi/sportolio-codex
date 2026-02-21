@@ -20,6 +20,7 @@ export interface StrengthSetDraft {
 }
 
 export interface StrengthExerciseDraft {
+  instanceId: string;
   exerciseId: string;
   canonicalName: string;
   selectedEquipment: string | null;

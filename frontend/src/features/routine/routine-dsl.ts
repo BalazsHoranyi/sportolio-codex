@@ -83,6 +83,31 @@ function parseOptionalCondition(
   return null;
 }
 
+function resolveExerciseInstanceId(
+  candidate: unknown,
+  fallbackIndex: number,
+  seenInstanceIds: Set<string>,
+): string {
+  const preferred =
+    typeof candidate === "string" && candidate.trim().length > 0
+      ? candidate
+      : `exercise-${fallbackIndex + 1}`;
+
+  if (!seenInstanceIds.has(preferred)) {
+    seenInstanceIds.add(preferred);
+    return preferred;
+  }
+
+  let sequence = fallbackIndex + 1;
+  while (seenInstanceIds.has(`exercise-${sequence}`)) {
+    sequence += 1;
+  }
+
+  const fallback = `exercise-${sequence}`;
+  seenInstanceIds.add(fallback);
+  return fallback;
+}
+
 function parseStrengthVariables(
   value: unknown,
   errors: string[],
@@ -268,6 +293,7 @@ function parseStrengthExercises(
   }
 
   const exercises: StrengthExerciseDraft[] = [];
+  const seenInstanceIds = new Set<string>();
 
   value.forEach((candidate, index) => {
     const exercisePath = `${path}[${index}]`;
@@ -313,8 +339,14 @@ function parseStrengthExercises(
       `${exercisePath}.sets`,
       errors,
     );
+    const instanceId = resolveExerciseInstanceId(
+      candidate.instanceId,
+      index,
+      seenInstanceIds,
+    );
 
     exercises.push({
+      instanceId,
       exerciseId,
       canonicalName,
       selectedEquipment,
@@ -337,6 +369,7 @@ function parseLegacyStrengthExercises(
   }
 
   const exercises: StrengthExerciseDraft[] = [];
+  const seenInstanceIds = new Set<string>();
 
   value.forEach((candidate, index) => {
     const path = `strength.exercises[${index}]`;
@@ -373,6 +406,11 @@ function parseLegacyStrengthExercises(
     }
 
     exercises.push({
+      instanceId: resolveExerciseInstanceId(
+        candidate.instanceId,
+        index,
+        seenInstanceIds,
+      ),
       exerciseId,
       canonicalName,
       selectedEquipment,

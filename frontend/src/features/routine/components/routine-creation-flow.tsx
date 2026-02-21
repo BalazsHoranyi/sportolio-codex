@@ -112,9 +112,11 @@ function findExerciseEquipmentOptions(
 
 function createExerciseDraft(
   exercise: SearchableExerciseCatalogItem,
+  instanceId: string,
   setId = "set-1",
 ) {
   return {
+    instanceId,
     exerciseId: exercise.id,
     canonicalName: exercise.canonicalName,
     selectedEquipment: exercise.equipmentOptions[0] ?? null,
@@ -170,7 +172,7 @@ function buildRoutineMuscleUsageResponse(
 
       exerciseSummaries.push({
         routineId: routine.routineId,
-        exerciseId: `${block.blockId}:${exercise.exerciseId}`,
+        exerciseId: `${block.blockId}:${exercise.instanceId}`,
         exerciseName: `${exercise.canonicalName} (${block.label})`,
         workload: totalUsage,
         totalUsage,
@@ -276,7 +278,7 @@ export function RoutineCreationFlow() {
   const [activeBlockId, setActiveBlockId] = useState<string>("block-1");
   const draggingExerciseRef = useRef<{
     blockId: string;
-    exerciseId: string;
+    exerciseInstanceId: string;
     exerciseName: string;
     blockLabel: string;
   } | null>(null);
@@ -600,21 +602,17 @@ export function RoutineCreationFlow() {
             if (block.blockId !== targetBlockId) {
               return block;
             }
-
-            const alreadyIncluded = block.exercises.some(
-              (entry) => entry.exerciseId === exercise.id,
+            const nextInstanceId = nextSequentialId(
+              block.exercises.map((entry) => entry.instanceId),
+              "exercise",
             );
-            if (alreadyIncluded) {
-              return block;
-            }
-
             const firstSetId = "set-1";
 
             return {
               ...block,
               exercises: [
                 ...block.exercises,
-                createExerciseDraft(exercise, firstSetId),
+                createExerciseDraft(exercise, nextInstanceId, firstSetId),
               ],
             };
           }),
@@ -625,7 +623,7 @@ export function RoutineCreationFlow() {
 
   function updateExercise(
     blockId: string,
-    exerciseId: string,
+    exerciseInstanceId: string,
     update: Partial<
       Pick<
         RoutineDraft["strength"]["blocks"][number]["exercises"][number],
@@ -642,7 +640,7 @@ export function RoutineCreationFlow() {
             ? {
                 ...block,
                 exercises: block.exercises.map((exercise) =>
-                  exercise.exerciseId === exerciseId
+                  exercise.instanceId === exerciseInstanceId
                     ? {
                         ...exercise,
                         ...update,
@@ -656,7 +654,7 @@ export function RoutineCreationFlow() {
     }));
   }
 
-  function removeStrengthExercise(blockId: string, exerciseId: string) {
+  function removeStrengthExercise(blockId: string, exerciseInstanceId: string) {
     setRoutine((previous) => ({
       ...previous,
       strength: {
@@ -666,7 +664,7 @@ export function RoutineCreationFlow() {
             ? {
                 ...block,
                 exercises: block.exercises.filter(
-                  (exercise) => exercise.exerciseId !== exerciseId,
+                  (exercise) => exercise.instanceId !== exerciseInstanceId,
                 ),
               }
             : block,
@@ -675,7 +673,7 @@ export function RoutineCreationFlow() {
     }));
   }
 
-  function addStrengthSet(blockId: string, exerciseId: string) {
+  function addStrengthSet(blockId: string, exerciseInstanceId: string) {
     setRoutine((previous) => ({
       ...previous,
       strength: {
@@ -685,7 +683,7 @@ export function RoutineCreationFlow() {
             ? {
                 ...block,
                 exercises: block.exercises.map((exercise) => {
-                  if (exercise.exerciseId !== exerciseId) {
+                  if (exercise.instanceId !== exerciseInstanceId) {
                     return exercise;
                   }
 
@@ -711,7 +709,7 @@ export function RoutineCreationFlow() {
 
   function updateStrengthSet(
     blockId: string,
-    exerciseId: string,
+    exerciseInstanceId: string,
     setId: string,
     update: Partial<
       RoutineDraft["strength"]["blocks"][number]["exercises"][number]["sets"][number]
@@ -726,7 +724,7 @@ export function RoutineCreationFlow() {
             ? {
                 ...block,
                 exercises: block.exercises.map((exercise) =>
-                  exercise.exerciseId === exerciseId
+                  exercise.instanceId === exerciseInstanceId
                     ? {
                         ...exercise,
                         sets: exercise.sets.map((setDraft) =>
@@ -749,7 +747,7 @@ export function RoutineCreationFlow() {
 
   function removeStrengthSet(
     blockId: string,
-    exerciseId: string,
+    exerciseInstanceId: string,
     setId: string,
   ) {
     setRoutine((previous) => ({
@@ -761,7 +759,7 @@ export function RoutineCreationFlow() {
             ? {
                 ...block,
                 exercises: block.exercises.map((exercise) => {
-                  if (exercise.exerciseId !== exerciseId) {
+                  if (exercise.instanceId !== exerciseInstanceId) {
                     return exercise;
                   }
 
@@ -786,11 +784,12 @@ export function RoutineCreationFlow() {
 
   function moveExerciseByStep(
     blockId: string,
-    exerciseId: string,
+    exerciseInstanceId: string,
     direction: -1 | 1,
     exerciseName: string,
     blockLabel: string,
   ) {
+    let moved = false;
     setRoutine((previous) => ({
       ...previous,
       strength: {
@@ -801,7 +800,7 @@ export function RoutineCreationFlow() {
           }
 
           const sourceIndex = block.exercises.findIndex(
-            (exercise) => exercise.exerciseId === exerciseId,
+            (exercise) => exercise.instanceId === exerciseInstanceId,
           );
           const targetIndex = sourceIndex + direction;
 
@@ -813,6 +812,7 @@ export function RoutineCreationFlow() {
             return block;
           }
 
+          moved = true;
           return {
             ...block,
             exercises: reorderItems(block.exercises, sourceIndex, targetIndex),
@@ -820,20 +820,22 @@ export function RoutineCreationFlow() {
         }),
       },
     }));
-    setReorderAnnouncement(
-      `Moved ${exerciseName} ${direction === -1 ? "up" : "down"} in ${blockLabel}.`,
-    );
+    if (moved) {
+      setReorderAnnouncement(
+        `Moved ${exerciseName} ${direction === -1 ? "up" : "down"} in ${blockLabel}.`,
+      );
+    }
   }
 
   function onExerciseDragStart(
     blockId: string,
-    exerciseId: string,
+    exerciseInstanceId: string,
     exerciseName: string,
     blockLabel: string,
   ) {
     draggingExerciseRef.current = {
       blockId,
-      exerciseId,
+      exerciseInstanceId,
       exerciseName,
       blockLabel,
     };
@@ -845,7 +847,7 @@ export function RoutineCreationFlow() {
 
   function onExerciseDrop(
     blockId: string,
-    targetExerciseId: string,
+    targetExerciseInstanceId: string,
     targetExerciseName: string,
   ) {
     const draggingExercise = draggingExerciseRef.current;
@@ -866,12 +868,17 @@ export function RoutineCreationFlow() {
           }
 
           const sourceIndex = block.exercises.findIndex(
-            (exercise) => exercise.exerciseId === draggingExercise.exerciseId,
+            (exercise) =>
+              exercise.instanceId === draggingExercise.exerciseInstanceId,
           );
           const targetIndex = block.exercises.findIndex(
-            (exercise) => exercise.exerciseId === targetExerciseId,
+            (exercise) => exercise.instanceId === targetExerciseInstanceId,
           );
-          if (sourceIndex !== targetIndex) {
+          if (
+            sourceIndex >= 0 &&
+            targetIndex >= 0 &&
+            sourceIndex !== targetIndex
+          ) {
             reordered = true;
           }
 
@@ -1342,13 +1349,13 @@ export function RoutineCreationFlow() {
 
                           return (
                             <li
-                              key={exercise.exerciseId}
+                              key={exercise.instanceId}
                               draggable
                               aria-label={`Drag to reorder ${exercise.canonicalName}`}
                               onDragStart={() =>
                                 onExerciseDragStart(
                                   block.blockId,
-                                  exercise.exerciseId,
+                                  exercise.instanceId,
                                   exercise.canonicalName,
                                   block.label,
                                 )
@@ -1358,7 +1365,7 @@ export function RoutineCreationFlow() {
                               onDrop={() =>
                                 onExerciseDrop(
                                   block.blockId,
-                                  exercise.exerciseId,
+                                  exercise.instanceId,
                                   exercise.canonicalName,
                                 )
                               }
@@ -1380,7 +1387,7 @@ export function RoutineCreationFlow() {
                                     onClick={() =>
                                       moveExerciseByStep(
                                         block.blockId,
-                                        exercise.exerciseId,
+                                        exercise.instanceId,
                                         -1,
                                         exercise.canonicalName,
                                         block.label,
@@ -1396,7 +1403,7 @@ export function RoutineCreationFlow() {
                                     onClick={() =>
                                       moveExerciseByStep(
                                         block.blockId,
-                                        exercise.exerciseId,
+                                        exercise.instanceId,
                                         1,
                                         exercise.canonicalName,
                                         block.label,
@@ -1418,7 +1425,7 @@ export function RoutineCreationFlow() {
                                       }
                                       removeStrengthExercise(
                                         block.blockId,
-                                        exercise.exerciseId,
+                                        exercise.instanceId,
                                       );
                                     }}
                                   >
@@ -1436,7 +1443,7 @@ export function RoutineCreationFlow() {
                                     onChange={(event) =>
                                       updateExercise(
                                         block.blockId,
-                                        exercise.exerciseId,
+                                        exercise.instanceId,
                                         {
                                           selectedEquipment:
                                             event.target.value.length > 0
@@ -1463,7 +1470,7 @@ export function RoutineCreationFlow() {
                                     onChange={(event) =>
                                       updateExercise(
                                         block.blockId,
-                                        exercise.exerciseId,
+                                        exercise.instanceId,
                                         {
                                           condition:
                                             event.target.value.trim().length > 0
@@ -1494,7 +1501,7 @@ export function RoutineCreationFlow() {
                                           onChange={(event) =>
                                             updateStrengthSet(
                                               block.blockId,
-                                              exercise.exerciseId,
+                                              exercise.instanceId,
                                               setDraft.setId,
                                               {
                                                 reps: toPositiveNumber(
@@ -1517,7 +1524,7 @@ export function RoutineCreationFlow() {
                                           onChange={(event) =>
                                             updateStrengthSet(
                                               block.blockId,
-                                              exercise.exerciseId,
+                                              exercise.instanceId,
                                               setDraft.setId,
                                               {
                                                 restSeconds:
@@ -1541,7 +1548,7 @@ export function RoutineCreationFlow() {
                                           onChange={(event) =>
                                             updateStrengthSet(
                                               block.blockId,
-                                              exercise.exerciseId,
+                                              exercise.instanceId,
                                               setDraft.setId,
                                               {
                                                 timerSeconds:
@@ -1569,7 +1576,7 @@ export function RoutineCreationFlow() {
                                               .value as StrengthProgressionStrategy;
                                             updateStrengthSet(
                                               block.blockId,
-                                              exercise.exerciseId,
+                                              exercise.instanceId,
                                               setDraft.setId,
                                               {
                                                 progression:
@@ -1615,7 +1622,7 @@ export function RoutineCreationFlow() {
                                             }
                                             updateStrengthSet(
                                               block.blockId,
-                                              exercise.exerciseId,
+                                              exercise.instanceId,
                                               setDraft.setId,
                                               {
                                                 progression: {
@@ -1653,7 +1660,7 @@ export function RoutineCreationFlow() {
                                         }
                                         removeStrengthSet(
                                           block.blockId,
-                                          exercise.exerciseId,
+                                          exercise.instanceId,
                                           setDraft.setId,
                                         );
                                       }}
@@ -1675,7 +1682,7 @@ export function RoutineCreationFlow() {
                                 onClick={() =>
                                   addStrengthSet(
                                     block.blockId,
-                                    exercise.exerciseId,
+                                    exercise.instanceId,
                                   )
                                 }
                               >

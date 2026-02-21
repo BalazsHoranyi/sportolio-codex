@@ -520,4 +520,168 @@ describe("RoutineCreationFlow", () => {
       true,
     );
   });
+
+  it("keeps duplicate exercise instances independently editable and removable", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    await user.click(screen.getByRole("tab", { name: /^dsl$/i }));
+    const dslEditor = screen.getByRole("textbox", {
+      name: /routine dsl editor/i,
+    });
+
+    fireEvent.change(dslEditor, {
+      target: {
+        value: JSON.stringify(
+          {
+            routineId: "routine-hybrid-a",
+            routineName: "Hybrid Builder",
+            path: "strength",
+            strength: {
+              variables: [],
+              blocks: [
+                {
+                  blockId: "block-1",
+                  label: "Main block",
+                  repeatCount: 1,
+                  condition: null,
+                  exercises: [
+                    {
+                      instanceId: "exercise-1",
+                      exerciseId: "global-split-squat",
+                      canonicalName: "Split Squat",
+                      selectedEquipment: "barbell",
+                      regionTags: ["quads", "glutes", "hamstrings"],
+                      condition: "side == left",
+                      sets: [
+                        {
+                          setId: "set-1",
+                          reps: 8,
+                          restSeconds: 120,
+                          timerSeconds: null,
+                          progression: null,
+                        },
+                      ],
+                    },
+                    {
+                      instanceId: "exercise-2",
+                      exerciseId: "global-split-squat",
+                      canonicalName: "Split Squat",
+                      selectedEquipment: "dumbbell",
+                      regionTags: ["quads", "glutes", "hamstrings"],
+                      condition: "side == right",
+                      sets: [
+                        {
+                          setId: "set-1",
+                          reps: 10,
+                          restSeconds: 120,
+                          timerSeconds: null,
+                          progression: null,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            endurance: {
+              intervals: [],
+            },
+          },
+          null,
+          2,
+        ),
+      },
+    });
+
+    await user.click(screen.getByRole("tab", { name: /^visual$/i }));
+
+    const exerciseConditionInputs = screen.getAllByRole("textbox", {
+      name: /exercise condition/i,
+    }) as HTMLInputElement[];
+    expect(exerciseConditionInputs).toHaveLength(2);
+
+    fireEvent.change(exerciseConditionInputs[1], {
+      target: {
+        value: "side == right && tempo == slow",
+      },
+    });
+
+    expect(exerciseConditionInputs[0]?.value).toBe("side == left");
+
+    const removeButtons = screen.getAllByRole("button", {
+      name: /^remove$/i,
+    });
+    await user.click(removeButtons[0]);
+
+    await user.click(screen.getByRole("tab", { name: /^dsl$/i }));
+    const dslAfterEdit = screen.getByRole("textbox", {
+      name: /routine dsl editor/i,
+    }) as HTMLTextAreaElement;
+
+    const splitSquatOccurrences =
+      dslAfterEdit.value.match(/"exerciseId": "global-split-squat"/g) ?? [];
+
+    expect(splitSquatOccurrences).toHaveLength(1);
+    expect(dslAfterEdit.value).toContain(
+      '"condition": "side == right && tempo == slow"',
+    );
+    expect(dslAfterEdit.value).not.toContain('"condition": "side == left"');
+
+    confirmSpy.mockRestore();
+  });
+
+  it("announces reorders only when movement occurs", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const searchInput = screen.getByRole("combobox", {
+      name: /strength exercise search/i,
+    });
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+
+    await user.type(searchInput, "bench");
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /bench press/i,
+      }),
+    );
+
+    await user.clear(searchInput);
+    await user.type(searchInput, "split");
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /move bench press up/i,
+      }),
+    );
+
+    expect(
+      screen.queryByText(/moved bench press up in main block\./i),
+    ).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /move bench press down/i,
+      }),
+    );
+
+    expect(
+      screen.getByText(/moved bench press down in main block\./i),
+    ).toBeTruthy();
+  });
 });

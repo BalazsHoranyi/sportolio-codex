@@ -11,7 +11,7 @@ The strength path uses explicit advanced structures:
 
 - `strength.variables[]` for custom expressions reused in logic.
 - `strength.blocks[]` for looped block execution (`repeatCount`) and optional block-level `condition`.
-- `block.exercises[]` for exercise-level `condition` and selected equipment.
+- `block.exercises[]` for per-instance exercise entries (`instanceId`), conditionals, and selected equipment.
 - `exercise.sets[]` for deterministic set controls:
   - `reps`
   - `restSeconds`
