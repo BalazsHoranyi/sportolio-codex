@@ -1681,6 +1681,315 @@ h1 {
   margin: 0;
 }
 
+.planner-page {
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: clamp(1.4rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem)
+    clamp(3rem, 7vw, 5rem);
+}
+
+.planner-flow-shell {
+  background:
+    radial-gradient(
+      circle at 88% 10%,
+      oklch(0.94 0.06 44 / 0.42),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 6% 94%,
+      oklch(0.95 0.04 210 / 0.32),
+      transparent 42%
+    ),
+    var(--bg-panel);
+  overflow: hidden;
+}
+
+.planner-flow-header {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.planner-flow-copy {
+  margin: 0;
+  max-width: 66ch;
+}
+
+.planner-step-indicator {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+
+.planner-step-chip {
+  align-items: center;
+  background: oklch(0.96 0.02 68 / 0.9);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: auto 1fr;
+  min-height: 3rem;
+  padding: 0.5rem 0.6rem;
+}
+
+.planner-step-chip span {
+  align-items: center;
+  background: oklch(0.91 0.03 61);
+  border-radius: 999px;
+  color: var(--ink-strong);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 700;
+  height: 1.5rem;
+  justify-content: center;
+  width: 1.5rem;
+}
+
+.planner-step-chip p {
+  color: var(--ink-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.planner-step-chip-active {
+  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
+  border-color: oklch(0.59 0.15 44);
+}
+
+.planner-step-chip-active span {
+  background: oklch(0.98 0.01 74 / 0.94);
+}
+
+.planner-step-chip-active p {
+  color: oklch(0.98 0.01 74);
+}
+
+.planner-flow-notice,
+.planner-flow-status {
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  margin: 0.85rem 0 0;
+}
+
+.planner-flow-notice {
+  color: var(--accent-deep);
+  font-weight: 600;
+}
+
+.planner-flow-error {
+  background: oklch(0.95 0.06 34 / 0.42);
+  border: 1px solid oklch(0.77 0.12 30);
+  border-radius: 0.7rem;
+  color: oklch(0.39 0.14 28);
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.planner-flow-error h3 {
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.planner-flow-error ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.planner-flow-panel {
+  background: oklch(0.98 0.01 74 / 0.9);
+  border: 1px solid var(--line);
+  border-radius: 0.95rem;
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.95rem;
+  padding: 1rem;
+}
+
+.planner-flow-panel h2 {
+  font-size: 1.2rem;
+}
+
+.planner-flow-panel h3 {
+  font-size: 1rem;
+}
+
+.planner-flow-helper {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.planner-flow-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.planner-flow-grid-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.planner-flow-input,
+.planner-flow-select {
+  background: oklch(0.99 0.01 76);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  color: var(--ink-strong);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.92rem;
+  margin-top: 0.35rem;
+  padding: 0.56rem 0.65rem;
+  width: 100%;
+}
+
+.planner-flow-input:focus-visible,
+.planner-flow-select:focus-visible,
+.planner-flow-action:focus-visible,
+.planner-flow-link:focus-visible {
+  outline: 2px solid oklch(0.42 0.17 40);
+  outline-offset: 2px;
+}
+
+.planner-flow-subheader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.planner-flow-subheader h3 {
+  margin: 0;
+}
+
+.planner-flow-card-list {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.planner-flow-card-list li {
+  background: oklch(0.965 0.018 67);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.75rem 0.8rem;
+}
+
+.planner-flow-link {
+  background: transparent;
+  border: 0;
+  color: var(--accent-deep);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  justify-self: start;
+  padding: 0;
+}
+
+.planner-flow-action {
+  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
+  border: 0;
+  border-radius: 999px;
+  color: oklch(0.98 0.01 74);
+  cursor: pointer;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  min-height: 2.1rem;
+  padding: 0.3rem 0.9rem;
+}
+
+.planner-review-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.planner-review-card {
+  background: oklch(0.97 0.02 68);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem 0.8rem;
+}
+
+.planner-review-list {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.planner-review-list li p {
+  color: var(--ink-strong);
+  font-weight: 700;
+  margin: 0;
+}
+
+.planner-review-list li small {
+  color: var(--ink-body);
+}
+
+.planner-flow-empty {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.planner-review-summary {
+  background: oklch(0.97 0.02 68);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  padding: 0.75rem 0.8rem;
+}
+
+.planner-review-summary h3 {
+  margin: 0;
+}
+
+.planner-review-summary dl {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0.65rem 0 0;
+}
+
+.planner-review-summary dt {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.planner-review-summary dd {
+  color: var(--ink-strong);
+  font-weight: 700;
+  margin: 0.2rem 0 0;
+}
+
+.planner-flow-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.planner-flow-actions-right {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 .routine-page {
   margin: 0 auto;
   max-width: 80rem;
@@ -2072,6 +2381,38 @@ h1 {
 
   .today-nav-actions .button {
     justify-content: center;
+  }
+
+  .planner-step-indicator {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planner-flow-grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-review-summary dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planner-flow-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .planner-flow-actions > div,
+  .planner-flow-actions-right {
+    width: 100%;
+  }
+
+  .planner-flow-actions-right .button,
+  .planner-flow-actions > div .button {
+    justify-content: center;
+    width: 100%;
   }
 
   .today-boundary {

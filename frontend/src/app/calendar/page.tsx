@@ -45,6 +45,9 @@ export default async function CalendarPage({
           <a className="button button-secondary" href="/">
             Home
           </a>
+          <a className="button button-secondary" href="/planner">
+            Planner
+          </a>
           <a className="button button-secondary" href="/routine">
             Routine
           </a>

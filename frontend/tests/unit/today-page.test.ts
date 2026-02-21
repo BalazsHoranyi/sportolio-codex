@@ -67,6 +67,7 @@ describe("TodayPage", () => {
     expect(html).toContain("Combined fatigue score");
     expect(html).toContain("System capacity");
     expect(html).toContain("Why this today");
+    expect(html).toContain('href="/planner"');
     expect(html).toContain("completed-before-boundary");
   });
 
