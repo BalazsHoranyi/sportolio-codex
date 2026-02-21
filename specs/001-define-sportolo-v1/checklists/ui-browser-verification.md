@@ -96,3 +96,51 @@
 - Lena: validated the same move workflow and confirmed calendar controls are operable in responsive layout.
 - Nora: repeated the move flow and confirmed updated schedule position and recompute count behavior.
 - Priya: repeated the move flow and confirmed weekly audit detail values update after the move action.
+
+## SPRT-75 Verification Addendum (February 21, 2026)
+
+- Scope: apply `@ss-themes/midnight-bloom` tokens across global frontend styling and confirm no route-level visual regressions.
+- Tooling: `agent-browser` persona walkthrough + `chrome-devtools-mcp` desktop/mobile route validation.
+
+### SPRT-75 Evidence Artifacts
+
+- Refreshed release artifacts (required by verification gate):
+- home-desktop-after.png
+- home-mobile-after.png
+- persona-diego-desktop.png
+- persona-diego-mobile.png
+- persona-evan-desktop.png
+- persona-evan-mobile.png
+- persona-hybrid-desktop.png
+- persona-hybrid-mobile.png
+- persona-lena-desktop.png
+- persona-lena-mobile.png
+- persona-nora-desktop.png
+- persona-nora-mobile.png
+- persona-priya-desktop.png
+- persona-priya-mobile.png
+
+- Route validation screenshots (`chrome-devtools-mcp`):
+- sprt75-devtools-home-desktop.png
+- sprt75-devtools-home-mobile.png
+- sprt75-devtools-today-desktop.png
+- sprt75-devtools-today-mobile.png
+- sprt75-devtools-calendar-desktop.png
+- sprt75-devtools-calendar-mobile.png
+- sprt75-devtools-planner-desktop.png
+- sprt75-devtools-planner-mobile.png
+- sprt75-devtools-routine-desktop.png
+- sprt75-devtools-routine-mobile.png
+- sprt75-devtools-analytics-desktop.png
+- sprt75-devtools-analytics-mobile.png
+- sprt75-devtools-settings-desktop.png
+- sprt75-devtools-settings-mobile.png
+
+### SPRT-75 Persona Execution Notes
+
+- Diego: logged in, validated `/today` visual hierarchy and nav token states on desktop/mobile.
+- Evan: repeated login + `/today` validation and confirmed shell contrast/readability with updated token palette.
+- Hybrid athlete: validated login flow and responsive shell behavior with updated focus and accent tokens.
+- Lena: validated mobile shell readability and nav affordances with tokenized surfaces.
+- Nora: validated desktop/mobile route shell consistency after token remapping.
+- Priya: validated login and `/today` rendering fidelity with the updated token system.

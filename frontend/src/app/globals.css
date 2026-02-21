@@ -2,24 +2,225 @@
   --font-display: "Fraunces", serif;
   --font-body: "Work Sans", sans-serif;
 
-  --bg-page: oklch(0.97 0.02 79);
-  --bg-soft: oklch(0.94 0.03 68);
-  --bg-panel: oklch(0.985 0.01 75);
-  --ink-strong: oklch(0.25 0.04 45);
-  --ink-body: oklch(0.39 0.03 46);
-  --ink-muted: oklch(0.54 0.03 47);
-  --accent: oklch(0.61 0.17 43);
-  --accent-deep: oklch(0.49 0.15 40);
-  --line: oklch(0.86 0.02 59);
-  --shadow-soft: 0 16px 34px oklch(0.4 0.03 38 / 0.14);
-  --radius: 1rem;
-  --calendar-neural: oklch(0.52 0.15 318);
-  --calendar-metabolic: oklch(0.56 0.17 196);
-  --calendar-mechanical: oklch(0.52 0.15 76);
-  --calendar-band: oklch(0.71 0.09 55 / 0.35);
-  --calendar-zone: oklch(0.74 0.14 27 / 0.26);
-  --calendar-point-alert: oklch(0.52 0.2 28);
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.32 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.32 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.32 0 0);
+  --primary: oklch(0.57 0.2 283.26);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.82 0.07 249.99);
+  --secondary-foreground: oklch(0.32 0 0);
+  --muted: oklch(0.82 0.02 90.54);
+  --muted-foreground: oklch(0.54 0 0);
+  --accent: oklch(0.65 0.06 117.02);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.64 0.21 25.39);
+  --border: oklch(0.87 0 0);
+  --input: oklch(0.87 0 0);
+  --ring: oklch(0.57 0.2 283.26);
+  --chart-1: oklch(0.57 0.2 283.26);
+  --chart-2: oklch(0.53 0.17 314.68);
+  --chart-3: oklch(0.34 0.18 301.34);
+  --chart-4: oklch(0.67 0.14 261.15);
+  --chart-5: oklch(0.59 0.1 245.35);
+  --sidebar: oklch(0.98 0 0);
+  --sidebar-foreground: oklch(0.32 0 0);
+  --sidebar-primary: oklch(0.57 0.2 283.26);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.65 0.06 117.02);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.87 0 0);
+  --sidebar-ring: oklch(0.57 0.2 283.26);
+  --shadow-blur: 10px;
+  --shadow-spread: -2px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 5px;
+  --shadow-2xs: 0px 5px 10px -2px oklch(0 0 0 / 0.05);
+  --shadow-xs: 0px 5px 10px -2px oklch(0 0 0 / 0.05);
+  --shadow-2xl: 0px 5px 10px -2px oklch(0 0 0 / 0.25);
+  --shadow-sm:
+    0px 5px 10px -2px oklch(0 0 0 / 0.1), 0px 1px 2px -3px oklch(0 0 0 / 0.1);
+  --shadow:
+    0px 5px 10px -2px oklch(0 0 0 / 0.1), 0px 1px 2px -3px oklch(0 0 0 / 0.1);
+  --shadow-md:
+    0px 5px 10px -2px oklch(0 0 0 / 0.1), 0px 2px 4px -3px oklch(0 0 0 / 0.1);
+  --shadow-lg:
+    0px 5px 10px -2px oklch(0 0 0 / 0.1), 0px 4px 6px -3px oklch(0 0 0 / 0.1);
+  --shadow-xl:
+    0px 5px 10px -2px oklch(0 0 0 / 0.1), 0px 8px 10px -3px oklch(0 0 0 / 0.1);
+  --font-sans: Montserrat, sans-serif;
+  --font-serif: Playfair Display, serif;
+  --font-mono: Source Code Pro, monospace;
+
+  --bg-page: var(--background);
+  --bg-soft: color-mix(in oklch, var(--background) 86%, var(--muted) 14%);
+  --bg-panel: var(--card);
+  --ink-strong: var(--foreground);
+  --ink-body: color-mix(
+    in oklch,
+    var(--foreground) 86%,
+    var(--muted-foreground) 14%
+  );
+  --ink-muted: var(--muted-foreground);
+  --line: var(--border);
+  --shadow-soft: var(--shadow-lg);
+  --brand-accent: var(--primary);
+  --brand-accent-deep: color-mix(
+    in oklch,
+    var(--primary) 78%,
+    var(--foreground) 22%
+  );
+  --radius: 0.5rem;
+  --calendar-neural: var(--chart-1);
+  --calendar-metabolic: var(--chart-2);
+  --calendar-mechanical: var(--chart-3);
+  --calendar-band: color-mix(in oklch, var(--chart-4) 42%, transparent);
+  --calendar-zone: color-mix(in oklch, var(--destructive) 30%, transparent);
+  --calendar-point-alert: var(--destructive);
+
+  --midnight-bloom-component-color-001: oklch(0.47 0.12 40 / 0.24);
+  --midnight-bloom-component-color-002: oklch(0.98 0.01 75);
+  --midnight-bloom-component-color-003: oklch(0.94 0.02 63);
+  --midnight-bloom-component-color-004: oklch(0.98 0.01 72 / 0.87);
+  --midnight-bloom-component-color-005: oklch(0.96 0.05 73 / 0.6);
+  --midnight-bloom-component-color-006: oklch(0.987 0.012 75);
+  --midnight-bloom-component-color-007: oklch(0.965 0.02 69);
+  --midnight-bloom-component-color-008: oklch(0.95 0.02 72);
+  --midnight-bloom-component-color-009: oklch(0.985 0.01 74);
+  --midnight-bloom-component-color-010: oklch(0.955 0.015 70);
+  --midnight-bloom-component-color-011: oklch(0.75 0.07 51);
+  --midnight-bloom-component-color-012: oklch(0.4 0.03 38 / 0.15);
+  --midnight-bloom-component-color-013: oklch(0.985 0.01 73);
+  --midnight-bloom-component-color-014: oklch(0.96 0.015 66);
+  --midnight-bloom-component-color-015: oklch(0.96 0.06 78 / 0.45);
+  --midnight-bloom-component-color-016: oklch(0.986 0.013 75);
+  --midnight-bloom-component-color-017: oklch(0.95 0.02 66);
+  --midnight-bloom-component-color-018: oklch(0.992 0.01 77 / 0.9);
+  --midnight-bloom-component-color-019: oklch(0.87 0.02 59);
+  --midnight-bloom-component-color-020: oklch(0.99 0.01 76);
+  --midnight-bloom-component-color-021: oklch(0.91 0.02 60);
+  --midnight-bloom-component-color-022: oklch(0.85 0.04 55);
+  --midnight-bloom-component-color-023: oklch(0.975 0.018 70);
+  --midnight-bloom-component-color-024: oklch(0.89 0.025 58);
+  --midnight-bloom-component-color-025: oklch(0.73 0.07 52);
+  --midnight-bloom-component-color-026: oklch(0.35 0.03 38 / 0.14);
+  --midnight-bloom-component-color-027: oklch(0.89 0.02 60);
+  --midnight-bloom-component-color-028: oklch(0.95 0.02 63);
+  --midnight-bloom-component-color-029: oklch(0.88 0.02 60);
+  --midnight-bloom-component-color-030: oklch(0.985 0.015 72);
+  --midnight-bloom-component-color-031: oklch(0.955 0.02 64);
+  --midnight-bloom-component-color-032: oklch(0.99 0.01 75);
+  --midnight-bloom-component-color-033: oklch(0.965 0.02 68);
+  --midnight-bloom-component-color-034: oklch(0.9 0.03 60);
+  --midnight-bloom-component-color-035: oklch(0.85 0.04 56);
+  --midnight-bloom-component-color-036: oklch(0.995 0.01 76 / 0.92);
+  --midnight-bloom-component-color-037: oklch(0.968 0.02 70 / 0.92);
+  --midnight-bloom-component-color-038: oklch(0.86 0.02 58);
+  --midnight-bloom-component-color-039: oklch(0.87 0.03 58);
+  --midnight-bloom-component-color-040: oklch(0.985 0.02 67);
+  --midnight-bloom-component-color-041: oklch(0.74 0.08 46);
+  --midnight-bloom-component-color-042: oklch(0.76 0.07 47 / 0.35);
+  --midnight-bloom-component-color-043: oklch(0.95 0.03 60);
+  --midnight-bloom-component-color-044: oklch(0.88 0.14 76 / 0.5);
+  --midnight-bloom-component-color-045: oklch(0.81 0.1 34 / 0.38);
+  --midnight-bloom-component-color-046: oklch(0.96 0.015 76);
+  --midnight-bloom-component-color-047: oklch(0.92 0.03 64);
+  --midnight-bloom-component-color-048: oklch(0.99 0.008 78 / 0.97);
+  --midnight-bloom-component-color-049: oklch(0.9 0.02 60);
+  --midnight-bloom-component-color-050: oklch(0.22 0.03 35 / 0.16);
+  --midnight-bloom-component-color-051: oklch(0.985 0.004 78);
+  --midnight-bloom-component-color-052: oklch(0.89 0.015 60);
+  --midnight-bloom-component-color-053: oklch(0.18 0.01 34 / 0.2);
+  --midnight-bloom-component-color-054: oklch(0.55 0.01 42 / 0.08);
+  --midnight-bloom-component-color-055: oklch(0.55 0.01 42 / 0.16);
+  --midnight-bloom-component-color-056: oklch(0.58 0.01 46);
+  --midnight-bloom-component-color-057: oklch(0.74 0.03 58);
+  --midnight-bloom-component-color-058: oklch(0.82 0.03 58 / 0.8);
+  --midnight-bloom-component-color-059: oklch(0.25 0.01 40);
+  --midnight-bloom-component-color-060: oklch(0.23 0.01 38);
+  --midnight-bloom-component-color-061: oklch(0.99 0.004 84);
+  --midnight-bloom-component-color-062: oklch(0.2 0.008 40);
+  --midnight-bloom-component-color-063: oklch(0.88 0.015 60);
+  --midnight-bloom-component-color-064: oklch(0.45 0.2 30);
+  --midnight-bloom-component-color-065: oklch(0.62 0.18 45);
+  --midnight-bloom-component-color-066: oklch(0.2 0.01 28);
+  --midnight-bloom-component-color-067: oklch(0.98 0.005 82);
+  --midnight-bloom-component-color-068: oklch(0.17 0.01 28 / 0.72);
+  --midnight-bloom-component-color-069: oklch(0.98 0.003 84);
+  --midnight-bloom-component-color-070: oklch(0.86 0.006 77);
+  --midnight-bloom-component-color-071: oklch(0.24 0.01 30);
+  --midnight-bloom-component-color-072: oklch(0.35 0.01 42 / 0.9);
+  --midnight-bloom-component-color-073: oklch(0.44 0.19 28 / 0.25);
+  --midnight-bloom-component-color-074: oklch(0.61 0.14 47 / 0.2);
+  --midnight-bloom-component-color-075: oklch(0.98 0.01 73 / 0.94);
+  --midnight-bloom-component-color-076: oklch(0.91 0.02 62);
+  --midnight-bloom-component-color-077: oklch(0.58 0.2 28);
+  --midnight-bloom-component-color-078: oklch(0.5 0.19 24);
+  --midnight-bloom-component-color-079: oklch(0.45 0.2 28);
+  --midnight-bloom-component-color-080: oklch(0.95 0.02 64);
+  --midnight-bloom-component-color-081: oklch(0.93 0.02 63);
+  --midnight-bloom-component-color-082: oklch(0.96 0.03 58);
+  --midnight-bloom-component-color-083: oklch(0.85 0.07 60);
+  --midnight-bloom-component-color-084: oklch(0.44 0.08 55);
+  --midnight-bloom-component-color-085: oklch(0.95 0.05 50 / 0.48);
+  --midnight-bloom-component-color-086: oklch(0.99 0.01 73);
+  --midnight-bloom-component-color-087: oklch(0.97 0.02 70);
+  --midnight-bloom-component-color-088: oklch(0.98 0.01 72);
+  --midnight-bloom-component-color-089: oklch(0.84 0.06 58);
+  --midnight-bloom-component-color-090: oklch(0.53 0.13 46);
+  --midnight-bloom-component-color-091: oklch(0.99 0.01 74);
+  --midnight-bloom-component-color-092: oklch(0.91 0.04 58);
+  --midnight-bloom-component-color-093: oklch(0.73 0.09 56);
+  --midnight-bloom-component-color-094: oklch(0.96 0.04 24 / 0.65);
+  --midnight-bloom-component-color-095: oklch(0.59 0.14 24);
+  --midnight-bloom-component-color-096: oklch(0.45 0.14 24);
+  --midnight-bloom-component-color-097: oklch(0.97 0.03 52 / 0.85);
+  --midnight-bloom-component-color-098: oklch(0.81 0.08 54);
+  --midnight-bloom-component-color-099: oklch(0.34 0.08 32);
+  --midnight-bloom-component-color-100: oklch(0.96 0.02 67);
+  --midnight-bloom-component-color-101: oklch(0.93 0.04 48 / 0.5);
+  --midnight-bloom-component-color-102: oklch(0.97 0.02 70 / 0.9);
+  --midnight-bloom-component-color-103: oklch(0.56 0.17 27 / 0.8);
+  --midnight-bloom-component-color-104: oklch(0.48 0.16 24);
+  --midnight-bloom-component-color-105: oklch(0.54 0.11 55 / 0.55);
+  --midnight-bloom-component-color-106: oklch(0.98 0.01 74);
+  --midnight-bloom-component-color-107: oklch(0.96 0.02 66);
+  --midnight-bloom-component-color-108: oklch(0.92 0.03 61);
+  --midnight-bloom-component-color-109: oklch(0.73 0.08 56);
+  --midnight-bloom-component-color-110: oklch(0.51 0.13 44);
+  --midnight-bloom-component-color-111: oklch(0.94 0.06 44 / 0.42);
+  --midnight-bloom-component-color-112: oklch(0.95 0.04 210 / 0.32);
+  --midnight-bloom-component-color-113: oklch(0.96 0.02 68 / 0.9);
+  --midnight-bloom-component-color-114: oklch(0.91 0.03 61);
+  --midnight-bloom-component-color-115: oklch(0.59 0.15 44);
+  --midnight-bloom-component-color-116: oklch(0.98 0.01 74 / 0.94);
+  --midnight-bloom-component-color-117: oklch(0.95 0.06 34 / 0.42);
+  --midnight-bloom-component-color-118: oklch(0.77 0.12 30);
+  --midnight-bloom-component-color-119: oklch(0.39 0.14 28);
+  --midnight-bloom-component-color-120: oklch(0.98 0.01 74 / 0.9);
+  --midnight-bloom-component-color-121: oklch(0.965 0.018 67 / 0.94);
+  --midnight-bloom-component-color-122: oklch(0.88 0.02 62);
+  --midnight-bloom-component-color-123: oklch(0.98 0.012 75);
+  --midnight-bloom-component-color-124: oklch(0.89 0.016 62);
+  --midnight-bloom-component-color-125: oklch(0.965 0.018 67);
+  --midnight-bloom-component-color-126: oklch(0.974 0.016 67 / 0.95);
+  --midnight-bloom-component-color-127: oklch(0.86 0.03 57);
+  --midnight-bloom-component-color-128: oklch(0.97 0.02 68);
+  --midnight-bloom-component-color-129: oklch(0.95 0.06 34 / 0.32);
+  --midnight-bloom-component-color-130: oklch(0.77 0.12 30 / 0.6);
+  --midnight-bloom-component-color-131: oklch(0.95 0.05 46 / 0.45);
+  --midnight-bloom-component-color-132: oklch(0.95 0.04 204 / 0.35);
+  --midnight-bloom-component-color-133: oklch(0.9 0.06 63);
+  --midnight-bloom-component-color-134: oklch(0.83 0.09 50);
+  --midnight-bloom-component-color-135: oklch(0.97 0.02 67);
+  --midnight-bloom-component-color-136: oklch(0.96 0.02 68);
+  --midnight-bloom-component-color-137: oklch(0.97 0.02 69);
+  --midnight-bloom-component-color-138: oklch(0.96 0.02 64);
 }
+
+@custom-variant dark (&:is(.dark *));
 
 *,
 *::before,
@@ -36,7 +237,11 @@ body {
 body {
   background:
     radial-gradient(circle at 8% 2%, var(--bg-soft), transparent 38%),
-    radial-gradient(circle at 84% 14%, oklch(0.92 0.03 35), transparent 42%),
+    radial-gradient(
+      circle at 84% 14%,
+      color-mix(in oklch, var(--brand-accent) 18%, var(--background)),
+      transparent 42%
+    ),
     var(--bg-page);
   color: var(--ink-body);
   font-family: var(--font-body), sans-serif;
@@ -55,12 +260,12 @@ button {
 }
 
 a:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
 .app-shell-skip-link {
-  background: oklch(0.96 0.02 66);
+  background: color-mix(in oklch, var(--background) 90%, var(--muted) 10%);
   border: 1px solid var(--line);
   border-radius: 0.65rem;
   color: var(--ink-strong);
@@ -85,7 +290,7 @@ a:focus-visible {
 .app-shell-topbar {
   align-items: center;
   backdrop-filter: blur(8px);
-  background: oklch(0.98 0.01 74 / 0.9);
+  background: color-mix(in oklch, var(--card) 90%, transparent);
   border: 1px solid var(--line);
   border-radius: 1.1rem;
   display: grid;
@@ -137,12 +342,12 @@ a:focus-visible {
 }
 
 .app-shell-nav-link:hover {
-  background: oklch(0.93 0.03 61);
+  background: color-mix(in oklch, var(--secondary) 44%, var(--background));
   color: var(--ink-strong);
 }
 
 .app-shell-nav-link.is-active {
-  background: oklch(0.9 0.05 56);
+  background: color-mix(in oklch, var(--primary) 30%, var(--background));
   color: var(--ink-strong);
 }
 
@@ -154,7 +359,7 @@ a:focus-visible {
 }
 
 .app-shell-session-pill {
-  background: oklch(0.95 0.02 66);
+  background: color-mix(in oklch, var(--secondary) 38%, var(--background));
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink-strong);
@@ -209,7 +414,7 @@ a:focus-visible {
 }
 
 .app-page-intro {
-  background: oklch(0.98 0.01 73 / 0.85);
+  background: color-mix(in oklch, var(--card) 88%, transparent);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -341,7 +546,7 @@ a:focus-visible {
 
 .auth-banner {
   align-items: center;
-  background: oklch(0.98 0.01 74 / 0.93);
+  background: color-mix(in oklch, var(--card) 92%, transparent);
   border: 1px solid var(--line);
   border-radius: 999px;
   display: flex;
@@ -362,7 +567,7 @@ a:focus-visible {
 }
 
 .skip-link {
-  background: oklch(0.96 0.02 66);
+  background: color-mix(in oklch, var(--background) 90%, var(--muted) 10%);
   border: 1px solid var(--line);
   border-radius: 0.65rem;
   color: var(--ink-strong);
@@ -386,7 +591,7 @@ article[id] {
   background: linear-gradient(
     130deg,
     transparent 0%,
-    oklch(0.92 0.03 56 / 0.6) 48%,
+    color-mix(in oklch, var(--brand-accent) 26%, transparent) 48%,
     transparent 100%
   );
   inset: 0;
@@ -401,7 +606,7 @@ article[id] {
 }
 
 .eyebrow {
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   font-size: clamp(0.73rem, 1.5vw, 0.82rem);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -457,7 +662,7 @@ h1 {
 }
 
 .button:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -466,19 +671,23 @@ h1 {
 }
 
 .button-primary {
-  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
-  box-shadow: 0 8px 16px oklch(0.47 0.12 40 / 0.24);
-  color: oklch(0.98 0.01 75);
+  background: linear-gradient(
+    120deg,
+    var(--brand-accent-deep),
+    var(--brand-accent)
+  );
+  box-shadow: 0 8px 16px var(--midnight-bloom-component-color-001);
+  color: var(--midnight-bloom-component-color-002);
 }
 
 .button-secondary {
-  background: oklch(0.94 0.02 63);
+  background: var(--midnight-bloom-component-color-003);
   border: 1px solid var(--line);
   color: var(--ink-strong);
 }
 
 .hero-metrics {
-  background: oklch(0.98 0.01 72 / 0.87);
+  background: var(--midnight-bloom-component-color-004);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -527,10 +736,14 @@ h1 {
   background:
     radial-gradient(
       circle at 12% 24%,
-      oklch(0.96 0.05 73 / 0.6),
+      var(--midnight-bloom-component-color-005),
       transparent 48%
     ),
-    linear-gradient(180deg, oklch(0.987 0.012 75), oklch(0.965 0.02 69));
+    linear-gradient(
+      180deg,
+      var(--midnight-bloom-component-color-006),
+      var(--midnight-bloom-component-color-007)
+    );
   display: grid;
   gap: 0.6rem;
 }
@@ -551,7 +764,7 @@ h1 {
 }
 
 .session-focus-id code {
-  background: oklch(0.95 0.02 72);
+  background: var(--midnight-bloom-component-color-008);
   border: 1px solid var(--line);
   border-radius: 0.55rem;
   color: var(--ink-strong);
@@ -590,8 +803,8 @@ h1 {
 .path-card {
   background: linear-gradient(
     170deg,
-    oklch(0.985 0.01 74),
-    oklch(0.955 0.015 70)
+    var(--midnight-bloom-component-color-009),
+    var(--midnight-bloom-component-color-010)
   );
   border: 1px solid var(--line);
   border-radius: 0.9rem;
@@ -610,13 +823,13 @@ h1 {
 }
 
 .path-card-link:hover {
-  border-color: oklch(0.75 0.07 51);
-  box-shadow: 0 10px 18px oklch(0.4 0.03 38 / 0.15);
+  border-color: var(--midnight-bloom-component-color-011);
+  box-shadow: 0 10px 18px var(--midnight-bloom-component-color-012);
   transform: translateY(-1px);
 }
 
 .path-card-link:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -638,7 +851,7 @@ h1 {
 }
 
 .path-cta {
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   font-size: 0.9rem;
   font-weight: 700;
   text-decoration: underline;
@@ -654,8 +867,8 @@ h1 {
 .flow-card {
   background: linear-gradient(
     180deg,
-    oklch(0.985 0.01 73),
-    oklch(0.96 0.015 66)
+    var(--midnight-bloom-component-color-013),
+    var(--midnight-bloom-component-color-014)
   );
   border: 1px solid var(--line);
   border-radius: 0.9rem;
@@ -701,7 +914,7 @@ h1 {
 }
 
 .integration-endpoint code {
-  background: oklch(0.95 0.02 72);
+  background: var(--midnight-bloom-component-color-008);
   border: 1px solid var(--line);
   border-radius: 0.55rem;
   color: var(--ink-strong);
@@ -716,10 +929,14 @@ h1 {
   background:
     radial-gradient(
       circle at 8% 18%,
-      oklch(0.96 0.06 78 / 0.45),
+      var(--midnight-bloom-component-color-015),
       transparent 42%
     ),
-    linear-gradient(180deg, oklch(0.986 0.013 75), oklch(0.95 0.02 66));
+    linear-gradient(
+      180deg,
+      var(--midnight-bloom-component-color-016),
+      var(--midnight-bloom-component-color-017)
+    );
 }
 
 .routine-builder-header p {
@@ -736,8 +953,8 @@ h1 {
 
 .routine-builder-picker-card,
 .routine-builder-draft-card {
-  background: oklch(0.992 0.01 77 / 0.9);
-  border: 1px solid oklch(0.87 0.02 59);
+  background: var(--midnight-bloom-component-color-018);
+  border: 1px solid var(--midnight-bloom-component-color-019);
   border-radius: 0.9rem;
   display: grid;
   gap: 0.75rem;
@@ -773,9 +990,18 @@ h1 {
 .routine-builder-select {
   appearance: none;
   background:
-    linear-gradient(180deg, oklch(0.99 0.01 76), oklch(0.965 0.02 69))
+    linear-gradient(
+        180deg,
+        var(--midnight-bloom-component-color-020),
+        var(--midnight-bloom-component-color-007)
+      )
       padding-box,
-    linear-gradient(180deg, oklch(0.91 0.02 60), oklch(0.85 0.04 55)) border-box;
+    linear-gradient(
+        180deg,
+        var(--midnight-bloom-component-color-021),
+        var(--midnight-bloom-component-color-022)
+      )
+      border-box;
   border: 1px solid transparent;
   border-radius: 0.62rem;
   color: var(--ink-strong);
@@ -786,7 +1012,7 @@ h1 {
 
 .routine-builder-input:focus-visible,
 .routine-builder-select:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -807,8 +1033,8 @@ h1 {
 }
 
 .routine-builder-result {
-  background: oklch(0.975 0.018 70);
-  border: 1px solid oklch(0.89 0.025 58);
+  background: var(--midnight-bloom-component-color-023);
+  border: 1px solid var(--midnight-bloom-component-color-024);
   border-radius: 0.7rem;
   color: inherit;
   cursor: pointer;
@@ -825,14 +1051,14 @@ h1 {
 
 .routine-builder-result:hover,
 .routine-builder-result.is-active {
-  border-color: oklch(0.73 0.07 52);
-  box-shadow: 0 8px 16px oklch(0.35 0.03 38 / 0.14);
+  border-color: var(--midnight-bloom-component-color-025);
+  box-shadow: 0 8px 16px var(--midnight-bloom-component-color-026);
   transform: translateY(-1px);
 }
 
 .routine-builder-result:focus-visible,
 .routine-builder-remove:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -857,7 +1083,7 @@ h1 {
 }
 
 .routine-builder-selected-list li {
-  border-bottom: 1px solid oklch(0.89 0.02 60);
+  border-bottom: 1px solid var(--midnight-bloom-component-color-027);
   padding-bottom: 0.6rem;
 }
 
@@ -882,7 +1108,7 @@ h1 {
 
 .routine-builder-remove {
   align-items: center;
-  background: oklch(0.95 0.02 63);
+  background: var(--midnight-bloom-component-color-028);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink-strong);
@@ -897,8 +1123,8 @@ h1 {
 }
 
 .routine-builder-dsl {
-  background: oklch(0.955 0.015 70);
-  border: 1px solid oklch(0.88 0.02 60);
+  background: var(--midnight-bloom-component-color-010);
+  border: 1px solid var(--midnight-bloom-component-color-029);
   border-radius: 0.8rem;
   color: var(--ink-strong);
   font-size: 0.79rem;
@@ -917,8 +1143,8 @@ h1 {
 .muscle-map-section {
   background: linear-gradient(
     180deg,
-    oklch(0.985 0.015 72),
-    oklch(0.955 0.02 64)
+    var(--midnight-bloom-component-color-030),
+    var(--midnight-bloom-component-color-031)
   );
 }
 
@@ -946,9 +1172,18 @@ h1 {
 .muscle-map-controls select {
   appearance: none;
   background:
-    linear-gradient(180deg, oklch(0.99 0.01 75), oklch(0.965 0.02 68))
+    linear-gradient(
+        180deg,
+        var(--midnight-bloom-component-color-032),
+        var(--midnight-bloom-component-color-033)
+      )
       padding-box,
-    linear-gradient(180deg, oklch(0.9 0.03 60), oklch(0.85 0.04 56)) border-box;
+    linear-gradient(
+        180deg,
+        var(--midnight-bloom-component-color-034),
+        var(--midnight-bloom-component-color-035)
+      )
+      border-box;
   border: 1px solid transparent;
   border-radius: 0.6rem;
   color: var(--ink-strong);
@@ -959,7 +1194,7 @@ h1 {
 }
 
 .muscle-map-controls select:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -973,10 +1208,10 @@ h1 {
 .muscle-map-card {
   background: linear-gradient(
     180deg,
-    oklch(0.995 0.01 76 / 0.92),
-    oklch(0.968 0.02 70 / 0.92)
+    var(--midnight-bloom-component-color-036),
+    var(--midnight-bloom-component-color-037)
   );
-  border: 1px solid oklch(0.86 0.02 58);
+  border: 1px solid var(--midnight-bloom-component-color-038);
   border-radius: 0.95rem;
   display: grid;
   gap: 0.8rem;
@@ -1005,7 +1240,7 @@ h1 {
 }
 
 .muscle-map-focus {
-  border: 1px solid oklch(0.87 0.03 58);
+  border: 1px solid var(--midnight-bloom-component-color-039);
   border-radius: 0.75rem;
   display: grid;
   gap: 0.55rem;
@@ -1051,7 +1286,7 @@ h1 {
 }
 
 .muscle-map-legend {
-  border-top: 1px solid oklch(0.88 0.02 60);
+  border-top: 1px solid var(--midnight-bloom-component-color-029);
   display: grid;
   gap: 0.45rem;
   list-style: none;
@@ -1079,17 +1314,17 @@ h1 {
 }
 
 .anchor-target:target {
-  background: oklch(0.985 0.02 67);
-  border-color: oklch(0.74 0.08 46);
+  background: var(--midnight-bloom-component-color-040);
+  border-color: var(--midnight-bloom-component-color-041);
   box-shadow:
-    0 0 0 2px oklch(0.76 0.07 47 / 0.35),
+    0 0 0 2px var(--midnight-bloom-component-color-042),
     var(--shadow-soft);
 }
 
 .back-to-top {
   border: 1px solid var(--line);
   border-radius: 999px;
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   display: inline-flex;
   font-size: 0.88rem;
   font-weight: 700;
@@ -1099,11 +1334,11 @@ h1 {
 }
 
 .back-to-top:hover {
-  background: oklch(0.95 0.03 60);
+  background: var(--midnight-bloom-component-color-043);
 }
 
 .back-to-top:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -1143,15 +1378,19 @@ h1 {
   background:
     radial-gradient(
       circle at 18% 16%,
-      oklch(0.88 0.14 76 / 0.5),
+      var(--midnight-bloom-component-color-044),
       transparent 42%
     ),
     radial-gradient(
       circle at 82% 84%,
-      oklch(0.81 0.1 34 / 0.38),
+      var(--midnight-bloom-component-color-045),
       transparent 48%
     ),
-    linear-gradient(155deg, oklch(0.96 0.015 76), oklch(0.92 0.03 64));
+    linear-gradient(
+      155deg,
+      var(--midnight-bloom-component-color-046),
+      var(--midnight-bloom-component-color-047)
+    );
   display: grid;
   min-height: 100vh;
   overflow: hidden;
@@ -1173,10 +1412,10 @@ h1 {
 }
 
 .auth-left-panel {
-  background: oklch(0.99 0.008 78 / 0.97);
-  border: 1px solid oklch(0.9 0.02 60);
+  background: var(--midnight-bloom-component-color-048);
+  border: 1px solid var(--midnight-bloom-component-color-049);
   border-radius: 1.2rem;
-  box-shadow: 0 14px 28px oklch(0.22 0.03 35 / 0.16);
+  box-shadow: 0 14px 28px var(--midnight-bloom-component-color-050);
   display: grid;
   gap: 1rem;
   padding: clamp(1.2rem, 3vw, 2rem);
@@ -1219,13 +1458,13 @@ h1 {
 }
 
 .auth-input {
-  background: oklch(0.985 0.004 78);
-  border: 1px solid oklch(0.89 0.015 60);
+  background: var(--midnight-bloom-component-color-051);
+  border: 1px solid var(--midnight-bloom-component-color-052);
   border-radius: 0.78rem;
   box-shadow:
-    0 2px 3px -1px oklch(0.18 0.01 34 / 0.2),
-    0 1px 0 0 oklch(0.55 0.01 42 / 0.08),
-    0 0 0 1px oklch(0.55 0.01 42 / 0.16);
+    0 2px 3px -1px var(--midnight-bloom-component-color-053),
+    0 1px 0 0 var(--midnight-bloom-component-color-054),
+    0 0 0 1px var(--midnight-bloom-component-color-055);
   color: var(--ink-strong);
   font: inherit;
   min-height: 2.8rem;
@@ -1233,22 +1472,22 @@ h1 {
 }
 
 .auth-input::placeholder {
-  color: oklch(0.58 0.01 46);
+  color: var(--midnight-bloom-component-color-056);
 }
 
 .auth-input:focus-visible {
-  border-color: oklch(0.74 0.03 58);
+  border-color: var(--midnight-bloom-component-color-057);
   box-shadow:
-    0 0 0 2px oklch(0.82 0.03 58 / 0.8),
-    0 2px 3px -1px oklch(0.18 0.01 34 / 0.2);
+    0 0 0 2px var(--midnight-bloom-component-color-058),
+    0 2px 3px -1px var(--midnight-bloom-component-color-053);
   outline: none;
 }
 
 .auth-submit {
-  background: oklch(0.25 0.01 40);
-  border: 1px solid oklch(0.23 0.01 38);
+  background: var(--midnight-bloom-component-color-059);
+  border: 1px solid var(--midnight-bloom-component-color-060);
   border-radius: 0.8rem;
-  color: oklch(0.99 0.004 84);
+  color: var(--midnight-bloom-component-color-061);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -1261,7 +1500,7 @@ h1 {
 }
 
 .auth-submit:hover:not(:disabled) {
-  background: oklch(0.2 0.008 40);
+  background: var(--midnight-bloom-component-color-062);
   transform: translateY(-1px);
 }
 
@@ -1271,7 +1510,7 @@ h1 {
 }
 
 .auth-submit:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -1283,7 +1522,7 @@ h1 {
 }
 
 .auth-divider div {
-  background: oklch(0.88 0.015 60);
+  background: var(--midnight-bloom-component-color-063);
   flex: 1;
   height: 1px;
 }
@@ -1302,10 +1541,10 @@ h1 {
 
 .auth-social-button {
   align-items: center;
-  background: oklch(0.25 0.01 40);
-  border: 1px solid oklch(0.23 0.01 38);
+  background: var(--midnight-bloom-component-color-059);
+  border: 1px solid var(--midnight-bloom-component-color-060);
   border-radius: 0.8rem;
-  color: oklch(0.99 0.004 84);
+  color: var(--midnight-bloom-component-color-061);
   cursor: pointer;
   display: inline-flex;
   justify-content: center;
@@ -1316,19 +1555,19 @@ h1 {
 }
 
 .auth-social-button:hover {
-  background: oklch(0.2 0.008 40);
+  background: var(--midnight-bloom-component-color-062);
   transform: translateY(-1px);
 }
 
 .auth-social-button:disabled {
-  background: oklch(0.25 0.01 40);
+  background: var(--midnight-bloom-component-color-059);
   cursor: not-allowed;
   opacity: 0.58;
   transform: none;
 }
 
 .auth-social-button:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -1344,7 +1583,7 @@ h1 {
 }
 
 .auth-error {
-  color: oklch(0.45 0.2 30);
+  color: var(--midnight-bloom-component-color-064);
   font-size: 0.85rem;
   font-weight: 600;
   margin: 0;
@@ -1370,7 +1609,7 @@ h1 {
 }
 
 .auth-signup-note a {
-  color: oklch(0.62 0.18 45);
+  color: var(--midnight-bloom-component-color-065);
   font-weight: 600;
   text-decoration: none;
 }
@@ -1380,9 +1619,9 @@ h1 {
 }
 
 .auth-right-panel {
-  background: oklch(0.2 0.01 28);
+  background: var(--midnight-bloom-component-color-066);
   border-radius: 1.2rem;
-  color: oklch(0.98 0.005 82);
+  color: var(--midnight-bloom-component-color-067);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -1402,7 +1641,7 @@ h1 {
 }
 
 .auth-pill-row p {
-  background: oklch(0.17 0.01 28 / 0.72);
+  background: var(--midnight-bloom-component-color-068);
   border-radius: 0.45rem;
   font-size: 0.75rem;
   margin: 0;
@@ -1411,7 +1650,7 @@ h1 {
 
 .auth-quote {
   backdrop-filter: blur(10px);
-  background: oklch(0.17 0.01 28 / 0.72);
+  background: var(--midnight-bloom-component-color-068);
   border-radius: 0.9rem;
   max-width: 26rem;
   padding: 1rem;
@@ -1420,7 +1659,7 @@ h1 {
 }
 
 .auth-quote h2 {
-  color: oklch(0.98 0.003 84);
+  color: var(--midnight-bloom-component-color-069);
   font-family: var(--font-body), sans-serif;
   font-size: 1rem;
   font-weight: 500;
@@ -1429,13 +1668,13 @@ h1 {
 }
 
 .auth-quote p {
-  color: oklch(0.86 0.006 77);
+  color: var(--midnight-bloom-component-color-070);
   font-size: 0.84rem;
   margin: 0.6rem 0 0;
 }
 
 .auth-quote p span {
-  color: oklch(0.99 0.004 84);
+  color: var(--midnight-bloom-component-color-061);
   font-weight: 700;
 }
 
@@ -1449,9 +1688,9 @@ h1 {
 }
 
 .auth-pattern span {
-  background: oklch(0.24 0.01 30);
+  background: var(--midnight-bloom-component-color-071);
   border-radius: 1rem;
-  box-shadow: 0 2px 0 0 oklch(0.35 0.01 42 / 0.9) inset;
+  box-shadow: 0 2px 0 0 var(--midnight-bloom-component-color-072) inset;
   display: block;
   height: clamp(5.8rem, 8vw, 7.5rem);
   width: clamp(5.8rem, 8vw, 7.5rem);
@@ -1472,12 +1711,12 @@ h1 {
   background:
     radial-gradient(
       circle at 50% 20%,
-      oklch(0.44 0.19 28 / 0.25),
+      var(--midnight-bloom-component-color-073),
       transparent 56%
     ),
     radial-gradient(
       circle at 35% 58%,
-      oklch(0.61 0.14 47 / 0.2),
+      var(--midnight-bloom-component-color-074),
       transparent 68%
     );
   filter: blur(28px);
@@ -1525,7 +1764,7 @@ h1 {
 }
 
 .today-boundary {
-  background: oklch(0.98 0.01 73 / 0.94);
+  background: var(--midnight-bloom-component-color-075);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -1603,7 +1842,7 @@ h1 {
 }
 
 .today-gauge-track {
-  background: oklch(0.91 0.02 62);
+  background: var(--midnight-bloom-component-color-076);
   border-radius: 999px;
   height: 0.65rem;
   margin-top: 0.7rem;
@@ -1611,7 +1850,11 @@ h1 {
 }
 
 .today-gauge-track span {
-  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
+  background: linear-gradient(
+    120deg,
+    var(--brand-accent-deep),
+    var(--brand-accent)
+  );
   border-radius: 999px;
   display: block;
   height: 100%;
@@ -1622,8 +1865,12 @@ h1 {
 .today-axis-card[data-threshold-state="high"] .today-gauge-track span,
 .today-recruitment-card[data-threshold-state="high"] .today-recruitment-value,
 .today-decision-card[data-threshold-state="high"] .today-decision-value {
-  background: linear-gradient(120deg, oklch(0.58 0.2 28), oklch(0.5 0.19 24));
-  color: oklch(0.45 0.2 28);
+  background: linear-gradient(
+    120deg,
+    var(--midnight-bloom-component-color-077),
+    var(--midnight-bloom-component-color-078)
+  );
+  color: var(--midnight-bloom-component-color-079);
 }
 
 .today-recruitment-card {
@@ -1632,7 +1879,7 @@ h1 {
 }
 
 .today-recruitment-value {
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   font-size: 2rem;
   font-weight: 700;
   line-height: 1;
@@ -1669,7 +1916,7 @@ h1 {
 }
 
 .today-alert {
-  color: oklch(0.5 0.19 24);
+  color: var(--midnight-bloom-component-color-078);
 }
 
 .today-safe {
@@ -1688,7 +1935,7 @@ h1 {
 }
 
 .today-chip {
-  background: oklch(0.95 0.02 64);
+  background: var(--midnight-bloom-component-color-080);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink-strong);
@@ -1699,7 +1946,7 @@ h1 {
 }
 
 .today-chip:hover {
-  background: oklch(0.93 0.02 63);
+  background: var(--midnight-bloom-component-color-081);
 }
 
 .today-empty {
@@ -1735,10 +1982,10 @@ h1 {
 }
 
 .calendar-recompute-warning {
-  background: oklch(0.96 0.03 58);
-  border: 1px solid oklch(0.85 0.07 60);
+  background: var(--midnight-bloom-component-color-082);
+  border: 1px solid var(--midnight-bloom-component-color-083);
   border-radius: 0.75rem;
-  color: oklch(0.44 0.08 55);
+  color: var(--midnight-bloom-component-color-084);
   font-size: 0.9rem;
   margin: 0 0 0.9rem;
   padding: 0.58rem 0.72rem;
@@ -1748,10 +1995,14 @@ h1 {
   background:
     radial-gradient(
       circle at 86% 16%,
-      oklch(0.95 0.05 50 / 0.48),
+      var(--midnight-bloom-component-color-085),
       transparent 42%
     ),
-    linear-gradient(180deg, oklch(0.99 0.01 73), oklch(0.97 0.02 70));
+    linear-gradient(
+      180deg,
+      var(--midnight-bloom-component-color-086),
+      var(--midnight-bloom-component-color-087)
+    );
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -1786,7 +2037,7 @@ h1 {
   align-content: start;
   align-items: start;
   align-self: start;
-  background: oklch(0.98 0.01 72);
+  background: var(--midnight-bloom-component-color-088);
   border: 1px solid var(--line);
   border-radius: 0.9rem;
   display: grid;
@@ -1814,8 +2065,8 @@ h1 {
 }
 
 .planning-template-chip {
-  background: oklch(0.96 0.03 58);
-  border: 1px solid oklch(0.84 0.06 58);
+  background: var(--midnight-bloom-component-color-082);
+  border: 1px solid var(--midnight-bloom-component-color-089);
   border-radius: 0.65rem;
   color: var(--ink-strong);
   cursor: grab;
@@ -1828,7 +2079,7 @@ h1 {
 }
 
 .planning-template-chip:focus-visible {
-  outline: 2px solid oklch(0.53 0.13 46);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -1850,7 +2101,7 @@ h1 {
 }
 
 .planning-calendar-main .fc {
-  background: oklch(0.99 0.01 74);
+  background: var(--midnight-bloom-component-color-091);
   border: 1px solid var(--line);
   border-radius: 0.9rem;
   padding: 0.65rem;
@@ -1862,7 +2113,7 @@ h1 {
 }
 
 .planning-calendar-main .fc .fc-button {
-  background: oklch(0.95 0.02 66);
+  background: var(--midnight-bloom-component-color-017);
   border: 1px solid var(--line);
   box-shadow: none;
   color: var(--ink-strong);
@@ -1874,8 +2125,8 @@ h1 {
 .planning-calendar-main .fc .fc-button-primary:not(:disabled):active,
 .planning-calendar-main .fc .fc-button-primary:not(:disabled).fc-button-active,
 .planning-calendar-main .fc .fc-button:hover {
-  background: oklch(0.91 0.04 58);
-  border-color: oklch(0.73 0.09 56);
+  background: var(--midnight-bloom-component-color-092);
+  border-color: var(--midnight-bloom-component-color-093);
   color: var(--ink-strong);
 }
 
@@ -1896,10 +2147,10 @@ h1 {
 
 .planning-remove-zone {
   align-items: center;
-  background: oklch(0.96 0.04 24 / 0.65);
-  border: 1px dashed oklch(0.59 0.14 24);
+  background: var(--midnight-bloom-component-color-094);
+  border: 1px dashed var(--midnight-bloom-component-color-095);
   border-radius: 0.7rem;
-  color: oklch(0.45 0.14 24);
+  color: var(--midnight-bloom-component-color-096);
   display: flex;
   font-size: 0.82rem;
   font-weight: 700;
@@ -1912,7 +2163,7 @@ h1 {
 }
 
 .planning-keyboard-schedule {
-  background: oklch(0.98 0.01 72);
+  background: var(--midnight-bloom-component-color-088);
   border: 1px solid var(--line);
   border-radius: 0.9rem;
   display: grid;
@@ -1922,8 +2173,8 @@ h1 {
 
 .planning-validation-banner {
   align-items: center;
-  background: oklch(0.97 0.03 52 / 0.85);
-  border: 1px solid oklch(0.81 0.08 54);
+  background: var(--midnight-bloom-component-color-097);
+  border: 1px solid var(--midnight-bloom-component-color-098);
   border-radius: 0.9rem;
   display: flex;
   flex-wrap: wrap;
@@ -1933,7 +2184,7 @@ h1 {
 }
 
 .planning-validation-banner p {
-  color: oklch(0.34 0.08 32);
+  color: var(--midnight-bloom-component-color-099);
   font-weight: 600;
   margin: 0;
 }
@@ -1957,7 +2208,7 @@ h1 {
 }
 
 .planning-scheduled-list li {
-  background: oklch(0.96 0.02 67);
+  background: var(--midnight-bloom-component-color-100);
   border: 1px solid var(--line);
   border-radius: 0.7rem;
   display: grid;
@@ -1983,7 +2234,7 @@ h1 {
 }
 
 .planning-scheduled-list select {
-  background: oklch(0.99 0.01 74);
+  background: var(--midnight-bloom-component-color-091);
   border: 1px solid var(--line);
   border-radius: 0.55rem;
   color: var(--ink-strong);
@@ -2009,7 +2260,7 @@ h1 {
 }
 
 .planning-mutation-log {
-  background: oklch(0.98 0.01 72);
+  background: var(--midnight-bloom-component-color-088);
   border: 1px solid var(--line);
   border-radius: 0.9rem;
   display: grid;
@@ -2039,10 +2290,14 @@ h1 {
   background:
     radial-gradient(
       circle at 86% 18%,
-      oklch(0.93 0.04 48 / 0.5),
+      var(--midnight-bloom-component-color-101),
       transparent 44%
     ),
-    linear-gradient(180deg, oklch(0.985 0.01 73), oklch(0.97 0.02 70));
+    linear-gradient(
+      180deg,
+      var(--midnight-bloom-component-color-013),
+      var(--midnight-bloom-component-color-087)
+    );
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -2058,7 +2313,7 @@ h1 {
 
 .calendar-legend-item {
   align-items: center;
-  background: oklch(0.97 0.02 70 / 0.9);
+  background: var(--midnight-bloom-component-color-102);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink-strong);
@@ -2110,7 +2365,7 @@ h1 {
 }
 
 .calendar-audit-svg {
-  background: oklch(0.99 0.01 74);
+  background: var(--midnight-bloom-component-color-091);
   border: 1px solid var(--line);
   border-radius: 0.85rem;
   display: block;
@@ -2122,20 +2377,20 @@ h1 {
 }
 
 .calendar-threshold-line {
-  stroke: oklch(0.56 0.17 27 / 0.8);
+  stroke: var(--midnight-bloom-component-color-103);
   stroke-dasharray: 5 4;
   stroke-width: 1.4;
 }
 
 .calendar-threshold-label {
-  fill: oklch(0.48 0.16 24);
+  fill: var(--midnight-bloom-component-color-104);
   font-size: 0.74rem;
   font-weight: 700;
 }
 
 .calendar-recruitment-band {
   fill: var(--calendar-band);
-  stroke: oklch(0.54 0.11 55 / 0.55);
+  stroke: var(--midnight-bloom-component-color-105);
   stroke-width: 1;
 }
 
@@ -2152,7 +2407,7 @@ h1 {
 }
 
 .calendar-axis-point {
-  stroke: oklch(0.98 0.01 74);
+  stroke: var(--midnight-bloom-component-color-106);
   stroke-width: 1.2;
 }
 
@@ -2170,7 +2425,7 @@ h1 {
 }
 
 .calendar-point-button {
-  background: oklch(0.96 0.02 66);
+  background: var(--midnight-bloom-component-color-107);
   border: 1px solid var(--line);
   border-radius: 0.6rem;
   color: var(--ink-strong);
@@ -2183,19 +2438,19 @@ h1 {
 
 .calendar-point-button:hover,
 .calendar-point-button.active {
-  background: oklch(0.92 0.03 61);
-  border-color: oklch(0.73 0.08 56);
+  background: var(--midnight-bloom-component-color-108);
+  border-color: var(--midnight-bloom-component-color-109);
 }
 
 .calendar-point-button:focus-visible {
-  background: oklch(0.92 0.03 61);
-  border-color: oklch(0.73 0.08 56);
-  outline: 2px solid oklch(0.51 0.13 44);
+  background: var(--midnight-bloom-component-color-108);
+  border-color: var(--midnight-bloom-component-color-109);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
 .calendar-point-tooltip {
-  background: oklch(0.98 0.01 73 / 0.94);
+  background: var(--midnight-bloom-component-color-075);
   border: 1px solid var(--line);
   border-radius: 0.85rem;
   display: grid;
@@ -2217,7 +2472,7 @@ h1 {
 }
 
 .calendar-tooltip-metrics div {
-  background: oklch(0.96 0.02 67);
+  background: var(--midnight-bloom-component-color-100);
   border: 1px solid var(--line);
   border-radius: 0.6rem;
   padding: 0.45rem 0.55rem;
@@ -2246,7 +2501,7 @@ h1 {
 }
 
 .calendar-tooltip-links a {
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   font-weight: 600;
   text-decoration: none;
 }
@@ -2271,12 +2526,12 @@ h1 {
   background:
     radial-gradient(
       circle at 88% 10%,
-      oklch(0.94 0.06 44 / 0.42),
+      var(--midnight-bloom-component-color-111),
       transparent 38%
     ),
     radial-gradient(
       circle at 6% 94%,
-      oklch(0.95 0.04 210 / 0.32),
+      var(--midnight-bloom-component-color-112),
       transparent 42%
     ),
     var(--bg-panel);
@@ -2304,7 +2559,7 @@ h1 {
 
 .planner-step-chip {
   align-items: center;
-  background: oklch(0.96 0.02 68 / 0.9);
+  background: var(--midnight-bloom-component-color-113);
   border: 1px solid var(--line);
   border-radius: 0.7rem;
   display: grid;
@@ -2316,7 +2571,7 @@ h1 {
 
 .planner-step-chip span {
   align-items: center;
-  background: oklch(0.91 0.03 61);
+  background: var(--midnight-bloom-component-color-114);
   border-radius: 999px;
   color: var(--ink-strong);
   display: inline-flex;
@@ -2335,16 +2590,20 @@ h1 {
 }
 
 .planner-step-chip-active {
-  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
-  border-color: oklch(0.59 0.15 44);
+  background: linear-gradient(
+    120deg,
+    var(--brand-accent-deep),
+    var(--brand-accent)
+  );
+  border-color: var(--midnight-bloom-component-color-115);
 }
 
 .planner-step-chip-active span {
-  background: oklch(0.98 0.01 74 / 0.94);
+  background: var(--midnight-bloom-component-color-116);
 }
 
 .planner-step-chip-active p {
-  color: oklch(0.98 0.01 74);
+  color: var(--midnight-bloom-component-color-106);
 }
 
 .planner-flow-notice,
@@ -2355,15 +2614,15 @@ h1 {
 }
 
 .planner-flow-notice {
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   font-weight: 600;
 }
 
 .planner-flow-error {
-  background: oklch(0.95 0.06 34 / 0.42);
-  border: 1px solid oklch(0.77 0.12 30);
+  background: var(--midnight-bloom-component-color-117);
+  border: 1px solid var(--midnight-bloom-component-color-118);
   border-radius: 0.7rem;
-  color: oklch(0.39 0.14 28);
+  color: var(--midnight-bloom-component-color-119);
   display: grid;
   gap: 0.35rem;
   margin-top: 0.9rem;
@@ -2381,7 +2640,7 @@ h1 {
 }
 
 .planner-flow-panel {
-  background: oklch(0.98 0.01 74 / 0.9);
+  background: var(--midnight-bloom-component-color-120);
   border: 1px solid var(--line);
   border-radius: 0.95rem;
   display: grid;
@@ -2405,8 +2664,8 @@ h1 {
 
 .planner-template-panel,
 .planner-template-timeline {
-  background: oklch(0.965 0.018 67 / 0.94);
-  border: 1px solid oklch(0.88 0.02 62);
+  background: var(--midnight-bloom-component-color-121);
+  border: 1px solid var(--midnight-bloom-component-color-122);
   border-radius: 0.74rem;
   display: grid;
   gap: 0.58rem;
@@ -2442,8 +2701,8 @@ h1 {
 }
 
 .planner-template-timeline-list li {
-  background: oklch(0.98 0.012 75);
-  border: 1px solid oklch(0.89 0.016 62);
+  background: var(--midnight-bloom-component-color-123);
+  border: 1px solid var(--midnight-bloom-component-color-124);
   border-radius: 0.6rem;
   display: grid;
   gap: 0.18rem;
@@ -2471,7 +2730,7 @@ h1 {
 
 .planner-flow-input,
 .planner-flow-select {
-  background: oklch(0.99 0.01 76);
+  background: var(--midnight-bloom-component-color-020);
   border: 1px solid var(--line);
   border-radius: 0.6rem;
   color: var(--ink-strong);
@@ -2486,7 +2745,7 @@ h1 {
 .planner-flow-select:focus-visible,
 .planner-flow-action:focus-visible,
 .planner-flow-link:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -2511,7 +2770,7 @@ h1 {
 }
 
 .planner-flow-toggle input {
-  accent-color: var(--accent-deep);
+  accent-color: var(--brand-accent-deep);
   height: 1rem;
   margin: 0;
   width: 1rem;
@@ -2526,7 +2785,7 @@ h1 {
 }
 
 .planner-flow-card-list li {
-  background: oklch(0.965 0.018 67);
+  background: var(--midnight-bloom-component-color-125);
   border: 1px solid var(--line);
   border-radius: 0.7rem;
   display: grid;
@@ -2537,7 +2796,7 @@ h1 {
 .planner-flow-link {
   background: transparent;
   border: 0;
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 700;
@@ -2546,10 +2805,14 @@ h1 {
 }
 
 .planner-flow-action {
-  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
+  background: linear-gradient(
+    120deg,
+    var(--brand-accent-deep),
+    var(--brand-accent)
+  );
   border: 0;
   border-radius: 999px;
-  color: oklch(0.98 0.01 74);
+  color: var(--midnight-bloom-component-color-106);
   cursor: pointer;
   font-family: var(--font-body), sans-serif;
   font-size: 0.84rem;
@@ -2559,8 +2822,8 @@ h1 {
 }
 
 .planner-mesocycle-output {
-  background: oklch(0.974 0.016 67 / 0.95);
-  border: 1px solid oklch(0.86 0.03 57);
+  background: var(--midnight-bloom-component-color-126);
+  border: 1px solid var(--midnight-bloom-component-color-127);
   border-radius: 0.66rem;
   display: grid;
   gap: 0.5rem;
@@ -2590,10 +2853,10 @@ h1 {
 }
 
 .planner-flow-inline-error {
-  background: oklch(0.95 0.06 34 / 0.42);
-  border: 1px solid oklch(0.77 0.12 30);
+  background: var(--midnight-bloom-component-color-117);
+  border: 1px solid var(--midnight-bloom-component-color-118);
   border-radius: 0.62rem;
-  color: oklch(0.39 0.14 28);
+  color: var(--midnight-bloom-component-color-119);
   display: grid;
   gap: 0.3rem;
   margin: 0.2rem 0 0;
@@ -2611,7 +2874,7 @@ h1 {
 }
 
 .planner-review-card {
-  background: oklch(0.97 0.02 68);
+  background: var(--midnight-bloom-component-color-128);
   border: 1px solid var(--line);
   border-radius: 0.7rem;
   display: grid;
@@ -2663,14 +2926,14 @@ h1 {
 }
 
 .planner-review-overlap {
-  background: oklch(0.95 0.06 34 / 0.32);
-  border: 1px solid oklch(0.77 0.12 30 / 0.6);
+  background: var(--midnight-bloom-component-color-129);
+  border: 1px solid var(--midnight-bloom-component-color-130);
   border-radius: 0.62rem;
   padding: 0.55rem 0.62rem;
 }
 
 .planner-review-overlap-title {
-  color: oklch(0.39 0.14 28);
+  color: var(--midnight-bloom-component-color-119);
   font-size: 0.79rem;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -2685,7 +2948,7 @@ h1 {
 }
 
 .planner-review-drilldown-links a {
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   font-size: 0.82rem;
   font-weight: 700;
   text-decoration: none;
@@ -2727,7 +2990,7 @@ h1 {
 }
 
 .planner-review-summary {
-  background: oklch(0.97 0.02 68);
+  background: var(--midnight-bloom-component-color-128);
   border: 1px solid var(--line);
   border-radius: 0.7rem;
   padding: 0.75rem 0.8rem;
@@ -2784,12 +3047,12 @@ h1 {
   background:
     radial-gradient(
       circle at 88% 8%,
-      oklch(0.95 0.05 46 / 0.45),
+      var(--midnight-bloom-component-color-131),
       transparent 38%
     ),
     radial-gradient(
       circle at 4% 94%,
-      oklch(0.95 0.04 204 / 0.35),
+      var(--midnight-bloom-component-color-132),
       transparent 44%
     ),
     var(--bg-panel);
@@ -2815,7 +3078,7 @@ h1 {
 }
 
 .routine-flow-mode-tabs {
-  background: oklch(0.96 0.02 68 / 0.9);
+  background: var(--midnight-bloom-component-color-113);
   border: 1px solid var(--line);
   border-radius: 999px;
   display: grid;
@@ -2847,8 +3110,12 @@ h1 {
 }
 
 .routine-flow-tab-active {
-  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
-  color: oklch(0.98 0.01 74);
+  background: linear-gradient(
+    120deg,
+    var(--brand-accent-deep),
+    var(--brand-accent)
+  );
+  color: var(--midnight-bloom-component-color-106);
 }
 
 .routine-flow-tab:focus-visible,
@@ -2860,7 +3127,7 @@ h1 {
 .routine-flow-input:focus-visible,
 .routine-flow-select:focus-visible,
 .routine-flow-textarea:focus-visible {
-  outline: 2px solid oklch(0.42 0.17 40);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -2871,7 +3138,7 @@ h1 {
 }
 
 .routine-flow-history-button {
-  background: oklch(0.95 0.02 66);
+  background: var(--midnight-bloom-component-color-017);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink-strong);
@@ -2897,7 +3164,7 @@ h1 {
 }
 
 .routine-flow-pill {
-  background: oklch(0.95 0.02 66);
+  background: var(--midnight-bloom-component-color-017);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink-strong);
@@ -2910,8 +3177,8 @@ h1 {
 }
 
 .routine-flow-pill-active {
-  background: oklch(0.9 0.06 63);
-  border-color: oklch(0.83 0.09 50);
+  background: var(--midnight-bloom-component-color-133);
+  border-color: var(--midnight-bloom-component-color-134);
 }
 
 .routine-flow-visual-grid {
@@ -2922,7 +3189,7 @@ h1 {
 }
 
 .routine-flow-panel {
-  background: oklch(0.98 0.01 74 / 0.9);
+  background: var(--midnight-bloom-component-color-120);
   border: 1px solid var(--line);
   border-radius: 0.95rem;
   display: grid;
@@ -2953,7 +3220,7 @@ h1 {
 .routine-flow-input,
 .routine-flow-select,
 .routine-flow-textarea {
-  background: oklch(0.99 0.01 76);
+  background: var(--midnight-bloom-component-color-020);
   border: 1px solid var(--line);
   border-radius: 0.6rem;
   color: var(--ink-strong);
@@ -2992,7 +3259,7 @@ h1 {
 }
 
 .routine-flow-result {
-  background: oklch(0.97 0.02 67);
+  background: var(--midnight-bloom-component-color-135);
   border: 1px solid var(--line);
   border-radius: 0.65rem;
   color: var(--ink-strong);
@@ -3021,7 +3288,7 @@ h1 {
 .routine-flow-interval-list li,
 .routine-flow-variable-list li,
 .routine-flow-set-list li {
-  background: oklch(0.96 0.02 68);
+  background: var(--midnight-bloom-component-color-136);
   border: 1px solid var(--line);
   border-radius: 0.65rem;
   display: grid;
@@ -3042,7 +3309,7 @@ h1 {
 .routine-flow-link {
   background: transparent;
   border: 0;
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 700;
@@ -3055,10 +3322,14 @@ h1 {
 }
 
 .routine-flow-action {
-  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
+  background: linear-gradient(
+    120deg,
+    var(--brand-accent-deep),
+    var(--brand-accent)
+  );
   border: 0;
   border-radius: 999px;
-  color: oklch(0.98 0.01 74);
+  color: var(--midnight-bloom-component-color-106);
   cursor: pointer;
   font-family: var(--font-body), sans-serif;
   font-size: 0.86rem;
@@ -3089,7 +3360,7 @@ h1 {
 }
 
 .routine-flow-block {
-  background: oklch(0.97 0.02 69);
+  background: var(--midnight-bloom-component-color-137);
   border: 1px solid var(--line);
   border-radius: 0.8rem;
   display: grid;
@@ -3162,11 +3433,11 @@ h1 {
 }
 
 .routine-flow-preview-toggle::marker {
-  color: var(--accent-deep);
+  color: var(--brand-accent-deep);
 }
 
 .routine-flow-dsl {
-  background: oklch(0.96 0.02 64);
+  background: var(--midnight-bloom-component-color-138);
   border: 1px solid var(--line);
   border-radius: 0.65rem;
   font-size: 0.82rem;
@@ -3196,10 +3467,10 @@ h1 {
 }
 
 .routine-flow-error {
-  background: oklch(0.95 0.06 34 / 0.42);
-  border: 1px solid oklch(0.77 0.12 30);
+  background: var(--midnight-bloom-component-color-117);
+  border: 1px solid var(--midnight-bloom-component-color-118);
   border-radius: 0.7rem;
-  color: oklch(0.39 0.14 28);
+  color: var(--midnight-bloom-component-color-119);
   display: grid;
   gap: 0.35rem;
   padding: 0.7rem 0.8rem;
@@ -3482,5 +3753,90 @@ h1 {
 
   .anchor-target {
     transition: none;
+  }
+}
+
+@theme inline {
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+.dark {
+  --background: oklch(0.23 0.01 268.25);
+  --foreground: oklch(0.92 0 0);
+  --card: oklch(0.32 0.01 229.15);
+  --card-foreground: oklch(0.92 0 0);
+  --popover: oklch(0.32 0.01 229.15);
+  --popover-foreground: oklch(0.92 0 0);
+  --secondary: oklch(0.34 0.18 301.34);
+  --secondary-foreground: oklch(0.92 0 0);
+  --muted: oklch(0.39 0 0);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent: oklch(0.67 0.14 261.15);
+  --accent-foreground: oklch(0.92 0 0);
+  --border: oklch(0.39 0 0);
+  --input: oklch(0.39 0 0);
+  --sidebar: oklch(0.23 0.01 268.25);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-accent: oklch(0.67 0.14 261.15);
+  --sidebar-accent-foreground: oklch(0.92 0 0);
+  --sidebar-border: oklch(0.39 0 0);
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0;
+  --shadow-offset-y: 1px;
+  --shadow-2xs: 0 1px 3px 0px oklch(0 0 0 / 0.05);
+  --shadow-xs: 0 1px 3px 0px oklch(0 0 0 / 0.05);
+  --shadow-2xl: 0 1px 3px 0px oklch(0 0 0 / 0.25);
+  --shadow-sm:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
+  --shadow: 0 1px 3px 0px oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
+  --shadow-md:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 2px 4px -1px oklch(0 0 0 / 0.1);
+  --shadow-lg:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 4px 6px -1px oklch(0 0 0 / 0.1);
+  --shadow-xl:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 8px 10px -1px oklch(0 0 0 / 0.1);
+}
+
+@layer base {
+  body {
+    letter-spacing: var(--tracking-normal);
   }
 }
