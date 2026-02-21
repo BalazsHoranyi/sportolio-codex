@@ -1873,6 +1873,12 @@ h1 {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.today-bento-axes,
+.today-bento-decisions {
+  overflow: visible;
+  position: relative;
+}
+
 .today-bento-intro {
   display: grid;
   gap: 0.8rem;
@@ -1889,6 +1895,34 @@ h1 {
 .today-header p {
   margin: 0.55rem 0 0;
   max-width: 62ch;
+}
+
+.today-data-source {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0;
+  max-width: fit-content;
+  padding: 0.28rem 0.62rem;
+  text-transform: uppercase;
+}
+
+.today-data-source-sample {
+  background: color-mix(
+    in oklch,
+    var(--midnight-bloom-component-color-078) 14%,
+    transparent
+  );
+  border-color: color-mix(
+    in oklch,
+    var(--midnight-bloom-component-color-078) 26%,
+    var(--line)
+  );
+  color: var(--midnight-bloom-component-color-078);
 }
 
 .today-boundary {
@@ -2062,18 +2096,127 @@ h1 {
 }
 
 .today-chip {
+  align-items: center;
   background: var(--midnight-bloom-component-color-080);
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--ink-strong);
+  display: inline-flex;
   font-size: 0.8rem;
   font-weight: 600;
+  gap: 0.4rem;
   padding: 0.45rem 0.7rem;
   text-decoration: none;
 }
 
+.today-chip span[aria-label$="contribution share"] {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .today-chip:hover {
   background: var(--midnight-bloom-component-color-081);
+}
+
+.today-chip-row-compact {
+  margin-top: 0.45rem;
+}
+
+.today-chip-row-compact .today-chip {
+  font-size: 0.74rem;
+  padding: 0.35rem 0.58rem;
+}
+
+.today-score-explain {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+}
+
+.today-score-tooltip {
+  position: relative;
+}
+
+.today-score-tooltip-trigger {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 700;
+  gap: 0.3rem;
+  letter-spacing: 0.02em;
+  margin: 0;
+  padding: 0;
+}
+
+.today-score-tooltip-trigger::after {
+  content: "i";
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.today-score-tooltip-trigger:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 2px;
+}
+
+.today-score-tooltip-content {
+  background: color-mix(in oklch, var(--bg-panel) 96%, var(--background) 4%);
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 0.38rem;
+  left: 0;
+  margin-top: 0.45rem;
+  max-width: min(19rem, calc(100vw - 2.2rem));
+  opacity: 0;
+  padding: 0.62rem 0.7rem;
+  pointer-events: none;
+  position: absolute;
+  top: 100%;
+  transform: translateY(-0.18rem);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+  z-index: 20;
+}
+
+.today-score-tooltip:hover .today-score-tooltip-content,
+.today-score-tooltip:focus-within .today-score-tooltip-content {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.today-score-explain-axis,
+.today-score-explain-decision,
+.today-score-explain-label {
+  margin: 0;
+}
+
+.today-score-explain-axis,
+.today-score-explain-decision {
+  color: var(--ink-strong);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.today-score-explain-label {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .today-empty {

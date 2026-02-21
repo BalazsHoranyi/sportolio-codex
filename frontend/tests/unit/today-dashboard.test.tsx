@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import type {
   TodayAccumulationResponse,
@@ -56,6 +56,83 @@ function buildSnapshot(
         capacityGatedScore: 5.3333,
       },
     },
+    explainability: {
+      neural: {
+        scoreValue: 8,
+        thresholdState: "high",
+        axisMeaning: "Neural readiness.",
+        decisionHint: "Back off high-skill work.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 8,
+            contributionShare: 1,
+          },
+        ],
+      },
+      metabolic: {
+        scoreValue: 4,
+        thresholdState: "moderate",
+        axisMeaning: "Metabolic strain.",
+        decisionHint: "Consolidate hard work.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 4,
+            contributionShare: 1,
+          },
+        ],
+      },
+      mechanical: {
+        scoreValue: 3,
+        thresholdState: "low",
+        axisMeaning: "Mechanical strain.",
+        decisionHint: "Proceed as planned.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 3,
+            contributionShare: 1,
+          },
+        ],
+      },
+      recruitment: {
+        scoreValue: 5,
+        thresholdState: "moderate",
+        axisMeaning: "Recruitment demand.",
+        decisionHint: "Watch high-threshold stacking.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 5,
+            contributionShare: 1,
+          },
+        ],
+      },
+      combined: {
+        scoreValue: 5.3333,
+        thresholdState: "moderate",
+        axisMeaning: "Combined risk.",
+        decisionHint: "Monitor readiness.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 5.3333,
+            contributionShare: 1,
+          },
+        ],
+      },
+    },
     ...overrides,
   };
 }
@@ -73,7 +150,7 @@ describe("TodayDashboard", () => {
     expect(screen.getByText("Neural")).toBeTruthy();
     expect(screen.getByText("Metabolic")).toBeTruthy();
     expect(screen.getByText("Mechanical")).toBeTruthy();
-    expect(screen.getByText(/Recruitment/i)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /Recruitment/i })).toBeTruthy();
 
     expect(screen.getByTestId("combined-score-card")).toBeTruthy();
     expect(screen.getByTestId("capacity-card")).toBeTruthy();
@@ -116,7 +193,10 @@ describe("TodayDashboard", () => {
       <TodayDashboard snapshot={buildSnapshot()} contributors={contributors} />,
     );
 
-    const includedLink = screen.getByRole("link", {
+    const contributorsRegion = screen.getByRole("region", {
+      name: /why this today contributors/i,
+    });
+    const includedLink = within(contributorsRegion).getByRole("link", {
       name: /heavy lower session/i,
     });
 
@@ -137,7 +217,92 @@ describe("TodayDashboard", () => {
     );
 
     expect(
-      screen.getByText(/no completed contributors inside today's boundary/i),
+      screen.getAllByText(/no completed contributors inside today's boundary/i)
+        .length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("renders per-score explainability tooltips with score-specific controls and contributor links", () => {
+    render(
+      <TodayDashboard
+        snapshot={buildSnapshot({
+          explainability: {
+            neural: {
+              scoreValue: 8,
+              thresholdState: "high",
+              axisMeaning: "Neural readiness.",
+              decisionHint: "Back off high-skill work.",
+              contributors: [
+                {
+                  sessionId: "completed-before-boundary",
+                  label: "Heavy lower session",
+                  href: "/calendar?sessionId=completed-before-boundary",
+                  contributionMagnitude: 8,
+                  contributionShare: 1,
+                },
+              ],
+            },
+            metabolic: {
+              scoreValue: 4,
+              thresholdState: "moderate",
+              axisMeaning: "Metabolic strain.",
+              decisionHint: "Consolidate hard work.",
+              contributors: [],
+            },
+            mechanical: {
+              scoreValue: 3,
+              thresholdState: "low",
+              axisMeaning: "Mechanical strain.",
+              decisionHint: "Proceed as planned.",
+              contributors: [],
+            },
+            recruitment: {
+              scoreValue: 5,
+              thresholdState: "moderate",
+              axisMeaning: "Recruitment demand.",
+              decisionHint: "Watch high-threshold stacking.",
+              contributors: [],
+            },
+            combined: {
+              scoreValue: 5.3333,
+              thresholdState: "moderate",
+              axisMeaning: "Combined risk.",
+              decisionHint: "Monitor readiness.",
+              contributors: [
+                {
+                  sessionId: "completed-before-boundary",
+                  label: "Heavy lower session",
+                  href: "/calendar?sessionId=completed-before-boundary",
+                  contributionMagnitude: 5.3333,
+                  contributionShare: 1,
+                },
+              ],
+            },
+          },
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /why this neural score/i }),
     ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /why this metabolic score/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /why this mechanical score/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /why this recruitment score/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /why this combined score/i }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole("tooltip")).toHaveLength(5);
+
+    expect(screen.getByText("Neural readiness.")).toBeTruthy();
+    expect(screen.getByText("Combined risk.")).toBeTruthy();
+    expect(screen.getAllByText("100%").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/top contributors/i).length).toBeGreaterThan(0);
   });
 });

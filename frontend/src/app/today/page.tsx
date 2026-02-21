@@ -7,7 +7,7 @@ import { loadTodayPageData } from "../../features/today/page-data";
 export const dynamic = "force-dynamic";
 
 export default async function TodayPage() {
-  const { snapshot, contributors } = await loadTodayPageData();
+  const { snapshot, contributors, source } = await loadTodayPageData();
 
   return (
     <AuthenticatedAppShell
@@ -15,7 +15,11 @@ export default async function TodayPage() {
       title="Today"
       description="Daily readiness and execution context."
     >
-      <TodayDashboard snapshot={snapshot} contributors={contributors} />
+      <TodayDashboard
+        snapshot={snapshot}
+        contributors={contributors}
+        dataSource={source}
+      />
     </AuthenticatedAppShell>
   );
 }

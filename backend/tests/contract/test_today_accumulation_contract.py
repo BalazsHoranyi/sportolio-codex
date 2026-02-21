@@ -26,6 +26,7 @@ def _request_payload() -> dict[str, object]:
         "sessions": [
             {
                 "sessionId": "completed-before-boundary",
+                "sessionLabel": "Heavy lower session",
                 "state": "completed",
                 "endedAt": "2026-02-20T10:00:00Z",
                 "fatigueAxes": {
@@ -37,6 +38,7 @@ def _request_payload() -> dict[str, object]:
             },
             {
                 "sessionId": "planned-before-boundary",
+                "sessionLabel": "Planned tempo run",
                 "state": "planned",
                 "endedAt": "2026-02-20T09:30:00Z",
                 "fatigueAxes": {
@@ -48,6 +50,7 @@ def _request_payload() -> dict[str, object]:
             },
             {
                 "sessionId": "completed-after-boundary",
+                "sessionLabel": "Completed after boundary",
                 "state": "completed",
                 "endedAt": "2026-02-20T11:00:00Z",
                 "fatigueAxes": {
@@ -113,6 +116,38 @@ def test_today_accumulation_contract_response_shape_and_completed_only_behavior(
         "capacityGateFactor": 1.09,
         "capacityGatedScore": 5.3333,
     }
+
+    explainability = body["explainability"]
+    assert set(explainability.keys()) == {
+        "neural",
+        "metabolic",
+        "mechanical",
+        "recruitment",
+        "combined",
+    }
+    expected_score_values = {
+        "neural": 8.0,
+        "metabolic": 4.0,
+        "mechanical": 3.0,
+        "recruitment": 5.0,
+        "combined": 5.3333,
+    }
+    for score_key, expected_value in expected_score_values.items():
+        score_block = explainability[score_key]
+        assert score_block["scoreValue"] == expected_value
+        assert score_block["thresholdState"] in {"low", "moderate", "high"}
+        assert isinstance(score_block["axisMeaning"], str)
+        assert score_block["axisMeaning"]
+        assert isinstance(score_block["decisionHint"], str)
+        assert score_block["decisionHint"]
+        assert len(score_block["contributors"]) == 1
+
+        contributor = score_block["contributors"][0]
+        assert contributor["sessionId"] == "completed-before-boundary"
+        assert contributor["label"] == "Heavy lower session"
+        assert contributor["href"] == "/calendar?sessionId=completed-before-boundary"
+        assert contributor["contributionShare"] == 1.0
+        assert contributor["contributionMagnitude"] == expected_value
 
 
 def test_today_accumulation_contract_is_deterministic_for_identical_payloads() -> None:

@@ -62,6 +62,45 @@ function isCombinedScoreDebug(value: unknown): boolean {
   );
 }
 
+function isExplainabilityContributor(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasString(value, "sessionId") &&
+    hasString(value, "label") &&
+    hasString(value, "href") &&
+    hasNumber(value, "contributionMagnitude") &&
+    hasNumber(value, "contributionShare")
+  );
+}
+
+function isScoreExplainability(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasNumber(value, "scoreValue") &&
+    hasString(value, "thresholdState") &&
+    hasString(value, "axisMeaning") &&
+    hasString(value, "decisionHint") &&
+    Array.isArray(value.contributors) &&
+    value.contributors.every((contributor) =>
+      isExplainabilityContributor(contributor),
+    )
+  );
+}
+
+function isTodayExplainability(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    isScoreExplainability(value.neural) &&
+    isScoreExplainability(value.metabolic) &&
+    isScoreExplainability(value.mechanical) &&
+    isScoreExplainability(value.recruitment) &&
+    isScoreExplainability(value.combined)
+  );
+}
+
 function isTodayAccumulationResponse(
   value: unknown,
 ): value is TodayAccumulationResponse {
@@ -88,7 +127,8 @@ function isTodayAccumulationResponse(
     isRecord(value.combinedScore) &&
     hasNumber(value.combinedScore, "value") &&
     hasString(value.combinedScore, "interpretation") &&
-    isCombinedScoreDebug(value.combinedScore.debug)
+    isCombinedScoreDebug(value.combinedScore.debug) &&
+    isTodayExplainability(value.explainability)
   );
 }
 

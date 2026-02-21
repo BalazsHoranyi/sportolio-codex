@@ -59,6 +59,59 @@ describe("TodayPage", () => {
           capacityGatedScore: 5.3333,
         },
       },
+      explainability: {
+        neural: {
+          scoreValue: 8,
+          thresholdState: "high",
+          axisMeaning: "Neural readiness.",
+          decisionHint: "Back off high-skill work.",
+          contributors: [
+            {
+              sessionId: "completed-before-boundary",
+              label: "Heavy lower session",
+              href: "/calendar?sessionId=completed-before-boundary",
+              contributionMagnitude: 8,
+              contributionShare: 1,
+            },
+          ],
+        },
+        metabolic: {
+          scoreValue: 4,
+          thresholdState: "moderate",
+          axisMeaning: "Metabolic strain.",
+          decisionHint: "Consolidate hard work.",
+          contributors: [],
+        },
+        mechanical: {
+          scoreValue: 3,
+          thresholdState: "low",
+          axisMeaning: "Mechanical strain.",
+          decisionHint: "Proceed as planned.",
+          contributors: [],
+        },
+        recruitment: {
+          scoreValue: 5,
+          thresholdState: "moderate",
+          axisMeaning: "Recruitment demand.",
+          decisionHint: "Watch high-threshold stacking.",
+          contributors: [],
+        },
+        combined: {
+          scoreValue: 5.3333,
+          thresholdState: "moderate",
+          axisMeaning: "Combined risk.",
+          decisionHint: "Monitor readiness.",
+          contributors: [
+            {
+              sessionId: "completed-before-boundary",
+              label: "Heavy lower session",
+              href: "/calendar?sessionId=completed-before-boundary",
+              contributionMagnitude: 5.3333,
+              contributionShare: 1,
+            },
+          ],
+        },
+      },
     });
 
     const html = renderToStaticMarkup(await TodayPage());
@@ -68,6 +121,7 @@ describe("TodayPage", () => {
     expect(html).toContain("Today fatigue snapshot");
     expect(html).toContain("Combined fatigue score");
     expect(html).toContain("System capacity");
+    expect(html).toContain("Live API snapshot");
     expect(html).toContain('aria-current="page"');
     expect(html.match(/<h1\b/g)?.length).toBe(1);
   });
@@ -79,6 +133,7 @@ describe("TodayPage", () => {
 
     expect(html).toContain("Today fatigue snapshot");
     expect(html).toContain("Boundary source");
+    expect(html).toContain("Using sample data (API unavailable).");
   });
 
   it("renders default contributor links from loaded session IDs when contributor metadata is unavailable", async () => {
@@ -126,6 +181,43 @@ describe("TodayPage", () => {
           capacityGatedScore: 5.3333,
         },
       },
+      explainability: {
+        neural: {
+          scoreValue: 8,
+          thresholdState: "high",
+          axisMeaning: "Neural readiness.",
+          decisionHint: "Back off high-skill work.",
+          contributors: [],
+        },
+        metabolic: {
+          scoreValue: 4,
+          thresholdState: "moderate",
+          axisMeaning: "Metabolic strain.",
+          decisionHint: "Consolidate hard work.",
+          contributors: [],
+        },
+        mechanical: {
+          scoreValue: 3,
+          thresholdState: "low",
+          axisMeaning: "Mechanical strain.",
+          decisionHint: "Proceed as planned.",
+          contributors: [],
+        },
+        recruitment: {
+          scoreValue: 5,
+          thresholdState: "moderate",
+          axisMeaning: "Recruitment demand.",
+          decisionHint: "Watch high-threshold stacking.",
+          contributors: [],
+        },
+        combined: {
+          scoreValue: 5.3333,
+          thresholdState: "moderate",
+          axisMeaning: "Combined risk.",
+          decisionHint: "Monitor readiness.",
+          contributors: [],
+        },
+      },
     });
 
     const html = renderToStaticMarkup(await TodayPage());
@@ -139,6 +231,6 @@ describe("TodayPage", () => {
 
     await expect(
       (async () => renderToStaticMarkup(await TodayPage()))(),
-    ).resolves.toContain("Today fatigue snapshot");
+    ).resolves.toContain("Using sample data (API unavailable).");
   });
 });

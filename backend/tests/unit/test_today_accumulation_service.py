@@ -277,3 +277,127 @@ def test_combined_score_emits_weight_debug_logs(
 
     assert any("base_weights" in message for message in caplog.messages)
     assert any("effective_weights" in message for message in caplog.messages)
+
+
+def test_today_accumulation_returns_explainability_top_three_ranked_contributors(
+    service: TodayAccumulationService,
+) -> None:
+    request = TodayAccumulationRequest(
+        as_of=datetime(2026, 2, 20, 12, 0, tzinfo=UTC),
+        timezone="UTC",
+        sessions=[
+            SessionFatigueInput(
+                session_id="a-session",
+                session_label="Session A",
+                state="completed",
+                ended_at=datetime(2026, 2, 19, 9, 0, tzinfo=UTC),
+                fatigue_axes=FatigueAxes(
+                    neural=5.0,
+                    metabolic=3.0,
+                    mechanical=1.0,
+                    recruitment=2.0,
+                ),
+            ),
+            SessionFatigueInput(
+                session_id="b-session",
+                session_label="Session B",
+                state="completed",
+                ended_at=datetime(2026, 2, 19, 10, 0, tzinfo=UTC),
+                fatigue_axes=FatigueAxes(
+                    neural=5.0,
+                    metabolic=1.0,
+                    mechanical=4.0,
+                    recruitment=3.0,
+                ),
+            ),
+            SessionFatigueInput(
+                session_id="c-session",
+                session_label="Session C",
+                state="completed",
+                ended_at=datetime(2026, 2, 19, 11, 0, tzinfo=UTC),
+                fatigue_axes=FatigueAxes(
+                    neural=2.0,
+                    metabolic=2.0,
+                    mechanical=2.0,
+                    recruitment=2.0,
+                ),
+            ),
+            SessionFatigueInput(
+                session_id="d-session",
+                session_label="Session D",
+                state="completed",
+                ended_at=datetime(2026, 2, 19, 12, 0, tzinfo=UTC),
+                fatigue_axes=FatigueAxes(
+                    neural=1.0,
+                    metabolic=1.0,
+                    mechanical=1.0,
+                    recruitment=1.0,
+                ),
+            ),
+        ],
+    )
+
+    result = service.compute_today_accumulation(request)
+
+    neural_contributors = result.explainability.neural.contributors
+    assert [item.session_id for item in neural_contributors] == [
+        "a-session",
+        "b-session",
+        "c-session",
+    ]
+    assert len(neural_contributors) == 3
+    assert sum(item.contribution_share for item in neural_contributors) == pytest.approx(
+        1.0, abs=1e-4
+    )
+    assert neural_contributors[0].label == "Session A"
+    assert neural_contributors[1].label == "Session B"
+    assert all(
+        item.href == f"/calendar?sessionId={item.session_id}" for item in neural_contributors
+    )
+    assert result.explainability.neural.threshold_state == "high"
+
+    combined_contributors = result.explainability.combined.contributors
+    assert len(combined_contributors) == 3
+    assert (
+        combined_contributors[0].contribution_magnitude
+        >= combined_contributors[1].contribution_magnitude
+    )
+    assert (
+        combined_contributors[1].contribution_magnitude
+        >= combined_contributors[2].contribution_magnitude
+    )
+    assert sum(item.contribution_share for item in combined_contributors) == pytest.approx(
+        1.0, abs=1e-4
+    )
+
+
+def test_today_accumulation_explainability_includes_axis_meaning_and_decision_hints(
+    service: TodayAccumulationService,
+) -> None:
+    request = TodayAccumulationRequest(
+        as_of=datetime(2026, 2, 20, 15, 0, tzinfo=UTC),
+        timezone="America/New_York",
+        sleep_events=[SleepEventInput(sleep_ended_at=datetime(2026, 2, 20, 10, 45, tzinfo=UTC))],
+        sessions=[
+            SessionFatigueInput(
+                session_id="completed-before-boundary",
+                state="completed",
+                ended_at=datetime(2026, 2, 20, 10, 0, tzinfo=UTC),
+                fatigue_axes=_axes(4.0),
+            )
+        ],
+    )
+
+    result = service.compute_today_accumulation(request)
+
+    score_blocks = [
+        result.explainability.neural,
+        result.explainability.metabolic,
+        result.explainability.mechanical,
+        result.explainability.recruitment,
+        result.explainability.combined,
+    ]
+    for block in score_blocks:
+        assert block.axis_meaning
+        assert block.decision_hint
+        assert block.threshold_state in {"low", "moderate", "high"}

@@ -1,5 +1,6 @@
 export type BoundarySource = "sleep_event" | "local_midnight";
 export type WorkoutType = "hybrid" | "strength" | "endurance";
+export type ScoreThresholdState = "low" | "moderate" | "high";
 
 export interface FatigueAxes {
   neural: number;
@@ -40,6 +41,30 @@ export interface RolloverBoundary {
   timezone: string;
 }
 
+export interface ExplainabilityContributor {
+  sessionId: string;
+  label: string;
+  href: string;
+  contributionMagnitude: number;
+  contributionShare: number;
+}
+
+export interface ScoreExplainability {
+  scoreValue: number;
+  thresholdState: ScoreThresholdState;
+  axisMeaning: string;
+  decisionHint: string;
+  contributors: ExplainabilityContributor[];
+}
+
+export interface TodayExplainability {
+  neural: ScoreExplainability;
+  metabolic: ScoreExplainability;
+  mechanical: ScoreExplainability;
+  recruitment: ScoreExplainability;
+  combined: ScoreExplainability;
+}
+
 export interface TodayAccumulationResponse {
   asOf: string;
   boundary: RolloverBoundary;
@@ -47,6 +72,7 @@ export interface TodayAccumulationResponse {
   excludedSessionIds: string[];
   accumulatedFatigue: FatigueAxes;
   combinedScore: CombinedScore;
+  explainability: TodayExplainability;
 }
 
 export interface TodayContributorSession {
@@ -61,6 +87,8 @@ export interface SleepEventInput {
 
 export interface SessionFatigueInput {
   sessionId: string;
+  sessionLabel?: string;
+  sessionHref?: string;
   state: "planned" | "in_progress" | "completed" | "partial" | "abandoned";
   endedAt: string | null;
   fatigueAxes: FatigueAxes;

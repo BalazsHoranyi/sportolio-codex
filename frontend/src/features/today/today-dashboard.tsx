@@ -5,16 +5,98 @@ import type {
   TodayAccumulationResponse,
   TodayContributorSession,
 } from "./types";
-import { buildTodayDashboardViewModel } from "./view-model";
+import {
+  buildTodayDashboardViewModel,
+  type ScoreExplainabilityViewModel,
+  type WhyThisLink,
+} from "./view-model";
 
 interface TodayDashboardProps {
   snapshot: TodayAccumulationResponse;
   contributors?: TodayContributorSession[];
+  dataSource?: "api" | "sample";
+}
+
+interface ScoreExplainabilityDetailsProps {
+  scoreKey: string;
+  scoreLabel: string;
+  explainability: ScoreExplainabilityViewModel;
+}
+
+function ContributorChips({ contributors }: { contributors: WhyThisLink[] }) {
+  if (contributors.length < 1) {
+    return (
+      <p className="today-empty">
+        No completed contributors inside today's boundary.
+      </p>
+    );
+  }
+
+  return (
+    <div className="today-chip-row today-chip-row-compact">
+      {contributors.map((contributor) => (
+        <a
+          className="today-chip"
+          href={contributor.href}
+          key={contributor.sessionId}
+        >
+          <span>{contributor.label}</span>
+          {contributor.shareLabel ? (
+            <span aria-label={`${contributor.label} contribution share`}>
+              {contributor.shareLabel}
+            </span>
+          ) : null}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function ScoreExplainabilityDetails({
+  scoreKey,
+  scoreLabel,
+  explainability,
+}: ScoreExplainabilityDetailsProps) {
+  const tooltipId = `${scoreKey}-score-tooltip`;
+
+  return (
+    <section
+      className="today-score-explain"
+      data-testid={`${scoreKey}-explain`}
+      aria-label={`${scoreLabel} score explainability`}
+    >
+      <div className="today-score-tooltip">
+        <button
+          aria-describedby={tooltipId}
+          aria-label={`Why this ${scoreLabel} score`}
+          className="today-score-tooltip-trigger"
+          type="button"
+        >
+          Why this {scoreLabel} score
+        </button>
+        <div
+          className="today-score-tooltip-content"
+          id={tooltipId}
+          role="tooltip"
+        >
+          <p className="today-score-explain-axis">
+            {explainability.axisMeaning}
+          </p>
+          <p className="today-score-explain-decision">
+            {explainability.decisionHint}
+          </p>
+        </div>
+      </div>
+      <p className="today-score-explain-label">Top contributors</p>
+      <ContributorChips contributors={explainability.contributors} />
+    </section>
+  );
 }
 
 export function TodayDashboard({
   snapshot,
   contributors,
+  dataSource = "api",
 }: TodayDashboardProps) {
   const viewModel = buildTodayDashboardViewModel(snapshot, contributors);
 
@@ -27,6 +109,16 @@ export function TodayDashboard({
             <h2>Today fatigue snapshot</h2>
             <p>Completed-only carryover from the current boundary window.</p>
           </header>
+          <p
+            className={`today-data-source ${
+              dataSource === "sample" ? "today-data-source-sample" : ""
+            }`}
+            role="status"
+          >
+            {dataSource === "sample"
+              ? "Using sample data (API unavailable)."
+              : "Live API snapshot"}
+          </p>
 
           <dl
             className="today-boundary"
@@ -74,6 +166,11 @@ export function TodayDashboard({
                 >
                   <span style={{ width: `${gauge.percent}%` }} />
                 </div>
+                <ScoreExplainabilityDetails
+                  scoreKey={gauge.id}
+                  scoreLabel={gauge.label}
+                  explainability={viewModel.scoreExplainability[gauge.id]}
+                />
               </article>
             ))}
 
@@ -88,6 +185,11 @@ export function TodayDashboard({
               <p className="today-recruitment-copy">
                 Derived from neural and mechanical carryover.
               </p>
+              <ScoreExplainabilityDetails
+                scoreKey="recruitment"
+                scoreLabel="Recruitment"
+                explainability={viewModel.scoreExplainability.recruitment}
+              />
             </article>
           </div>
         </BentoGridItem>
@@ -114,6 +216,11 @@ export function TodayDashboard({
               ) : (
                 <p className="today-safe">Below red threshold</p>
               )}
+              <ScoreExplainabilityDetails
+                scoreKey="combined"
+                scoreLabel="Combined"
+                explainability={viewModel.scoreExplainability.combined}
+              />
             </article>
 
             <article
@@ -143,19 +250,7 @@ export function TodayDashboard({
             Contributors are limited to sessions included by the accumulation
             boundary.
           </p>
-          <div className="today-chip-row">
-            {viewModel.whyThisLinks.length > 0 ? (
-              viewModel.whyThisLinks.map((link) => (
-                <a className="today-chip" href={link.href} key={link.sessionId}>
-                  {link.label}
-                </a>
-              ))
-            ) : (
-              <p className="today-empty">
-                No completed contributors inside today's boundary.
-              </p>
-            )}
-          </div>
+          <ContributorChips contributors={viewModel.whyThisLinks} />
         </BentoGridItem>
       </BentoGrid>
     </section>

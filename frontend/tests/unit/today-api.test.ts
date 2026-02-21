@@ -61,6 +61,39 @@ describe("today api", () => {
     expect(snapshot).toBeUndefined();
   });
 
+  it("returns undefined when explainability contributor payload is malformed", async () => {
+    const invalidPayload = structuredClone(todayAccumulationResponseSample) as {
+      explainability?: {
+        combined?: {
+          contributors?: unknown[];
+        };
+      };
+    };
+    invalidPayload.explainability = {
+      combined: {
+        contributors: [null],
+      },
+    };
+
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify(invalidPayload), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }),
+    );
+
+    const snapshot = await loadTodaySnapshot({
+      request: todayAccumulationRequestSample,
+      apiBaseUrl: "http://localhost:8000",
+      fetchImpl,
+    });
+
+    expect(snapshot).toBeUndefined();
+  });
+
   it("returns undefined when the fetch request throws", async () => {
     const fetchImpl = vi.fn(async () => {
       throw new Error("network failure");

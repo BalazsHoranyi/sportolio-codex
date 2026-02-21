@@ -1,12 +1,15 @@
 import type {
+  ExplainabilityContributor,
+  ScoreExplainability,
   TodayAccumulationResponse,
   TodayContributorSession,
 } from "./types";
 
 export type ThresholdState = "low" | "moderate" | "high";
+export type GaugeId = "neural" | "metabolic" | "mechanical";
 
 export interface AxisGaugeViewModel {
-  id: string;
+  id: GaugeId;
   label: string;
   value: number;
   percent: number;
@@ -17,6 +20,13 @@ export interface WhyThisLink {
   sessionId: string;
   label: string;
   href: string;
+  shareLabel?: string;
+}
+
+export interface ScoreExplainabilityViewModel {
+  axisMeaning: string;
+  decisionHint: string;
+  contributors: WhyThisLink[];
 }
 
 export interface TodayDashboardViewModel {
@@ -24,6 +34,13 @@ export interface TodayDashboardViewModel {
   boundarySourceLabel: string;
   boundaryWindow: string;
   gauges: AxisGaugeViewModel[];
+  scoreExplainability: {
+    neural: ScoreExplainabilityViewModel;
+    metabolic: ScoreExplainabilityViewModel;
+    mechanical: ScoreExplainabilityViewModel;
+    recruitment: ScoreExplainabilityViewModel;
+    combined: ScoreExplainabilityViewModel;
+  };
   recruitmentValue: number;
   recruitmentState: ThresholdState;
   combinedScoreValue: number;
@@ -61,6 +78,28 @@ function mapBoundarySource(boundarySource: string): string {
     : "Local midnight rollover";
 }
 
+function formatDateTime(value: string, timezone: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timezone,
+      timeZoneName: "short",
+    }).format(date);
+  } catch {
+    return value;
+  }
+}
+
 function toCapacityState(factor: number): ThresholdState {
   if (factor >= 1.1) {
     return "high";
@@ -85,11 +124,25 @@ function defaultSessionHref(sessionId: string): string {
   return `/calendar?sessionId=${encodeURIComponent(sessionId)}`;
 }
 
-function buildWhyThisLinks(
+function toShareLabel(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function byMagnitudeDesc(
+  a: ExplainabilityContributor,
+  b: ExplainabilityContributor,
+): number {
+  if (a.contributionMagnitude === b.contributionMagnitude) {
+    return a.sessionId.localeCompare(b.sessionId);
+  }
+  return b.contributionMagnitude - a.contributionMagnitude;
+}
+
+function buildFallbackContributorLinks(
   includedSessionIds: string[],
   contributors?: TodayContributorSession[],
 ): WhyThisLink[] {
-  if (!contributors || contributors.length === 0) {
+  if (!contributors || contributors.length < 1) {
     return includedSessionIds.map((sessionId) => ({
       sessionId,
       label: sessionId,
@@ -107,6 +160,63 @@ function buildWhyThisLinks(
     }));
 }
 
+function buildExplainabilityContributorLinks(
+  explainabilityContributors: ExplainabilityContributor[],
+  includedSessionIds: string[],
+): WhyThisLink[] {
+  if (explainabilityContributors.length < 1) {
+    return [];
+  }
+
+  const includedSet = new Set(includedSessionIds);
+  return explainabilityContributors
+    .filter((contributor) => includedSet.has(contributor.sessionId))
+    .sort(byMagnitudeDesc)
+    .slice(0, 3)
+    .map((contributor) => ({
+      sessionId: contributor.sessionId,
+      label: contributor.label,
+      href: contributor.href ?? defaultSessionHref(contributor.sessionId),
+      shareLabel: toShareLabel(contributor.contributionShare),
+    }));
+}
+
+function resolveContributorLinks(
+  explainabilityContributors: ExplainabilityContributor[],
+  includedSessionIds: string[],
+  contributors?: TodayContributorSession[],
+): WhyThisLink[] {
+  const explainabilityLinks = buildExplainabilityContributorLinks(
+    explainabilityContributors,
+    includedSessionIds,
+  );
+
+  if (explainabilityLinks.length > 0) {
+    return explainabilityLinks;
+  }
+
+  return buildFallbackContributorLinks(includedSessionIds, contributors).slice(
+    0,
+    3,
+  );
+}
+
+function buildScoreExplainabilityViewModel(
+  explainability: ScoreExplainability,
+  includedSessionIds: string[],
+  contributors?: TodayContributorSession[],
+): ScoreExplainabilityViewModel {
+  return {
+    axisMeaning: explainability.axisMeaning,
+    decisionHint: explainability.decisionHint,
+    contributors: resolveContributorLinks(
+      explainability.contributors,
+      includedSessionIds,
+      contributors,
+    ),
+  };
+}
+
 export function buildTodayDashboardViewModel(
   snapshot: TodayAccumulationResponse,
   contributors?: TodayContributorSession[],
@@ -122,9 +232,9 @@ export function buildTodayDashboardViewModel(
   const capacityState = toCapacityState(capacityFactor);
 
   return {
-    asOf: snapshot.asOf,
+    asOf: formatDateTime(snapshot.asOf, snapshot.boundary.timezone),
     boundarySourceLabel: mapBoundarySource(snapshot.boundary.boundarySource),
-    boundaryWindow: `${snapshot.boundary.boundaryStart} -> ${snapshot.boundary.boundaryEnd}`,
+    boundaryWindow: `${formatDateTime(snapshot.boundary.boundaryStart, snapshot.boundary.timezone)} to ${formatDateTime(snapshot.boundary.boundaryEnd, snapshot.boundary.timezone)}`,
     gauges: [
       {
         id: "neural",
@@ -148,6 +258,33 @@ export function buildTodayDashboardViewModel(
         thresholdState: toThresholdState(mechanical),
       },
     ],
+    scoreExplainability: {
+      neural: buildScoreExplainabilityViewModel(
+        snapshot.explainability.neural,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+      metabolic: buildScoreExplainabilityViewModel(
+        snapshot.explainability.metabolic,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+      mechanical: buildScoreExplainabilityViewModel(
+        snapshot.explainability.mechanical,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+      recruitment: buildScoreExplainabilityViewModel(
+        snapshot.explainability.recruitment,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+      combined: buildScoreExplainabilityViewModel(
+        snapshot.explainability.combined,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+    },
     recruitmentValue: recruitment,
     recruitmentState: toThresholdState(recruitment),
     combinedScoreValue: combinedScore,
@@ -156,6 +293,10 @@ export function buildTodayDashboardViewModel(
     capacityFactor,
     capacityState,
     capacityLabel: toCapacityLabel(capacityState),
-    whyThisLinks: buildWhyThisLinks(snapshot.includedSessionIds, contributors),
+    whyThisLinks: resolveContributorLinks(
+      snapshot.explainability.combined.contributors,
+      snapshot.includedSessionIds,
+      contributors,
+    ),
   };
 }

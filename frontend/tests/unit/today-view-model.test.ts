@@ -11,10 +11,12 @@ describe("today view-model", () => {
       todayContributorSample,
     );
 
-    expect(viewModel.whyThisLinks).toHaveLength(1);
-    expect(viewModel.whyThisLinks[0]?.sessionId).toBe(
+    expect(viewModel.whyThisLinks).toHaveLength(3);
+    expect(viewModel.whyThisLinks.map((link) => link.sessionId)).toEqual([
       "completed-before-boundary",
-    );
+      "sprint-starts-1",
+      "threshold-run-1",
+    ]);
   });
 
   it("creates default contributor links when custom contributors are absent", () => {
@@ -57,5 +59,129 @@ describe("today view-model", () => {
       viewModel.gauges.find((gauge) => gauge.id === "metabolic")?.value,
     ).toBe(0);
     expect(viewModel.recruitmentValue).toBe(10);
+  });
+
+  it("prefers backend explainability contributors and exposes contribution share labels", () => {
+    const snapshot = structuredClone(todayAccumulationResponseSample) as {
+      explainability?: unknown;
+    };
+    snapshot.explainability = {
+      neural: {
+        scoreValue: 8,
+        thresholdState: "high",
+        axisMeaning: "Neural readiness.",
+        decisionHint: "Back off high-skill work.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 8,
+            contributionShare: 1,
+          },
+        ],
+      },
+      metabolic: {
+        scoreValue: 4,
+        thresholdState: "moderate",
+        axisMeaning: "Metabolic strain.",
+        decisionHint: "Consolidate hard work.",
+        contributors: [],
+      },
+      mechanical: {
+        scoreValue: 3,
+        thresholdState: "low",
+        axisMeaning: "Mechanical strain.",
+        decisionHint: "Proceed as planned.",
+        contributors: [],
+      },
+      recruitment: {
+        scoreValue: 5,
+        thresholdState: "moderate",
+        axisMeaning: "Recruitment demand.",
+        decisionHint: "Watch high-threshold stacking.",
+        contributors: [],
+      },
+      combined: {
+        scoreValue: 5.3333,
+        thresholdState: "moderate",
+        axisMeaning: "Combined risk.",
+        decisionHint: "Monitor readiness.",
+        contributors: [
+          {
+            sessionId: "completed-before-boundary",
+            label: "Heavy lower session",
+            href: "/calendar?sessionId=completed-before-boundary",
+            contributionMagnitude: 5.3333,
+            contributionShare: 1,
+          },
+        ],
+      },
+    };
+
+    const viewModel = buildTodayDashboardViewModel(
+      snapshot as typeof todayAccumulationResponseSample,
+    );
+
+    expect(viewModel.whyThisLinks).toHaveLength(1);
+    expect(viewModel.whyThisLinks[0]?.label).toBe("Heavy lower session");
+    expect(viewModel.whyThisLinks[0]?.shareLabel).toBe("100%");
+    expect(viewModel.scoreExplainability.neural.axisMeaning).toContain(
+      "Neural readiness",
+    );
+  });
+
+  it("limits per-score contributor links to top three sessions by magnitude", () => {
+    const snapshot = structuredClone(todayAccumulationResponseSample);
+    snapshot.includedSessionIds = ["s1", "s2", "s3", "s4"];
+    snapshot.explainability.neural.contributors = [
+      {
+        sessionId: "s1",
+        label: "Session 1",
+        href: "/calendar?sessionId=s1",
+        contributionMagnitude: 1.1,
+        contributionShare: 0.1,
+      },
+      {
+        sessionId: "s2",
+        label: "Session 2",
+        href: "/calendar?sessionId=s2",
+        contributionMagnitude: 9.1,
+        contributionShare: 0.5,
+      },
+      {
+        sessionId: "s3",
+        label: "Session 3",
+        href: "/calendar?sessionId=s3",
+        contributionMagnitude: 5.2,
+        contributionShare: 0.25,
+      },
+      {
+        sessionId: "s4",
+        label: "Session 4",
+        href: "/calendar?sessionId=s4",
+        contributionMagnitude: 4.4,
+        contributionShare: 0.15,
+      },
+    ];
+
+    const viewModel = buildTodayDashboardViewModel(snapshot);
+    const links = viewModel.scoreExplainability.neural.contributors;
+
+    expect(links).toHaveLength(3);
+    expect(links.map((link) => link.sessionId)).toEqual(["s2", "s3", "s4"]);
+    expect(links[0]?.shareLabel).toBe("50%");
+  });
+
+  it("formats boundary window and as-of timestamps for scan-friendly readability", () => {
+    const viewModel = buildTodayDashboardViewModel(
+      todayAccumulationResponseSample,
+      todayContributorSample,
+    );
+
+    expect(viewModel.boundaryWindow).toContain(" to ");
+    expect(viewModel.boundaryWindow).not.toContain("->");
+    expect(viewModel.boundaryWindow).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
+    expect(viewModel.asOf).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
 });

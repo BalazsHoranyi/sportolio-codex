@@ -23,6 +23,8 @@ export const todayAccumulationRequestSample: TodayAccumulationRequest = {
   sessions: [
     {
       sessionId: "completed-before-boundary",
+      sessionLabel: "Heavy lower session",
+      sessionHref: "/calendar?sessionId=completed-before-boundary",
       state: "completed",
       endedAt: "2026-02-20T10:00:00Z",
       fatigueAxes: {
@@ -33,7 +35,35 @@ export const todayAccumulationRequestSample: TodayAccumulationRequest = {
       },
     },
     {
+      sessionId: "sprint-starts-1",
+      sessionLabel: "Sprint starts",
+      sessionHref: "/calendar?sessionId=sprint-starts-1",
+      state: "completed",
+      endedAt: "2026-02-20T04:10:00Z",
+      fatigueAxes: {
+        neural: 6,
+        metabolic: 3,
+        mechanical: 2,
+        recruitment: 4,
+      },
+    },
+    {
+      sessionId: "threshold-run-1",
+      sessionLabel: "Threshold run",
+      sessionHref: "/calendar?sessionId=threshold-run-1",
+      state: "completed",
+      endedAt: "2026-02-19T23:20:00Z",
+      fatigueAxes: {
+        neural: 5,
+        metabolic: 4,
+        mechanical: 2,
+        recruitment: 3,
+      },
+    },
+    {
       sessionId: "planned-before-boundary",
+      sessionLabel: "Planned tempo run",
+      sessionHref: "/calendar?sessionId=planned-before-boundary",
       state: "planned",
       endedAt: "2026-02-20T09:30:00Z",
       fatigueAxes: {
@@ -54,7 +84,11 @@ export const todayAccumulationResponseSample: TodayAccumulationResponse = {
     boundarySource: "sleep_event",
     timezone: "America/New_York",
   },
-  includedSessionIds: ["completed-before-boundary"],
+  includedSessionIds: [
+    "completed-before-boundary",
+    "sprint-starts-1",
+    "threshold-run-1",
+  ],
   excludedSessionIds: ["planned-before-boundary", "completed-after-boundary"],
   accumulatedFatigue: {
     neural: 8,
@@ -90,6 +124,162 @@ export const todayAccumulationResponseSample: TodayAccumulationResponse = {
       capacityGatedScore: 5.3333,
     },
   },
+  explainability: {
+    neural: {
+      scoreValue: 8,
+      thresholdState: "high",
+      axisMeaning:
+        "Neural reflects central-drive and coordination readiness for precision or high-skill work.",
+      decisionHint:
+        "Load is high. Consider reducing intensity or moving hard work.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 4.2,
+          contributionShare: 0.52,
+        },
+        {
+          sessionId: "sprint-starts-1",
+          label: "Sprint starts",
+          href: "/calendar?sessionId=sprint-starts-1",
+          contributionMagnitude: 2.4,
+          contributionShare: 0.3,
+        },
+        {
+          sessionId: "threshold-run-1",
+          label: "Threshold run",
+          href: "/calendar?sessionId=threshold-run-1",
+          contributionMagnitude: 1.4,
+          contributionShare: 0.18,
+        },
+      ],
+    },
+    metabolic: {
+      scoreValue: 4,
+      thresholdState: "moderate",
+      axisMeaning:
+        "Metabolic reflects substrate and energetic strain from recent work density.",
+      decisionHint:
+        "Load is building. Consolidate hard work and monitor drift.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 1.7,
+          contributionShare: 0.42,
+        },
+        {
+          sessionId: "threshold-run-1",
+          label: "Threshold run",
+          href: "/calendar?sessionId=threshold-run-1",
+          contributionMagnitude: 1.4,
+          contributionShare: 0.35,
+        },
+        {
+          sessionId: "sprint-starts-1",
+          label: "Sprint starts",
+          href: "/calendar?sessionId=sprint-starts-1",
+          contributionMagnitude: 0.9,
+          contributionShare: 0.23,
+        },
+      ],
+    },
+    mechanical: {
+      scoreValue: 3,
+      thresholdState: "low",
+      axisMeaning:
+        "Mechanical reflects force and tissue load accumulation that drives soreness and risk.",
+      decisionHint: "Load is low. Keep planned quality if execution is crisp.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 2.1,
+          contributionShare: 0.7,
+        },
+        {
+          sessionId: "sprint-starts-1",
+          label: "Sprint starts",
+          href: "/calendar?sessionId=sprint-starts-1",
+          contributionMagnitude: 0.6,
+          contributionShare: 0.2,
+        },
+        {
+          sessionId: "threshold-run-1",
+          label: "Threshold run",
+          href: "/calendar?sessionId=threshold-run-1",
+          contributionMagnitude: 0.3,
+          contributionShare: 0.1,
+        },
+      ],
+    },
+    recruitment: {
+      scoreValue: 5,
+      thresholdState: "moderate",
+      axisMeaning:
+        "Recruitment reflects high-threshold motor-unit demand derived from neural and mechanical stress.",
+      decisionHint:
+        "Load is building. Consolidate hard work and monitor drift.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 2.5,
+          contributionShare: 0.5,
+        },
+        {
+          sessionId: "sprint-starts-1",
+          label: "Sprint starts",
+          href: "/calendar?sessionId=sprint-starts-1",
+          contributionMagnitude: 1.5,
+          contributionShare: 0.3,
+        },
+        {
+          sessionId: "threshold-run-1",
+          label: "Threshold run",
+          href: "/calendar?sessionId=threshold-run-1",
+          contributionMagnitude: 1,
+          contributionShare: 0.2,
+        },
+      ],
+    },
+    combined: {
+      scoreValue: 5.3333,
+      thresholdState: "moderate",
+      axisMeaning:
+        "Combined estimates the probability that the next hard session degrades adaptation.",
+      decisionHint:
+        "Load is building. Consolidate hard work and monitor drift.",
+      contributors: [
+        {
+          sessionId: "completed-before-boundary",
+          label: "Heavy lower session",
+          href: "/calendar?sessionId=completed-before-boundary",
+          contributionMagnitude: 2.4533,
+          contributionShare: 0.46,
+        },
+        {
+          sessionId: "sprint-starts-1",
+          label: "Sprint starts",
+          href: "/calendar?sessionId=sprint-starts-1",
+          contributionMagnitude: 1.6533,
+          contributionShare: 0.31,
+        },
+        {
+          sessionId: "threshold-run-1",
+          label: "Threshold run",
+          href: "/calendar?sessionId=threshold-run-1",
+          contributionMagnitude: 1.2267,
+          contributionShare: 0.23,
+        },
+      ],
+    },
+  },
 };
 
 export const todayContributorSample: TodayContributorSession[] = [
@@ -97,6 +287,16 @@ export const todayContributorSample: TodayContributorSession[] = [
     sessionId: "completed-before-boundary",
     label: "Heavy lower session",
     href: "/calendar?sessionId=completed-before-boundary",
+  },
+  {
+    sessionId: "sprint-starts-1",
+    label: "Sprint starts",
+    href: "/calendar?sessionId=sprint-starts-1",
+  },
+  {
+    sessionId: "threshold-run-1",
+    label: "Threshold run",
+    href: "/calendar?sessionId=threshold-run-1",
   },
   {
     sessionId: "planned-before-boundary",

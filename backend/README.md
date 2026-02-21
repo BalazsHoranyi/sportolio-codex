@@ -92,6 +92,12 @@ Behavior:
 - Applies workout-type weight modifiers with renormalization so effective weights remain deterministic and sum to `1.0`.
 - Keeps interpretation text fixed to `probability next hard session degrades adaptation`.
 - Emits debug fields for `baseWeights`, `modifierWeights`, and `effectiveWeights` plus gate-stage scores.
+- Emits `explainability` blocks for displayed scores (`neural`, `metabolic`, `mechanical`, `recruitment`, `combined`) with:
+  - `scoreValue`
+  - `thresholdState` (`low | moderate | high`)
+  - `axisMeaning` + `decisionHint` tooltip copy
+  - top contributors (1-3) containing `sessionId`, `label`, `href`, `contributionMagnitude`, and `contributionShare`.
+- Contributor ranking is deterministic (`contributionMagnitude` descending, then `sessionId` ascending), and shares are normalized to the returned top-contributor set.
 
 ## Exercise catalog API
 
