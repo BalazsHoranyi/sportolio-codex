@@ -684,4 +684,257 @@ describe("RoutineCreationFlow", () => {
       screen.getByText(/moved bench press down in main block\./i),
     ).toBeTruthy();
   });
+
+  it("supports undo/redo across mixed visual and DSL edit history", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    await user.click(screen.getByRole("tab", { name: /^dsl$/i }));
+    const dslEditor = screen.getByRole("textbox", {
+      name: /routine dsl editor/i,
+    }) as HTMLTextAreaElement;
+    const editedDsl = JSON.parse(dslEditor.value) as {
+      strength: {
+        blocks: Array<{
+          exercises: Array<{
+            condition: string | null;
+          }>;
+        }>;
+      };
+    };
+    editedDsl.strength.blocks[0]!.exercises[0]!.condition =
+      "tempo == controlled";
+
+    fireEvent.change(dslEditor, {
+      target: { value: JSON.stringify(editedDsl, null, 2) },
+    });
+
+    await user.click(screen.getByRole("tab", { name: /^visual$/i }));
+    expect(
+      (
+        screen.getByRole("textbox", {
+          name: /exercise condition/i,
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("tempo == controlled");
+
+    const undoButton = screen.getByRole("button", { name: /^undo$/i });
+    const redoButton = screen.getByRole("button", { name: /^redo$/i });
+
+    await user.click(undoButton);
+    expect(
+      (
+        screen.getByRole("textbox", {
+          name: /exercise condition/i,
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("");
+
+    await user.click(undoButton);
+    expect(
+      screen.queryByRole("list", {
+        name: /selected strength exercises/i,
+      }),
+    ).toBeNull();
+
+    await user.click(redoButton);
+    await user.click(redoButton);
+
+    const selectedStrengthList = screen.getByRole("list", {
+      name: /selected strength exercises/i,
+    });
+    expect(within(selectedStrengthList).getByText("Split Squat")).toBeTruthy();
+    expect(
+      (
+        screen.getByRole("textbox", {
+          name: /exercise condition/i,
+        }) as HTMLInputElement
+      ).value,
+    ).toBe("tempo == controlled");
+  });
+
+  it("does not create history entries from invalid DSL edits", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    await user.click(screen.getByRole("tab", { name: /^dsl$/i }));
+    const dslEditor = screen.getByRole("textbox", {
+      name: /routine dsl editor/i,
+    });
+    fireEvent.change(dslEditor, {
+      target: {
+        value: "{ this is not valid json",
+      },
+    });
+
+    expect(screen.getByText(/invalid json/i)).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /^undo$/i }));
+    await user.click(screen.getByRole("tab", { name: /^visual$/i }));
+
+    expect(
+      screen.queryByRole("list", {
+        name: /selected strength exercises/i,
+      }),
+    ).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /^redo$/i }));
+    const selectedStrengthList = screen.getByRole("list", {
+      name: /selected strength exercises/i,
+    });
+    expect(within(selectedStrengthList).getByText("Split Squat")).toBeTruthy();
+  });
+
+  it("supports keyboard shortcuts for undo and redo when focus is outside editors", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    const selectedStrengthList = screen.getByRole("list", {
+      name: /selected strength exercises/i,
+    });
+    expect(within(selectedStrengthList).getByText("Split Squat")).toBeTruthy();
+
+    fireEvent.keyDown(window, {
+      key: "z",
+      ctrlKey: true,
+    });
+    expect(
+      screen.queryByRole("list", {
+        name: /selected strength exercises/i,
+      }),
+    ).toBeNull();
+
+    fireEvent.keyDown(window, {
+      key: "y",
+      ctrlKey: true,
+    });
+    const listAfterRedo = screen.getByRole("list", {
+      name: /selected strength exercises/i,
+    });
+    expect(within(listAfterRedo).getByText("Split Squat")).toBeTruthy();
+  });
+
+  it("clears redo history after creating a new edit from an undone state", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /bench press/i,
+      }),
+    );
+
+    const undoButton = screen.getByRole("button", { name: /^undo$/i });
+    const redoButton = screen.getByRole("button", { name: /^redo$/i });
+
+    await user.click(undoButton);
+    expect(
+      within(
+        screen.getByRole("list", { name: /selected strength exercises/i }),
+      ).queryByText("Bench Press"),
+    ).toBeNull();
+
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /bench press/i,
+      }),
+    );
+
+    expect(
+      within(
+        screen.getByRole("list", { name: /selected strength exercises/i }),
+      ).getAllByText("Bench Press"),
+    ).toHaveLength(1);
+    expect((redoButton as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("does not apply history shortcuts when the event was already prevented", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    const selectedStrengthList = screen.getByRole("list", {
+      name: /selected strength exercises/i,
+    });
+    expect(within(selectedStrengthList).getByText("Split Squat")).toBeTruthy();
+
+    function preventHistoryShortcut(event: KeyboardEvent) {
+      event.preventDefault();
+    }
+
+    window.addEventListener("keydown", preventHistoryShortcut, {
+      capture: true,
+      once: true,
+    });
+    fireEvent.keyDown(document.body, {
+      key: "z",
+      ctrlKey: true,
+    });
+
+    expect(
+      within(
+        screen.getByRole("list", {
+          name: /selected strength exercises/i,
+        }),
+      ).getByText("Split Squat"),
+    ).toBeTruthy();
+  });
 });
