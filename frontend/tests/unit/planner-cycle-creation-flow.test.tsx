@@ -28,6 +28,55 @@ function expectVisibleControlsToHaveLabelMetadata() {
   });
 }
 
+function extractRecommendedWindowDates(): {
+  suggestedStartDate: string;
+  suggestedEndDate: string;
+} {
+  const recommendation = screen.getByText(/recommended window:/i).textContent;
+  if (!recommendation) {
+    throw new Error("Unable to resolve recommended macro window text");
+  }
+
+  const match = recommendation.match(
+    /recommended window:\s*(\d{4}-\d{2}-\d{2})\s*to\s*(\d{4}-\d{2}-\d{2})/i,
+  );
+  if (!match?.[1] || !match[2]) {
+    throw new Error(
+      `Unable to parse recommended window dates from: "${recommendation}"`,
+    );
+  }
+
+  return {
+    suggestedStartDate: match[1],
+    suggestedEndDate: match[2],
+  };
+}
+
+function extractLastMesocycleBandEndDate(): string {
+  const list = screen.getByRole("list", {
+    name: /macro timeline mesocycles/i,
+  });
+  const items = Array.from(list.querySelectorAll("li"));
+  const lastItem = items[items.length - 1];
+  const text = lastItem?.textContent;
+  if (!text) {
+    throw new Error("Unable to resolve last mesocycle timeline band");
+  }
+
+  const match = text.match(/to\s*(\d{4}-\d{2}-\d{2})/i);
+  if (!match?.[1]) {
+    throw new Error(`Unable to parse last mesocycle band date from: "${text}"`);
+  }
+
+  return match[1];
+}
+
+function diffDays(leftIsoDate: string, rightIsoDate: string): number {
+  const leftDate = new Date(`${leftIsoDate}T00:00:00.000Z`);
+  const rightDate = new Date(`${rightIsoDate}T00:00:00.000Z`);
+  return Math.floor((rightDate.getTime() - leftDate.getTime()) / 86_400_000);
+}
+
 describe("CycleCreationFlow", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -218,6 +267,97 @@ describe("CycleCreationFlow", () => {
       expect(
         (screen.getByLabelText(/target end date/i) as HTMLInputElement).value,
       ).toBe(appliedEndDate);
+    });
+  });
+
+  it("keeps timeline controls consistent when applying selected recommended dates during auto-sync", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "powerlifting_5k",
+    );
+    await user.click(screen.getByRole("button", { name: /apply template/i }));
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "triathlon_strength",
+    );
+
+    const recommendedWindow = extractRecommendedWindowDates();
+
+    await user.click(
+      screen.getByRole("button", { name: /use recommended dates/i }),
+    );
+
+    await waitFor(() => {
+      expect(
+        (screen.getByLabelText(/^start date$/i) as HTMLInputElement).value,
+      ).toBe(recommendedWindow.suggestedStartDate);
+      expect(
+        (screen.getByLabelText(/target end date/i) as HTMLInputElement).value,
+      ).toBe(recommendedWindow.suggestedEndDate);
+    });
+  });
+
+  it("uses the selected template for future auto-sync updates after using selected recommended dates", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "powerlifting_5k",
+    );
+    await user.click(screen.getByRole("button", { name: /apply template/i }));
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "triathlon_strength",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /use recommended dates/i }),
+    );
+
+    await user.clear(screen.getByLabelText(/event date/i));
+    await user.type(screen.getByLabelText(/event date/i), "2026-08-15");
+
+    await waitFor(() => {
+      const recommendation = extractRecommendedWindowDates();
+      expect(
+        (screen.getByLabelText(/^start date$/i) as HTMLInputElement).value,
+      ).toBe(recommendation.suggestedStartDate);
+      expect(
+        (screen.getByLabelText(/target end date/i) as HTMLInputElement).value,
+      ).toBe(recommendation.suggestedEndDate);
+    });
+  });
+
+  it("keeps mesocycle bands aligned to the synced macro window when event dates move", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "powerlifting_5k",
+    );
+    await user.click(screen.getByRole("button", { name: /apply template/i }));
+
+    await user.clear(screen.getByLabelText(/event date/i));
+    await user.type(screen.getByLabelText(/event date/i), "2026-08-15");
+
+    await waitFor(() => {
+      const targetEndDate = (
+        screen.getByLabelText(/target end date/i) as HTMLInputElement
+      ).value;
+      const lastBandEndDate = extractLastMesocycleBandEndDate();
+      const offsetDays = diffDays(targetEndDate, lastBandEndDate);
+      expect(targetEndDate).toBeTruthy();
+      expect(offsetDays).toBeGreaterThanOrEqual(0);
+      expect(offsetDays).toBeLessThan(7);
     });
   });
 

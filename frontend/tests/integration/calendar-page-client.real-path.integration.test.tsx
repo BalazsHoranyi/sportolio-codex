@@ -85,6 +85,7 @@ function extractLastLatencyValueInMs(): number {
 
 describe("CalendarPageClient real-path integration", () => {
   it("applies drag-drop move events through the full calendar surface within the end-to-end interaction budget", async () => {
+    // Product target is p95 <= 2s for calendar interactions in v1.
     const endToEndLatencyBudgetMs = 2_000;
     const user = userEvent.setup();
 

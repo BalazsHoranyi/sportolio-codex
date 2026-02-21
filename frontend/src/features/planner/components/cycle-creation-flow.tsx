@@ -112,6 +112,86 @@ function normalizeMesocycleStrategyForDuration(
   };
 }
 
+function allocateDurationWeeks(
+  totalWeeks: number,
+  weights: number[],
+): number[] {
+  const safeTotalWeeks = Math.max(1, Math.floor(totalWeeks));
+  if (weights.length === 0) {
+    return [safeTotalWeeks];
+  }
+
+  const safeWeights = weights.map((weight) =>
+    Number.isFinite(weight) && weight > 0 ? weight : 1,
+  );
+  const weightSum = safeWeights.reduce((sum, weight) => sum + weight, 0);
+  const baseDurations = safeWeights.map((weight) =>
+    Math.max(1, Math.floor((safeTotalWeeks * weight) / weightSum)),
+  );
+  const fractions = safeWeights.map((weight, index) => ({
+    index,
+    fraction: (safeTotalWeeks * weight) / weightSum - baseDurations[index],
+  }));
+
+  let allocatedWeeks = baseDurations.reduce((sum, value) => sum + value, 0);
+  while (allocatedWeeks < safeTotalWeeks) {
+    const candidate = [...fractions].sort((left, right) => {
+      if (right.fraction !== left.fraction) {
+        return right.fraction - left.fraction;
+      }
+
+      return left.index - right.index;
+    })[0];
+    baseDurations[candidate.index] += 1;
+    allocatedWeeks += 1;
+  }
+
+  while (allocatedWeeks > safeTotalWeeks) {
+    const candidate = baseDurations
+      .map((value, index) => ({ value, index }))
+      .filter((entry) => entry.value > 1)
+      .sort((left, right) => right.value - left.value)[0];
+    if (!candidate) {
+      break;
+    }
+
+    baseDurations[candidate.index] -= 1;
+    allocatedWeeks -= 1;
+  }
+
+  return baseDurations;
+}
+
+function rebalanceMesocyclesToTotalWeeks(
+  mesocycles: PlannerMesocycleDraft[],
+  totalWeeks: number,
+): PlannerMesocycleDraft[] {
+  if (mesocycles.length === 0) {
+    return mesocycles;
+  }
+
+  const nextDurations = allocateDurationWeeks(
+    totalWeeks,
+    mesocycles.map((mesocycle) => mesocycle.durationWeeks),
+  );
+
+  return mesocycles.map((mesocycle, index) => {
+    const durationWeeks = Math.max(1, nextDurations[index] ?? 1);
+    if (durationWeeks === mesocycle.durationWeeks) {
+      return mesocycle;
+    }
+
+    return {
+      ...mesocycle,
+      durationWeeks,
+      strategy: normalizeMesocycleStrategyForDuration(
+        mesocycle.strategy,
+        durationWeeks,
+      ),
+    };
+  });
+}
+
 function validateMacroStep(draft: PlannerDraft): string[] {
   const errors: string[] = [];
 
@@ -360,9 +440,19 @@ export function CycleCreationFlow() {
     }
 
     setDraft((previous) => {
+      const nextMesocycles = rebalanceMesocyclesToTotalWeeks(
+        previous.mesocycles,
+        autoSyncTimelinePreview.totalWeeks,
+      );
+      const mesocyclesChanged = nextMesocycles.some(
+        (mesocycle, index) =>
+          mesocycle.durationWeeks !== previous.mesocycles[index]?.durationWeeks,
+      );
+
       if (
         previous.startDate === autoSyncTimelinePreview.suggestedStartDate &&
-        previous.endDate === autoSyncTimelinePreview.suggestedEndDate
+        previous.endDate === autoSyncTimelinePreview.suggestedEndDate &&
+        !mesocyclesChanged
       ) {
         return previous;
       }
@@ -371,12 +461,14 @@ export function CycleCreationFlow() {
         ...previous,
         startDate: autoSyncTimelinePreview.suggestedStartDate,
         endDate: autoSyncTimelinePreview.suggestedEndDate,
+        mesocycles: nextMesocycles,
       };
     });
   }, [
     autoSyncTimeline,
     autoSyncTimelinePreview.suggestedEndDate,
     autoSyncTimelinePreview.suggestedStartDate,
+    autoSyncTimelinePreview.totalWeeks,
   ]);
 
   function updateDraft(update: (previous: PlannerDraft) => PlannerDraft) {
@@ -415,6 +507,7 @@ export function CycleCreationFlow() {
   }
 
   function alignMacroTimelineToAnchors() {
+    setAutoSyncTemplateId(selectedTemplateId);
     updateDraft((previous) => ({
       ...previous,
       startDate: macroTimelinePreview.suggestedStartDate,
