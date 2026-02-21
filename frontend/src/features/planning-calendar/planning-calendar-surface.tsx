@@ -15,7 +15,7 @@ import React, {
 
 import { planningWeekDateOptions, workoutTemplateCatalog } from "./sample-data";
 import {
-  applyPlanningMutation,
+  applyPlanningMutationWithOutcome,
   createInitialPlanningCalendarState,
   createMutationFromTemplate,
 } from "./mutations";
@@ -98,6 +98,28 @@ function normalizeCalendarDate(value: string): string | undefined {
   return asDate.toISOString().slice(0, 10);
 }
 
+function sortForDisplay(workouts: PlannedWorkout[]): PlannedWorkout[] {
+  return [...workouts].sort((left, right) => {
+    if (left.date !== right.date) {
+      return left.date.localeCompare(right.date);
+    }
+
+    if (left.sessionOrder !== right.sessionOrder) {
+      return left.sessionOrder - right.sessionOrder;
+    }
+
+    return left.title.localeCompare(right.title);
+  });
+}
+
+type PendingMutation = Omit<PlanningMutationEvent, "mutationId">;
+
+function toPendingMutation(mutation: PlanningMutationEvent): PendingMutation {
+  const next: Partial<PlanningMutationEvent> = { ...mutation };
+  delete next.mutationId;
+  return next as PendingMutation;
+}
+
 export function PlanningCalendarSurface({
   initialState,
   onMutation,
@@ -107,6 +129,11 @@ export function PlanningCalendarSurface({
   );
   const [planningState, setPlanningState] = useState<PlanningCalendarState>(
     initialState ?? createInitialPlanningCalendarState(),
+  );
+  const [pendingOverrideMutation, setPendingOverrideMutation] =
+    useState<PendingMutation | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(
+    null,
   );
   const [keyboardMoveTargets, setKeyboardMoveTargets] = useState<
     Record<string, string>
@@ -118,11 +145,16 @@ export function PlanningCalendarSurface({
     ),
   );
 
+  const planningStateRef = useRef(planningState);
   const removeDropZoneRef = useRef<HTMLDivElement | null>(null);
   const templatePaletteRef = useRef<HTMLUListElement | null>(null);
   const mutationCounterRef = useRef(0);
   const addedWorkoutCounterRef = useRef(0);
   const draggingWorkoutIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    planningStateRef.current = planningState;
+  }, [planningState]);
 
   useEffect(() => {
     const onResize = () => {
@@ -202,31 +234,66 @@ export function PlanningCalendarSurface({
     return map;
   }, [planningState.workouts]);
 
+  const workoutsByDate = useMemo(() => {
+    const map = new Map<string, PlannedWorkout[]>();
+    for (const workout of planningState.workouts) {
+      const existing = map.get(workout.date) ?? [];
+      map.set(workout.date, [...existing, workout]);
+    }
+
+    for (const [date, workouts] of map.entries()) {
+      map.set(date, sortForDisplay(workouts));
+    }
+
+    return map;
+  }, [planningState.workouts]);
+
   const calendarEvents = useMemo(
     () =>
-      planningState.workouts.map((workout) => ({
-        id: workout.workoutId,
-        title: workout.title,
-        start: workout.date,
-        allDay: true,
-        classNames: [
-          `planning-event-${workout.workoutType}`,
-          `planning-event-${workout.intensity}`,
-        ],
-      })),
-    [planningState.workouts],
+      sortForDisplay(planningState.workouts).map((workout) => {
+        const sameDayCount = workoutsByDate.get(workout.date)?.length ?? 1;
+        const titlePrefix = sameDayCount > 1 ? `${workout.sessionOrder}. ` : "";
+        return {
+          id: workout.workoutId,
+          title: `${titlePrefix}${workout.title}`,
+          start: workout.date,
+          allDay: true,
+          classNames: [
+            `planning-event-${workout.workoutType}`,
+            `planning-event-${workout.intensity}`,
+          ],
+        };
+      }),
+    [planningState.workouts, workoutsByDate],
   );
 
   const commitMutation = useCallback(
-    (mutation: Omit<PlanningMutationEvent, "mutationId">) => {
+    (mutation: PendingMutation) => {
       mutationCounterRef.current += 1;
       const withId: PlanningMutationEvent = {
         ...mutation,
         mutationId: `mutation-${mutationCounterRef.current}`,
       };
 
-      setPlanningState((previous) => applyPlanningMutation(previous, withId));
-      onMutation?.(withId);
+      const outcome = applyPlanningMutationWithOutcome(
+        planningStateRef.current,
+        withId,
+      );
+      planningStateRef.current = outcome.state;
+      setPlanningState(outcome.state);
+
+      if (outcome.applied && outcome.appliedMutation) {
+        setValidationMessage(null);
+        setPendingOverrideMutation(null);
+        onMutation?.(outcome.appliedMutation);
+      } else if (outcome.requiresOverride && outcome.pendingMutation) {
+        setPendingOverrideMutation(toPendingMutation(outcome.pendingMutation));
+        setValidationMessage(outcome.rejectionReason ?? "Change blocked.");
+      } else if (outcome.rejectionReason) {
+        setValidationMessage(outcome.rejectionReason);
+      }
+
+      return outcome;
     },
     [onMutation],
   );
@@ -238,12 +305,7 @@ export function PlanningCalendarSurface({
           ? args.event.extendedProps.templateId
           : undefined;
       const toDate = normalizeCalendarDate(args.event.startStr);
-      if (!templateId) {
-        args.event.remove();
-        return;
-      }
-
-      if (!toDate) {
+      if (!templateId || !toDate) {
         args.event.remove();
         return;
       }
@@ -262,13 +324,7 @@ export function PlanningCalendarSurface({
         return;
       }
 
-      const mutationWithoutId = {
-        ...mutation,
-      } as Omit<PlanningMutationEvent, "mutationId"> & {
-        mutationId?: string;
-      };
-      delete mutationWithoutId.mutationId;
-      commitMutation(mutationWithoutId);
+      commitMutation(toPendingMutation(mutation));
       args.event.remove();
     },
     [commitMutation],
@@ -281,17 +337,24 @@ export function PlanningCalendarSurface({
         return;
       }
 
-      commitMutation({
+      const outcome = commitMutation({
         type: "workout_moved",
         workoutId: currentWorkout.workoutId,
         title: currentWorkout.title,
         fromDate: args.oldEvent.startStr || currentWorkout.date,
         toDate: args.event.startStr || currentWorkout.date,
+        fromOrder: currentWorkout.sessionOrder,
         workoutType: currentWorkout.workoutType,
         intensity: currentWorkout.intensity,
         source: "drag_drop",
         occurredAt: nowIsoTimestamp(),
       });
+
+      if (!outcome.applied) {
+        if (typeof args.revert === "function") {
+          args.revert();
+        }
+      }
     },
     [commitMutation, workoutsById],
   );
@@ -332,6 +395,7 @@ export function PlanningCalendarSurface({
         workoutId: workout.workoutId,
         title: workout.title,
         fromDate: workout.date,
+        fromOrder: workout.sessionOrder,
         workoutType: workout.workoutType,
         intensity: workout.intensity,
         source: "drag_drop",
@@ -355,13 +419,7 @@ export function PlanningCalendarSurface({
       return;
     }
 
-    const mutationWithoutId = {
-      ...mutation,
-    } as Omit<PlanningMutationEvent, "mutationId"> & {
-      mutationId?: string;
-    };
-    delete mutationWithoutId.mutationId;
-    commitMutation(mutationWithoutId);
+    commitMutation(toPendingMutation(mutation));
   }
 
   function moveWorkoutWithKeyboard(workout: PlannedWorkout) {
@@ -376,6 +434,36 @@ export function PlanningCalendarSurface({
       title: workout.title,
       fromDate: workout.date,
       toDate,
+      fromOrder: workout.sessionOrder,
+      workoutType: workout.workoutType,
+      intensity: workout.intensity,
+      source: "keyboard",
+      occurredAt: nowIsoTimestamp(),
+    });
+  }
+
+  function reorderWorkoutWithKeyboard(workout: PlannedWorkout, offset: -1 | 1) {
+    const sameDayWorkouts = workoutsByDate.get(workout.date) ?? [];
+    const currentIndex = sameDayWorkouts.findIndex(
+      (candidate) => candidate.workoutId === workout.workoutId,
+    );
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const targetWorkout = sameDayWorkouts[currentIndex + offset];
+    if (!targetWorkout) {
+      return;
+    }
+
+    commitMutation({
+      type: "workout_reordered",
+      workoutId: workout.workoutId,
+      title: workout.title,
+      fromDate: workout.date,
+      toDate: workout.date,
+      fromOrder: workout.sessionOrder,
+      toOrder: targetWorkout.sessionOrder,
       workoutType: workout.workoutType,
       intensity: workout.intensity,
       source: "keyboard",
@@ -389,9 +477,22 @@ export function PlanningCalendarSurface({
       workoutId: workout.workoutId,
       title: workout.title,
       fromDate: workout.date,
+      fromOrder: workout.sessionOrder,
       workoutType: workout.workoutType,
       intensity: workout.intensity,
       source: "keyboard",
+      occurredAt: nowIsoTimestamp(),
+    });
+  }
+
+  function applyPendingOverride() {
+    if (!pendingOverrideMutation) {
+      return;
+    }
+
+    commitMutation({
+      ...pendingOverrideMutation,
+      allowOverlap: true,
       occurredAt: nowIsoTimestamp(),
     });
   }
@@ -403,6 +504,7 @@ export function PlanningCalendarSurface({
   const defaultCalendarView = isCompactViewport
     ? "dayGridMonth"
     : "timeGridWeek";
+  const sortedWorkouts = sortForDisplay(planningState.workouts);
 
   return (
     <section
@@ -490,54 +592,118 @@ export function PlanningCalendarSurface({
         </div>
       </div>
 
+      {validationMessage ? (
+        <section
+          className="planning-validation-banner"
+          role="status"
+          aria-live="polite"
+        >
+          <p>{validationMessage}</p>
+          <div className="planning-validation-actions">
+            {pendingOverrideMutation ? (
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={applyPendingOverride}
+              >
+                Proceed anyway
+              </button>
+            ) : null}
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => {
+                setPendingOverrideMutation(null);
+                setValidationMessage(null);
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       <section
         className="planning-keyboard-schedule"
         aria-label="Scheduled workouts"
       >
         <h3>Keyboard controls for scheduled workouts</h3>
         <ul className="planning-scheduled-list">
-          {planningState.workouts.map((workout) => (
-            <li key={workout.workoutId}>
-              <p>
-                <strong>{workout.title}</strong> on{" "}
-                {formatLongDateLabel(workout.date)}
-              </p>
-              <label>
-                Move target day
-                <select
-                  value={keyboardMoveTargets[workout.workoutId] ?? workout.date}
-                  onChange={(event) =>
-                    setKeyboardMoveTargets((previous) => ({
-                      ...previous,
-                      [workout.workoutId]: event.target.value,
-                    }))
-                  }
-                >
-                  {planningWeekDateOptions.map((date) => (
-                    <option key={`${workout.workoutId}-${date}`} value={date}>
-                      {formatLongDateLabel(date)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="planning-keyboard-row-actions">
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  onClick={() => moveWorkoutWithKeyboard(workout)}
-                >
-                  Move {workout.title} to selected day
-                </button>
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  onClick={() => removeWorkoutWithKeyboard(workout)}
-                >
-                  Remove {workout.title} from schedule
-                </button>
-              </div>
-            </li>
-          ))}
+          {sortedWorkouts.map((workout) => {
+            const sameDayWorkouts = workoutsByDate.get(workout.date) ?? [];
+            const currentIndex = sameDayWorkouts.findIndex(
+              (candidate) => candidate.workoutId === workout.workoutId,
+            );
+            const hasEarlier = currentIndex > 0;
+            const hasLater =
+              currentIndex >= 0 && currentIndex < sameDayWorkouts.length - 1;
+
+            return (
+              <li key={workout.workoutId}>
+                <p>
+                  <strong>{workout.title}</strong> on{" "}
+                  {formatLongDateLabel(workout.date)} (slot{" "}
+                  {workout.sessionOrder})
+                </p>
+                <p className="planning-history-meta">
+                  History entries:{" "}
+                  {planningState.workoutHistory[workout.workoutId]?.length ?? 0}
+                </p>
+                <label>
+                  Move target day
+                  <select
+                    value={
+                      keyboardMoveTargets[workout.workoutId] ?? workout.date
+                    }
+                    onChange={(event) =>
+                      setKeyboardMoveTargets((previous) => ({
+                        ...previous,
+                        [workout.workoutId]: event.target.value,
+                      }))
+                    }
+                  >
+                    {planningWeekDateOptions.map((date) => (
+                      <option key={`${workout.workoutId}-${date}`} value={date}>
+                        {formatLongDateLabel(date)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="planning-keyboard-row-actions">
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    onClick={() => moveWorkoutWithKeyboard(workout)}
+                  >
+                    Move {workout.title} to selected day
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    disabled={!hasEarlier}
+                    onClick={() => reorderWorkoutWithKeyboard(workout, -1)}
+                  >
+                    Move {workout.title} earlier in day
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    disabled={!hasLater}
+                    onClick={() => reorderWorkoutWithKeyboard(workout, 1)}
+                  >
+                    Move {workout.title} later in day
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    onClick={() => removeWorkoutWithKeyboard(workout)}
+                  >
+                    Remove {workout.title} from schedule
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -558,6 +724,11 @@ export function PlanningCalendarSurface({
                 <p>
                   Source: {mutation.source} | from {mutation.fromDate ?? "n/a"}{" "}
                   to {mutation.toDate ?? "n/a"}
+                </p>
+                <p>
+                  Order: {mutation.fromOrder ?? "n/a"} to{" "}
+                  {mutation.toOrder ?? "n/a"} | Override applied:{" "}
+                  {mutation.overrideApplied ? "yes" : "no"}
                 </p>
               </li>
             ))}

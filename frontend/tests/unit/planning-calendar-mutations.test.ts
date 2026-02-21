@@ -1,5 +1,6 @@
 import {
   applyPlanningMutation,
+  applyPlanningMutationWithOutcome,
   createInitialPlanningCalendarState,
 } from "../../src/features/planning-calendar/mutations";
 
@@ -12,7 +13,9 @@ describe("planning calendar mutations", () => {
       workoutId: "workout-strength-a",
       title: "Heavy lower",
       fromDate: "2026-02-17",
-      toDate: "2026-02-19",
+      toDate: "2026-02-18",
+      fromOrder: 1,
+      toOrder: 1,
       source: "drag_drop",
       occurredAt: "2026-02-21T07:00:00.000Z",
     });
@@ -21,7 +24,12 @@ describe("planning calendar mutations", () => {
       moved.workouts.find(
         (workout) => workout.workoutId === "workout-strength-a",
       )?.date,
-    ).toBe("2026-02-19");
+    ).toBe("2026-02-18");
+    expect(
+      moved.workouts.find(
+        (workout) => workout.workoutId === "workout-strength-a",
+      )?.sessionOrder,
+    ).toBe(1);
     expect(moved.mutationLog.at(-1)?.type).toBe("workout_moved");
   });
 
@@ -33,6 +41,7 @@ describe("planning calendar mutations", () => {
       workoutId: "workout-added-a",
       title: "Recovery ride",
       toDate: "2026-02-21",
+      toOrder: 1,
       source: "drag_drop",
       occurredAt: "2026-02-21T07:01:00.000Z",
     });
@@ -47,6 +56,7 @@ describe("planning calendar mutations", () => {
       workoutId: "workout-added-a",
       title: "Recovery ride",
       fromDate: "2026-02-21",
+      fromOrder: 1,
       source: "keyboard",
       occurredAt: "2026-02-21T07:02:00.000Z",
     });
@@ -57,5 +67,217 @@ describe("planning calendar mutations", () => {
       ),
     ).toBe(false);
     expect(removed.mutationLog.at(-1)?.type).toBe("workout_removed");
+  });
+
+  it("blocks overlap moves by default and allows explicit overrides", () => {
+    const state = createInitialPlanningCalendarState();
+
+    const blocked = applyPlanningMutationWithOutcome(state, {
+      mutationId: "mutation-overlap-blocked",
+      type: "workout_moved",
+      workoutId: "workout-endurance-a",
+      title: "Tempo run",
+      fromDate: "2026-02-19",
+      toDate: "2026-02-17",
+      source: "drag_drop",
+      occurredAt: "2026-02-21T07:03:00.000Z",
+    });
+
+    expect(blocked.applied).toBe(false);
+    expect(blocked.requiresOverride).toBe(true);
+    expect(blocked.recomputeRequired).toBe(false);
+    expect(
+      blocked.state.workouts.find(
+        (workout) => workout.workoutId === "workout-endurance-a",
+      )?.date,
+    ).toBe("2026-02-19");
+
+    const overridden = applyPlanningMutationWithOutcome(state, {
+      mutationId: "mutation-overlap-override",
+      type: "workout_moved",
+      workoutId: "workout-endurance-a",
+      title: "Tempo run",
+      fromDate: "2026-02-19",
+      toDate: "2026-02-17",
+      source: "drag_drop",
+      occurredAt: "2026-02-21T07:04:00.000Z",
+      allowOverlap: true,
+    });
+
+    expect(overridden.applied).toBe(true);
+    expect(overridden.appliedMutation?.overrideApplied).toBe(true);
+    expect(overridden.recomputeRequired).toBe(true);
+    expect(
+      overridden.state.workouts.filter(
+        (workout) => workout.date === "2026-02-17",
+      ),
+    ).toHaveLength(2);
+  });
+
+  it("supports in-day reorder while preserving workout identity and history", () => {
+    const state = createInitialPlanningCalendarState();
+    const withSecondWorkout = applyPlanningMutationWithOutcome(state, {
+      mutationId: "mutation-add-overlap",
+      type: "workout_added",
+      workoutId: "workout-added-a",
+      title: "Recovery ride",
+      toDate: "2026-02-17",
+      source: "keyboard",
+      occurredAt: "2026-02-21T07:05:00.000Z",
+      allowOverlap: true,
+      workoutType: "recovery",
+      intensity: "easy",
+    });
+
+    expect(withSecondWorkout.applied).toBe(true);
+
+    const reordered = applyPlanningMutationWithOutcome(
+      withSecondWorkout.state,
+      {
+        mutationId: "mutation-reorder-a",
+        type: "workout_reordered",
+        workoutId: "workout-added-a",
+        title: "Recovery ride",
+        fromDate: "2026-02-17",
+        toDate: "2026-02-17",
+        fromOrder: 2,
+        toOrder: 1,
+        source: "keyboard",
+        occurredAt: "2026-02-21T07:06:00.000Z",
+      },
+    );
+
+    expect(reordered.applied).toBe(true);
+    expect(reordered.recomputeRequired).toBe(true);
+
+    const sameDay = reordered.state.workouts.filter(
+      (workout) => workout.date === "2026-02-17",
+    );
+    expect(sameDay).toHaveLength(2);
+    expect(sameDay.map((workout) => workout.workoutId)).toEqual([
+      "workout-added-a",
+      "workout-strength-a",
+    ]);
+    expect(
+      reordered.state.workoutHistory["workout-added-a"].map(
+        (entry) => entry.type,
+      ),
+    ).toContain("workout_reordered");
+  });
+
+  it("records history for all workouts whose schedule changes from one mutation", () => {
+    const state = createInitialPlanningCalendarState();
+
+    const withAddedOverlap = applyPlanningMutationWithOutcome(state, {
+      mutationId: "mutation-history-add",
+      type: "workout_added",
+      workoutId: "workout-added-history",
+      title: "A recovery ride",
+      toDate: "2026-02-17",
+      toOrder: 1,
+      source: "keyboard",
+      occurredAt: "2026-02-21T07:10:00.000Z",
+      allowOverlap: true,
+      workoutType: "recovery",
+      intensity: "easy",
+    });
+
+    expect(withAddedOverlap.applied).toBe(true);
+    expect(
+      withAddedOverlap.state.workoutHistory["workout-strength-a"],
+    ).toContainEqual(
+      expect.objectContaining({
+        mutationId: "mutation-history-add",
+        fromDate: "2026-02-17",
+        toDate: "2026-02-17",
+        fromOrder: 1,
+        toOrder: 2,
+      }),
+    );
+
+    const moved = applyPlanningMutationWithOutcome(withAddedOverlap.state, {
+      mutationId: "mutation-history-move",
+      type: "workout_moved",
+      workoutId: "workout-endurance-a",
+      title: "Tempo run",
+      fromDate: "2026-02-19",
+      toDate: "2026-02-17",
+      toOrder: 1,
+      source: "drag_drop",
+      occurredAt: "2026-02-21T07:11:00.000Z",
+      allowOverlap: true,
+    });
+
+    expect(moved.applied).toBe(true);
+    expect(moved.state.workoutHistory["workout-strength-a"]).toContainEqual(
+      expect.objectContaining({
+        mutationId: "mutation-history-move",
+        fromDate: "2026-02-17",
+        toDate: "2026-02-17",
+        fromOrder: 2,
+        toOrder: 3,
+      }),
+    );
+
+    const reordered = applyPlanningMutationWithOutcome(moved.state, {
+      mutationId: "mutation-history-reorder",
+      type: "workout_reordered",
+      workoutId: "workout-strength-a",
+      title: "Heavy lower",
+      fromDate: "2026-02-17",
+      toDate: "2026-02-17",
+      fromOrder: 3,
+      toOrder: 1,
+      source: "keyboard",
+      occurredAt: "2026-02-21T07:12:00.000Z",
+    });
+
+    expect(reordered.applied).toBe(true);
+    expect(
+      reordered.state.workoutHistory["workout-endurance-a"],
+    ).toContainEqual(
+      expect.objectContaining({
+        mutationId: "mutation-history-reorder",
+        fromDate: "2026-02-17",
+        toDate: "2026-02-17",
+        fromOrder: 2,
+        toOrder: 3,
+      }),
+    );
+    expect(
+      reordered.state.workoutHistory["workout-added-history"],
+    ).toContainEqual(
+      expect.objectContaining({
+        mutationId: "mutation-history-reorder",
+        fromDate: "2026-02-17",
+        toDate: "2026-02-17",
+        fromOrder: 1,
+        toOrder: 2,
+      }),
+    );
+
+    const removed = applyPlanningMutationWithOutcome(reordered.state, {
+      mutationId: "mutation-history-remove",
+      type: "workout_removed",
+      workoutId: "workout-strength-a",
+      title: "Heavy lower",
+      fromDate: "2026-02-17",
+      fromOrder: 1,
+      source: "keyboard",
+      occurredAt: "2026-02-21T07:13:00.000Z",
+    });
+
+    expect(removed.applied).toBe(true);
+    expect(
+      removed.state.workoutHistory["workout-added-history"],
+    ).toContainEqual(
+      expect.objectContaining({
+        mutationId: "mutation-history-remove",
+        fromDate: "2026-02-17",
+        toDate: "2026-02-17",
+        fromOrder: 2,
+        toOrder: 1,
+      }),
+    );
   });
 });

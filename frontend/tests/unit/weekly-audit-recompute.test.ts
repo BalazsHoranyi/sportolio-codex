@@ -78,4 +78,31 @@ describe("recomputeWeeklyAuditResponse", () => {
       baseFeb21?.completedAxes.metabolic ?? 0,
     );
   });
+
+  it("treats in-day reorder as a deterministic no-op for axis totals", () => {
+    const mutations: PlanningMutationEvent[] = [
+      {
+        mutationId: "mutation-reorder-1",
+        type: "workout_reordered",
+        workoutId: "workout-strength-a",
+        title: "Heavy lower",
+        fromDate: "2026-02-17",
+        toDate: "2026-02-17",
+        fromOrder: 2,
+        toOrder: 1,
+        source: "keyboard",
+        occurredAt: "2026-02-21T08:06:00.000Z",
+        workoutType: "strength",
+        intensity: "hard",
+      },
+    ];
+
+    const next = recomputeWeeklyAuditResponse(
+      weeklyAuditResponseSample,
+      mutations,
+    );
+
+    expect(next).not.toBe(weeklyAuditResponseSample);
+    expect(next.points).toEqual(weeklyAuditResponseSample.points);
+  });
 });

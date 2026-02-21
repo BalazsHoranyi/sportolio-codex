@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import React from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const { fullCalendarPropsSpy } = vi.hoisted(() => ({
@@ -49,7 +49,7 @@ vi.mock("@fullcalendar/react", () => ({
                 oldEvent: { startStr: string };
               }) => void
             )({
-              event: { id: "workout-strength-a", startStr: "2026-02-22" },
+              event: { id: "workout-strength-a", startStr: "2026-02-20" },
               oldEvent: { startStr: "2026-02-17" },
             })
           }
@@ -144,6 +144,89 @@ describe("PlanningCalendarSurface", () => {
       expect.objectContaining({
         type: "workout_removed",
         source: "keyboard",
+      }),
+    );
+  });
+
+  it("supports in-day reorder controls and emits reorder mutations", async () => {
+    const user = userEvent.setup();
+    const onMutation = vi.fn();
+
+    render(<PlanningCalendarSurface onMutation={onMutation} />);
+
+    const tempoRunRow = screen
+      .getByText("Tempo run", { selector: "strong" })
+      .closest("li");
+    expect(tempoRunRow).toBeTruthy();
+
+    const rowWithin = within(tempoRunRow as HTMLElement);
+    await user.selectOptions(
+      rowWithin.getByRole("combobox", { name: /move target day/i }),
+      "2026-02-17",
+    );
+    await user.click(
+      rowWithin.getByRole("button", {
+        name: /move tempo run to selected day/i,
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: /proceed anyway/i,
+      }),
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /move tempo run earlier in day/i,
+      }),
+    );
+
+    expect(onMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "workout_reordered",
+        source: "keyboard",
+      }),
+    );
+  });
+
+  it("requires explicit override for blocked overlap moves", async () => {
+    const user = userEvent.setup();
+    const onMutation = vi.fn();
+
+    render(<PlanningCalendarSurface onMutation={onMutation} />);
+
+    const tempoRunRow = screen
+      .getByText("Tempo run", { selector: "strong" })
+      .closest("li");
+    expect(tempoRunRow).toBeTruthy();
+
+    const rowWithin = within(tempoRunRow as HTMLElement);
+    await user.selectOptions(
+      rowWithin.getByRole("combobox", { name: /move target day/i }),
+      "2026-02-17",
+    );
+    await user.click(
+      rowWithin.getByRole("button", {
+        name: /move tempo run to selected day/i,
+      }),
+    );
+
+    expect(screen.getByText(/would overlap an existing workout/i)).toBeTruthy();
+    expect(
+      onMutation.mock.calls.some(
+        ([mutation]) =>
+          mutation &&
+          typeof mutation === "object" &&
+          (mutation as { type?: string }).type === "workout_moved",
+      ),
+    ).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: /proceed anyway/i }));
+
+    expect(onMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "workout_moved",
+        overrideApplied: true,
       }),
     );
   });

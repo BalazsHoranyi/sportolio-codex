@@ -209,6 +209,11 @@ export function recomputeWeeklyAuditResponse(
     if (mutation.type === "workout_moved") {
       applyDateDelta(byDate, fromDate, delta, -1);
       applyDateDelta(byDate, toDate, delta, 1);
+      continue;
+    }
+
+    if (mutation.type === "workout_reordered") {
+      continue;
     }
   }
 
