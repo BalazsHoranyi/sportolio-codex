@@ -1,0 +1,147 @@
+{
+  "$defs": {
+    "PlanWorkoutMovedMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "athlete_id": {
+          "minLength": 1,
+          "title": "Athlete Id",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Correlation Id"
+        },
+        "event_id": {
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "event_type": {
+          "const": "plan.workout.moved",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_version": {
+          "const": "1.0.0",
+          "title": "Event Version",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "producer": {
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "event_type",
+        "event_version",
+        "occurred_at",
+        "athlete_id",
+        "producer"
+      ],
+      "title": "PlanWorkoutMovedMetadata",
+      "type": "object"
+    },
+    "PlanWorkoutMovedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "from_date": {
+          "format": "date",
+          "title": "From Date",
+          "type": "string"
+        },
+        "initiated_by_id": {
+          "minLength": 1,
+          "title": "Initiated By Id",
+          "type": "string"
+        },
+        "initiated_by_role": {
+          "enum": [
+            "athlete",
+            "coach",
+            "system"
+          ],
+          "title": "Initiated By Role",
+          "type": "string"
+        },
+        "preserves_session_assignments": {
+          "title": "Preserves Session Assignments",
+          "type": "boolean"
+        },
+        "reason": {
+          "enum": [
+            "user_drag_drop",
+            "coach_adjustment",
+            "goal_rebalance",
+            "fatigue_guardrail"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "to_date": {
+          "format": "date",
+          "title": "To Date",
+          "type": "string"
+        },
+        "workout_id": {
+          "minLength": 1,
+          "title": "Workout Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workout_id",
+        "from_date",
+        "to_date",
+        "reason",
+        "initiated_by_role",
+        "initiated_by_id",
+        "preserves_session_assignments"
+      ],
+      "title": "PlanWorkoutMovedPayload",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/PlanWorkoutMovedMetadata"
+    },
+    "payload": {
+      "$ref": "#/$defs/PlanWorkoutMovedPayload"
+    }
+  },
+  "required": [
+    "metadata",
+    "payload"
+  ],
+  "title": "PlanWorkoutMovedEvent",
+  "type": "object"
+}
