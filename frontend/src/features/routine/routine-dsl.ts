@@ -2125,15 +2125,72 @@ function parseHumanStrengthDsl(
         continue;
       }
 
-      const restToken = token.match(/^rest\s*:\s*([-+]?\d*\.?\d+)\s*s?$/i);
+      const restToken = token.match(/^rest\s*:\s*(.+)$/i);
       if (restToken) {
-        restSeconds = Number.parseFloat(restToken[1] ?? "");
+        const column = findTokenColumn(rawLine, token);
+        const restRaw = (restToken[1] ?? "").trim();
+        const numericRest = restRaw.replace(/\s*s$/i, "");
+        if (!/^[+-]?\d*\.?\d+$/.test(numericRest)) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "Rest token must be a non-negative number.",
+              "Use rest: 180 or rest: 180s.",
+            ),
+          );
+          continue;
+        }
+        const parsedRest = Number.parseFloat(numericRest);
+        if (!Number.isFinite(parsedRest) || parsedRest < 0) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "Rest token must be a non-negative number.",
+              "Use rest: 180 or rest: 180s.",
+            ),
+          );
+          continue;
+        }
+        restSeconds = parsedRest;
         continue;
       }
 
-      const timerToken = token.match(/^timer\s*:\s*([-+]?\d*\.?\d+)\s*s?$/i);
+      const timerToken = token.match(/^timer\s*:\s*(.+)$/i);
       if (timerToken) {
-        timerSeconds = Number.parseFloat(timerToken[1] ?? "");
+        const column = findTokenColumn(rawLine, token);
+        const timerRaw = (timerToken[1] ?? "").trim();
+        if (timerRaw.toLowerCase() === "null") {
+          timerSeconds = null;
+          continue;
+        }
+
+        const numericTimer = timerRaw.replace(/\s*s$/i, "");
+        if (!/^[+-]?\d*\.?\d+$/.test(numericTimer)) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "Timer token must be a positive number or null.",
+              "Use timer: 45, timer: 45s, or timer: null.",
+            ),
+          );
+          continue;
+        }
+        const parsedTimer = Number.parseFloat(numericTimer);
+        if (!Number.isFinite(parsedTimer) || parsedTimer <= 0) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "Timer token must be a positive number or null.",
+              "Use timer: 45, timer: 45s, or timer: null.",
+            ),
+          );
+          continue;
+        }
+        timerSeconds = parsedTimer;
         continue;
       }
 
@@ -2188,15 +2245,65 @@ function parseHumanStrengthDsl(
         continue;
       }
 
-      const rpeToken = token.match(/^rpe\s*:\s*([-+]?\d*\.?\d+)$/i);
+      const rpeToken = token.match(/^rpe\s*:\s*(.+)$/i);
       if (rpeToken) {
-        rpe = Number.parseFloat(rpeToken[1] ?? "");
+        const column = findTokenColumn(rawLine, token);
+        const rpeRaw = (rpeToken[1] ?? "").trim();
+        if (!/^[+-]?\d*\.?\d+$/.test(rpeRaw)) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "RPE token must be a number between 1 and 10.",
+              "Use rpe: 8.",
+            ),
+          );
+          continue;
+        }
+        const parsedRpe = Number.parseFloat(rpeRaw);
+        if (!Number.isFinite(parsedRpe) || parsedRpe < 1 || parsedRpe > 10) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "RPE token must be a number between 1 and 10.",
+              "Use rpe: 8.",
+            ),
+          );
+          continue;
+        }
+        rpe = parsedRpe;
         continue;
       }
 
-      const rirToken = token.match(/^rir\s*:\s*([-+]?\d*\.?\d+)$/i);
+      const rirToken = token.match(/^rir\s*:\s*(.+)$/i);
       if (rirToken) {
-        rir = Number.parseFloat(rirToken[1] ?? "");
+        const column = findTokenColumn(rawLine, token);
+        const rirRaw = (rirToken[1] ?? "").trim();
+        if (!/^[+-]?\d*\.?\d+$/.test(rirRaw)) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "RIR token must be a number between 0 and 10.",
+              "Use rir: 2.",
+            ),
+          );
+          continue;
+        }
+        const parsedRir = Number.parseFloat(rirRaw);
+        if (!Number.isFinite(parsedRir) || parsedRir < 0 || parsedRir > 10) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "RIR token must be a number between 0 and 10.",
+              "Use rir: 2.",
+            ),
+          );
+          continue;
+        }
+        rir = parsedRir;
         continue;
       }
 
@@ -2455,12 +2562,17 @@ function parseHumanEnduranceDsl(
     }
 
     if (!targetType || targetValue === null) {
-      const heartRateMatch = descriptor.match(
+      const heartRatePrefixedMatch = descriptor.match(
         /(?:hr|heart[_ -]?rate|bpm)\s*[:=]?\s*([-+]?\d*\.?\d+)/i,
       );
-      if (heartRateMatch) {
+      const heartRateSuffixMatch = descriptor.match(
+        /([-+]?\d*\.?\d+)\s*bpm\b/i,
+      );
+      const heartRateToken =
+        heartRatePrefixedMatch?.[1] ?? heartRateSuffixMatch?.[1];
+      if (heartRateToken) {
         targetType = "heart_rate";
-        targetValue = Number.parseFloat(heartRateMatch[1] ?? "");
+        targetValue = Number.parseFloat(heartRateToken);
       }
     }
 

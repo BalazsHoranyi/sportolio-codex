@@ -57,7 +57,7 @@ Targets support:
 
 - `%` intensity (`power_watts` path)
 - `pace:<value>`
-- `hr:<value>` / `bpm`
+- `hr:<value>`, `bpm:<value>`, or `<value>bpm`
 
 Optional cadence and notes are preserved:
 

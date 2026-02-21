@@ -559,6 +559,57 @@ Squat / 5x5 / rests: 210s
     expect(parsed.errors[0]).toContain("Hint:");
   });
 
+  it("returns line and column hints for invalid strength numeric tokens", () => {
+    const parsed = parseRoutineDsl(
+      `
+routine "Strength Numeric Validation" id:routine-strength-numeric-validation path:strength
+references macro:null meso:null micro:null
+
+## Day 1
+Squat / 5x5 / rest: -10s / timer: 0s / rpe: 11 / rir: -1
+`.trim(),
+    );
+
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) {
+      return;
+    }
+
+    expect(parsed.errors).not.toHaveLength(0);
+    expect(parsed.errors.every((error) => error.includes("Line "))).toBe(true);
+    expect(parsed.errors.every((error) => error.includes("column"))).toBe(true);
+    expect(parsed.errors.join("\n")).toContain("rest");
+    expect(parsed.errors.join("\n")).toContain("timer");
+    expect(parsed.errors.join("\n")).toContain("RPE");
+    expect(parsed.errors.join("\n")).toContain("RIR");
+    expect(parsed.errors.join("\n")).not.toContain("strength.blocks[0]");
+  });
+
+  it("parses heart-rate bpm suffix targets in human endurance DSL", () => {
+    const parsed = parseRoutineDsl(
+      `
+routine "Endurance BPM Suffix" id:routine-endurance-bpm-suffix path:endurance
+references macro:null meso:null micro:null
+
+Main set
+- 5m 145bpm
+`.trim(),
+    );
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) {
+      return;
+    }
+
+    expect(parsed.value.endurance.blocks).toHaveLength(1);
+    expect(parsed.value.endurance.blocks[0]?.segments[0]?.target).toStrictEqual(
+      {
+        type: "heart_rate",
+        value: 145,
+      },
+    );
+  });
+
   it("round-trips custom strength set IDs without semantic loss", () => {
     const routine = {
       dslVersion: "2.0",
