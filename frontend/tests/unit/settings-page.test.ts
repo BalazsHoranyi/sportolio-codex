@@ -11,6 +11,7 @@ describe("SettingsPage", () => {
     expect(html).toContain("Timezone");
     expect(html).toContain("Units");
     expect(html).toContain("Notification digest");
+    expect(html).toContain('aria-label="Settings bento layout"');
     expect(html).toContain('aria-current="page"');
   });
 });

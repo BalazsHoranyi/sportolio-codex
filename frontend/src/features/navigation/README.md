@@ -14,6 +14,19 @@ The shell enforces focused, single-purpose routes:
 
 `/` reuses the `Today` page implementation so post-login defaults stay aligned with the same route objective.
 
+## Bento layout contract
+
+The authenticated top-level routes use a shared Bento layout pattern built from `frontend/src/components/ui/bento-grid.tsx`.
+
+- `/today` root landmark: `aria-label="Today bento layout"`
+- `/calendar` root landmark: `aria-label="Calendar bento layout"`
+- `/planner` root landmark: `aria-label="Planner bento layout"`
+- `/planner` inner workflow landmark: `aria-label="Planner bento workspace"`
+- `/analytics` root landmark: `aria-label="Analytics bento layout"`
+- `/settings` root landmark: `aria-label="Settings bento layout"`
+
+These landmarks are test-backed in route unit tests and used during browser verification for responsive checks.
+
 ## Active state contract
 
 Top-level links use `aria-current="page"` for the active destination. This is applied in both desktop and mobile navigation render paths.
@@ -28,5 +41,6 @@ When adding a new authenticated top-level route:
 
 1. Add the route to `APP_NAV_ITEMS` in `frontend/src/components/navigation/nav-config.ts`.
 2. Wrap the page content with `AuthenticatedAppShell`.
-3. Provide a route-specific `title` and `description` that keeps the page single-purpose.
-4. Add/update unit tests for route rendering and nav active-state behavior.
+3. Compose route modules with `BentoGrid`/`BentoGridItem` and expose a route-specific Bento landmark label.
+4. Provide a route-specific `title` and `description` that keeps the page single-purpose.
+5. Add/update unit tests for route rendering, Bento landmark presence, and nav active-state behavior.

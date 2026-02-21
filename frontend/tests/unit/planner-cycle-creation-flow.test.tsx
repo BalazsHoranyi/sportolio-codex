@@ -86,6 +86,9 @@ describe("CycleCreationFlow", () => {
     const user = userEvent.setup();
 
     render(<CycleCreationFlow />);
+    expect(
+      screen.getByRole("region", { name: /planner bento workspace/i }),
+    ).toBeTruthy();
 
     await user.type(screen.getByLabelText(/plan name/i), "Spring Hybrid Block");
     await user.clear(screen.getByLabelText(/^start date$/i));

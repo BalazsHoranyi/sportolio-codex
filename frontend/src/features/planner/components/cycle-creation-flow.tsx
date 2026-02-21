@@ -780,7 +780,7 @@ export function CycleCreationFlow() {
   return (
     <section
       className="planner-flow-shell section"
-      aria-labelledby="planner-flow-title"
+      aria-label="Planner bento workspace"
     >
       <header className="planner-flow-header">
         <p className="eyebrow">Planning</p>

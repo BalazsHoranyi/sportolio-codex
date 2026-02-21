@@ -144,3 +144,45 @@
 - Lena: validated mobile shell readability and nav affordances with tokenized surfaces.
 - Nora: validated desktop/mobile route shell consistency after token remapping.
 - Priya: validated login and `/today` rendering fidelity with the updated token system.
+
+## SPRT-77 Verification Addendum (February 21, 2026)
+
+- Scope: migrate `/today`, `/planner`, `/calendar`, `/analytics`, and `/settings` to Aceternity-inspired Bento layouts while preserving focused route intent and responsive behavior.
+- Tooling: `agent-browser` persona walkthrough + `chrome-devtools-mcp` route validation.
+
+### SPRT-77 Evidence Artifacts
+
+- Persona validation screenshots (`agent-browser`):
+- sprt77-persona-diego-desktop.png
+- sprt77-persona-diego-mobile.png
+- sprt77-persona-evan-desktop.png
+- sprt77-persona-evan-mobile.png
+- sprt77-persona-hybrid-desktop.png
+- sprt77-persona-hybrid-mobile.png
+- sprt77-persona-lena-desktop.png
+- sprt77-persona-lena-mobile.png
+- sprt77-persona-nora-desktop.png
+- sprt77-persona-nora-mobile.png
+- sprt77-persona-priya-desktop.png
+- sprt77-persona-priya-mobile.png
+
+- Route validation screenshots (`chrome-devtools-mcp`):
+- sprt77-devtools-today-desktop.png
+- sprt77-devtools-today-mobile.png
+- sprt77-devtools-planner-desktop.png
+- sprt77-devtools-planner-mobile.png
+- sprt77-devtools-calendar-desktop.png
+- sprt77-devtools-calendar-mobile.png
+- sprt77-devtools-analytics-desktop.png
+- sprt77-devtools-analytics-mobile.png
+- sprt77-devtools-settings-desktop.png
+- sprt77-devtools-settings-mobile.png
+
+### SPRT-77 Persona Execution Notes
+
+- Diego: logged in and validated all five migrated routes expose their Bento landmarks and preserve navigation clarity on desktop/mobile.
+- Evan: repeated full route traversal and confirmed planner workflow surface remains available inside `Planner bento workspace`.
+- Hybrid athlete: validated all migrated routes maintain deterministic, single-purpose framing with responsive Bento modules.
+- Lena: confirmed mobile traversal across all migrated routes remains readable and operable with no overflow regressions.
+- Nora: validated desktop/mobile transitions across migrated routes and verified landmark-based structure is intact.
+- Priya: repeated the full route matrix and confirmed focused page intent remains intact after Bento migration.
