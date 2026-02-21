@@ -14,6 +14,14 @@ function readRootBlock(css: string): string {
   return rootBlock[1];
 }
 
+function readThemeInlineBlock(css: string): string {
+  const themeInlineBlock = css.match(/@theme inline\s*{([\s\S]*?)\n}/);
+  if (!themeInlineBlock) {
+    throw new Error("Missing @theme inline declaration block");
+  }
+  return themeInlineBlock[1];
+}
+
 describe("midnight bloom token contract", () => {
   it("defines standardized shadcn theme variables in :root", () => {
     const rootCss = readRootBlock(readGlobalsCss());
@@ -38,5 +46,24 @@ describe("midnight bloom token contract", () => {
     expect(css).toMatch(/--ink-strong:\s*var\(--foreground\)/);
     expect(css).toMatch(/--ink-muted:\s*var\(--muted-foreground\)/);
     expect(css).toMatch(/--line:\s*var\(--border\)/);
+  });
+
+  it("avoids self-referential token declarations in @theme inline", () => {
+    const themeInline = readThemeInlineBlock(readGlobalsCss());
+
+    const lines = themeInline
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("--"));
+
+    for (const line of lines) {
+      const match = line.match(/^--([\w-]+)\s*:\s*var\(--([\w-]+)\)/);
+      if (!match) {
+        continue;
+      }
+
+      const [, targetToken, sourceToken] = match;
+      expect(sourceToken).not.toBe(targetToken);
+    }
   });
 });
