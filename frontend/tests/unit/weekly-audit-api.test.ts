@@ -56,6 +56,31 @@ describe("weekly audit api", () => {
     expect(response).toBeUndefined();
   });
 
+  it("returns undefined when contributor entries are malformed", async () => {
+    const invalidPayload = structuredClone(weeklyAuditResponseSample) as {
+      points: Array<{ contributors: unknown[] }>;
+    };
+    invalidPayload.points[0].contributors = [null];
+
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify(invalidPayload), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }),
+    );
+
+    const response = await loadWeeklyAuditResponse({
+      apiBaseUrl: "http://localhost:8000",
+      startDate: "2026-02-17",
+      fetchImpl,
+    });
+
+    expect(response).toBeUndefined();
+  });
+
   it("returns undefined when fetch fails", async () => {
     const fetchImpl = vi.fn(async () => {
       throw new Error("network down");

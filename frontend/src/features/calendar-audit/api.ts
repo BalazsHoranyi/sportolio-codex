@@ -1,4 +1,3 @@
-import { weeklyAuditResponseSample } from "./sample-data";
 import type { WeeklyAuditApiResponse } from "./types";
 
 function defaultApiBaseUrl(): string | undefined {
@@ -7,6 +6,10 @@ function defaultApiBaseUrl(): string | undefined {
 
 function defaultAthleteId(): string {
   return process.env.SPORTOLO_DEMO_ATHLETE_ID ?? "athlete-1";
+}
+
+function defaultStartDate(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 interface LoadWeeklyAuditResponseOptions {
@@ -41,6 +44,28 @@ function hasNumber(value: unknown, key: string): boolean {
   return isRecord(value) && typeof value[key] === "number";
 }
 
+function hasValidThresholdZoneState(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    value.thresholdZoneState === undefined ||
+    value.thresholdZoneState === "low" ||
+    value.thresholdZoneState === "moderate" ||
+    value.thresholdZoneState === "high"
+  );
+}
+
+function isContributor(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    hasString(value, "sessionId") &&
+    hasString(value, "label") &&
+    (value.href === undefined || typeof value.href === "string")
+  );
+}
+
 function isAuditPoint(value: unknown): boolean {
   return (
     hasString(value, "date") &&
@@ -50,7 +75,9 @@ function isAuditPoint(value: unknown): boolean {
     hasNumber(value.completedAxes, "metabolic") &&
     hasNumber(value.completedAxes, "mechanical") &&
     hasNumber(value, "recruitmentOverlay") &&
-    Array.isArray(value.contributors)
+    hasValidThresholdZoneState(value) &&
+    Array.isArray(value.contributors) &&
+    value.contributors.every((contributor) => isContributor(contributor))
   );
 }
 
@@ -66,7 +93,7 @@ function isWeeklyAuditApiResponse(
 }
 
 export async function loadWeeklyAuditResponse({
-  startDate = weeklyAuditResponseSample.startDate,
+  startDate = defaultStartDate(),
   athleteId,
   apiBaseUrl,
   fetchImpl = fetch,
