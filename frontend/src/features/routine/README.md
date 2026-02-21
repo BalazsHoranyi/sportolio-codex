@@ -24,6 +24,17 @@ Supported progression strategies:
 - `linear_add_reps`
 - `percentage_wave`
 
+## Catalog and filtering
+
+Strength search supports:
+
+- typo-tolerant fuzzy matching against canonical names and aliases
+- equipment filtering
+- muscle filtering
+
+When `/api/exercises` cannot reach the backend, it falls back to a deterministic
+seeded catalog snapshot (`>=1000` entries) so authoring remains usable offline.
+
 ## Backward compatibility
 
 Legacy DSL payloads that only include `strength.exercises[]` are still accepted.
@@ -43,3 +54,17 @@ Strength exercise order inside a block can be changed using:
 - keyboard/button controls (`Move up` / `Move down`)
 
 Reordering is deterministic and structure-safe (no out-of-bounds moves).
+
+## Muscle-map visibility
+
+Visual strength editing includes deterministic muscle-map rollups rendered via
+`react-muscle-highlighter` for:
+
+- selected exercise-level emphasis
+- routine-level aggregate emphasis
+- microcycle draft aggregate emphasis
+
+## Set removal guardrail
+
+Each exercise must keep at least one set. The last remaining set cannot be
+removed, which prevents accidental destructive resets.

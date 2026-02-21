@@ -21,6 +21,22 @@ vi.mock("../../src/features/exercise-picker/api", () => ({
   loadExerciseCatalog: loadExerciseCatalogMock,
 }));
 
+vi.mock("react-muscle-highlighter", () => ({
+  __esModule: true,
+  default: ({
+    data,
+    side,
+  }: {
+    data: Array<{ slug: string; intensity: number }>;
+    side: string;
+  }) =>
+    React.createElement(
+      "div",
+      { "data-side": side },
+      data.map((part) => `${part.slug}:${part.intensity}`).join("|"),
+    ),
+}));
+
 import { RoutineCreationFlow } from "../../src/features/routine/components/routine-creation-flow";
 
 const catalogFixture: SearchableExerciseCatalogItem[] = [
@@ -124,6 +140,42 @@ describe("RoutineCreationFlow", () => {
       name: /selected strength exercises/i,
     });
     expect(within(selectedStrengthList).getByText("Split Squat")).toBeTruthy();
+  });
+
+  it("supports equipment/muscle filtering and shows exercise/routine/microcycle muscle-map visibility", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const equipmentFilter = screen.getByRole("combobox", {
+      name: /equipment filter/i,
+    });
+    await user.selectOptions(equipmentFilter, "barbell");
+
+    const muscleFilter = screen.getByRole("combobox", {
+      name: /muscle filter/i,
+    });
+    await user.selectOptions(muscleFilter, "chest");
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    expect(
+      within(resultsList).getByRole("button", { name: /bench press/i }),
+    ).toBeTruthy();
+    expect(
+      within(resultsList).queryByRole("button", { name: /split squat/i }),
+    ).toBeNull();
+
+    await user.click(
+      within(resultsList).getByRole("button", { name: /bench press/i }),
+    );
+
+    expect(screen.getByText(/exercise map/i)).toBeTruthy();
+    expect(screen.getByText(/routine map/i)).toBeTruthy();
+    expect(screen.getByText(/microcycle map/i)).toBeTruthy();
   });
 
   it("shows inline validation and preserves last valid visual state on invalid DSL", async () => {
@@ -285,6 +337,65 @@ describe("RoutineCreationFlow", () => {
     expect(dslEditor.value).toContain('"strategy": "linear_add_load"');
   });
 
+  it("supports drag and drop reorder while preserving structure validity", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const searchInput = screen.getByRole("combobox", {
+      name: /strength exercise search/i,
+    });
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+
+    await user.type(searchInput, "bench");
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /bench press/i,
+      }),
+    );
+
+    await user.clear(searchInput);
+    await user.type(searchInput, "split");
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    const selectedList = screen.getByRole("list", {
+      name: /selected strength exercises/i,
+    });
+    const splitItem = (
+      within(selectedList).getByRole("button", {
+        name: /move split squat up/i,
+      }) as HTMLElement
+    ).closest("li");
+    const benchItem = (
+      within(selectedList).getByRole("button", {
+        name: /move bench press down/i,
+      }) as HTMLElement
+    ).closest("li");
+    expect(splitItem).toBeTruthy();
+    expect(benchItem).toBeTruthy();
+
+    fireEvent.dragStart(splitItem as HTMLElement);
+    fireEvent.dragOver(benchItem as HTMLElement);
+    fireEvent.drop(benchItem as HTMLElement);
+
+    await user.click(screen.getByRole("tab", { name: /^dsl$/i }));
+
+    const dslEditor = screen.getByRole("textbox", {
+      name: /routine dsl editor/i,
+    }) as HTMLTextAreaElement;
+    expect(
+      dslEditor.value.indexOf('"canonicalName": "Split Squat"'),
+    ).toBeLessThan(dslEditor.value.indexOf('"canonicalName": "Bench Press"'));
+  });
+
   it("supports keyboard tab navigation for editor mode and routine path", async () => {
     const user = userEvent.setup();
 
@@ -373,5 +484,40 @@ describe("RoutineCreationFlow", () => {
     ).toBeNull();
 
     confirmSpy.mockRestore();
+  });
+
+  it("keeps the last set immutable and only allows remove when more than one set exists", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    const initialRemoveSetButton = screen.getByRole("button", {
+      name: /remove set/i,
+    }) as HTMLButtonElement;
+    expect(initialRemoveSetButton.disabled).toBe(true);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /add set/i,
+      }),
+    );
+
+    const removeSetButtons = screen.getAllByRole("button", {
+      name: /remove set/i,
+    }) as HTMLButtonElement[];
+    expect(removeSetButtons.every((button) => button.disabled === false)).toBe(
+      true,
+    );
   });
 });

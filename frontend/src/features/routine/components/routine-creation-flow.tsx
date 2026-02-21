@@ -8,6 +8,11 @@ import {
   filterAndRankExercises,
   type SearchableExerciseCatalogItem,
 } from "../../exercise-picker/state";
+import { MuscleMapExplorer } from "../../muscle-map/muscle-map-explorer";
+import type {
+  MuscleUsageApiResponse,
+  MuscleUsageMap,
+} from "../../muscle-map/types";
 import { parseRoutineDsl, serializeRoutineDsl } from "../routine-dsl";
 import {
   createDefaultStrengthSet,
@@ -119,6 +124,88 @@ function createExerciseDraft(
   };
 }
 
+function buildExerciseUsage(
+  regionTags: string[],
+  totalUsage: number,
+): MuscleUsageMap {
+  if (regionTags.length === 0 || totalUsage <= 0) {
+    return {};
+  }
+
+  const perMuscleUsage = totalUsage / regionTags.length;
+  return regionTags.reduce<MuscleUsageMap>((usage, regionTag) => {
+    usage[regionTag] = (usage[regionTag] ?? 0) + perMuscleUsage;
+    return usage;
+  }, {});
+}
+
+function mergeMuscleUsage(
+  current: MuscleUsageMap,
+  next: MuscleUsageMap,
+): MuscleUsageMap {
+  const merged = { ...current };
+  for (const [key, value] of Object.entries(next)) {
+    merged[key] = (merged[key] ?? 0) + value;
+  }
+  return merged;
+}
+
+function buildRoutineMuscleUsageResponse(
+  routine: RoutineDraft,
+): MuscleUsageApiResponse {
+  const exerciseSummaries: MuscleUsageApiResponse["exerciseSummaries"] = [];
+  let routineMuscleUsage: MuscleUsageMap = {};
+  let routineTotalUsage = 0;
+
+  for (const block of routine.strength.blocks) {
+    const repeatCount = Math.max(block.repeatCount, 1);
+
+    for (const exercise of block.exercises) {
+      const setUsage = exercise.sets.reduce(
+        (running, setDraft) => running + Math.max(setDraft.reps, 1),
+        0,
+      );
+      const totalUsage = Math.max(setUsage * repeatCount, 1);
+      const muscleUsage = buildExerciseUsage(exercise.regionTags, totalUsage);
+
+      exerciseSummaries.push({
+        routineId: routine.routineId,
+        exerciseId: `${block.blockId}:${exercise.exerciseId}`,
+        exerciseName: `${exercise.canonicalName} (${block.label})`,
+        workload: totalUsage,
+        totalUsage,
+        muscleUsage,
+      });
+
+      routineTotalUsage += totalUsage;
+      routineMuscleUsage = mergeMuscleUsage(routineMuscleUsage, muscleUsage);
+    }
+  }
+
+  const hasExerciseSummaries = exerciseSummaries.length > 0;
+
+  return {
+    exerciseSummaries,
+    routineSummaries: hasExerciseSummaries
+      ? [
+          {
+            routineId: routine.routineId,
+            routineName: routine.routineName,
+            totalUsage: routineTotalUsage,
+            muscleUsage: routineMuscleUsage,
+          },
+        ]
+      : [],
+    microcycleSummary: {
+      microcycleId: `${routine.routineId}-draft-microcycle`,
+      microcycleName: "Draft microcycle",
+      routineCount: hasExerciseSummaries ? 1 : 0,
+      totalUsage: routineTotalUsage,
+      muscleUsage: routineMuscleUsage,
+    },
+  };
+}
+
 function resolveNextTabIndex(
   currentIndex: number,
   key: string,
@@ -179,14 +266,19 @@ export function RoutineCreationFlow() {
     exercisePickerSampleCatalog,
   );
   const [searchText, setSearchText] = useState("");
+  const [equipmentFilter, setEquipmentFilter] = useState("all");
+  const [muscleFilter, setMuscleFilter] = useState("all");
   const [isLoadingCatalog, setIsLoadingCatalog] = useState<boolean>(true);
   const [usingFallbackCatalog, setUsingFallbackCatalog] =
     useState<boolean>(false);
+  const [reorderAnnouncement, setReorderAnnouncement] = useState("");
 
   const [activeBlockId, setActiveBlockId] = useState<string>("block-1");
   const draggingExerciseRef = useRef<{
     blockId: string;
     exerciseId: string;
+    exerciseName: string;
+    blockLabel: string;
   } | null>(null);
 
   useEffect(() => {
@@ -242,15 +334,40 @@ export function RoutineCreationFlow() {
     }
   }, [activeBlockId, routine.strength.blocks]);
 
+  const equipmentFacetOptions = useMemo(() => {
+    const unique = new Set<string>();
+    for (const exercise of catalog) {
+      for (const option of exercise.equipmentOptions) {
+        unique.add(option);
+      }
+    }
+    return ["all", ...Array.from(unique).sort()];
+  }, [catalog]);
+
+  const muscleFacetOptions = useMemo(() => {
+    const unique = new Set<string>();
+    for (const exercise of catalog) {
+      for (const regionTag of exercise.regionTags) {
+        unique.add(regionTag);
+      }
+    }
+    return ["all", ...Array.from(unique).sort()];
+  }, [catalog]);
+
   const visibleExercises = useMemo(
     () =>
       filterAndRankExercises({
         catalog,
         searchText,
-        equipmentFilter: "all",
-        muscleFilter: "all",
+        equipmentFilter,
+        muscleFilter,
       }).slice(0, 10),
-    [catalog, searchText],
+    [catalog, equipmentFilter, muscleFilter, searchText],
+  );
+
+  const routineMuscleUsageResponse = useMemo(
+    () => buildRoutineMuscleUsageResponse(routine),
+    [routine],
   );
 
   const activeBlock =
@@ -651,13 +768,13 @@ export function RoutineCreationFlow() {
                   const remainingSets = exercise.sets.filter(
                     (setDraft) => setDraft.setId !== setId,
                   );
+                  if (remainingSets.length === 0) {
+                    return exercise;
+                  }
 
                   return {
                     ...exercise,
-                    sets:
-                      remainingSets.length > 0
-                        ? remainingSets
-                        : [createDefaultStrengthSet("set-1")],
+                    sets: remainingSets,
                   };
                 }),
               }
@@ -671,6 +788,8 @@ export function RoutineCreationFlow() {
     blockId: string,
     exerciseId: string,
     direction: -1 | 1,
+    exerciseName: string,
+    blockLabel: string,
   ) {
     setRoutine((previous) => ({
       ...previous,
@@ -701,13 +820,34 @@ export function RoutineCreationFlow() {
         }),
       },
     }));
+    setReorderAnnouncement(
+      `Moved ${exerciseName} ${direction === -1 ? "up" : "down"} in ${blockLabel}.`,
+    );
   }
 
-  function onExerciseDragStart(blockId: string, exerciseId: string) {
-    draggingExerciseRef.current = { blockId, exerciseId };
+  function onExerciseDragStart(
+    blockId: string,
+    exerciseId: string,
+    exerciseName: string,
+    blockLabel: string,
+  ) {
+    draggingExerciseRef.current = {
+      blockId,
+      exerciseId,
+      exerciseName,
+      blockLabel,
+    };
   }
 
-  function onExerciseDrop(blockId: string, targetExerciseId: string) {
+  function onExerciseDragEnd() {
+    draggingExerciseRef.current = null;
+  }
+
+  function onExerciseDrop(
+    blockId: string,
+    targetExerciseId: string,
+    targetExerciseName: string,
+  ) {
     const draggingExercise = draggingExerciseRef.current;
     draggingExerciseRef.current = null;
 
@@ -715,6 +855,7 @@ export function RoutineCreationFlow() {
       return;
     }
 
+    let reordered = false;
     setRoutine((previous) => ({
       ...previous,
       strength: {
@@ -730,6 +871,9 @@ export function RoutineCreationFlow() {
           const targetIndex = block.exercises.findIndex(
             (exercise) => exercise.exerciseId === targetExerciseId,
           );
+          if (sourceIndex !== targetIndex) {
+            reordered = true;
+          }
 
           return {
             ...block,
@@ -738,6 +882,12 @@ export function RoutineCreationFlow() {
         }),
       },
     }));
+
+    if (reordered) {
+      setReorderAnnouncement(
+        `Moved ${draggingExercise.exerciseName} before ${targetExerciseName} in ${draggingExercise.blockLabel}.`,
+      );
+    }
   }
 
   function addEnduranceInterval() {
@@ -999,6 +1149,44 @@ export function RoutineCreationFlow() {
                 ))}
               </select>
 
+              <div className="routine-flow-filter-grid">
+                <label htmlFor="strength-equipment-filter">
+                  Equipment filter
+                  <select
+                    id="strength-equipment-filter"
+                    className="routine-flow-select"
+                    name="strength-equipment-filter"
+                    value={equipmentFilter}
+                    onChange={(event) => setEquipmentFilter(event.target.value)}
+                  >
+                    {equipmentFacetOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option === "all"
+                          ? "All equipment"
+                          : formatToken(option)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label htmlFor="strength-muscle-filter">
+                  Muscle filter
+                  <select
+                    id="strength-muscle-filter"
+                    className="routine-flow-select"
+                    name="strength-muscle-filter"
+                    value={muscleFilter}
+                    onChange={(event) => setMuscleFilter(event.target.value)}
+                  >
+                    {muscleFacetOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option === "all" ? "All muscles" : formatToken(option)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
               <label htmlFor="strength-exercise-search">
                 Strength exercise search
               </label>
@@ -1010,7 +1198,7 @@ export function RoutineCreationFlow() {
                 name="strength-exercise-search"
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Try: splt sqaut"
+                placeholder="Try: splt sqaut…"
                 autoComplete="off"
               />
 
@@ -1032,24 +1220,30 @@ export function RoutineCreationFlow() {
                 role="listbox"
                 aria-label="Strength search results"
               >
-                {visibleExercises.map((exercise) => (
-                  <li key={exercise.id}>
-                    <button
-                      type="button"
-                      className="routine-flow-result"
-                      onClick={() => addStrengthExercise(exercise)}
-                    >
-                      <span>{exercise.canonicalName}</span>
-                      <small>
-                        {exercise.equipmentOptions.length > 0
-                          ? exercise.equipmentOptions
-                              .map(formatToken)
-                              .join(", ")
-                          : "No equipment"}
-                      </small>
-                    </button>
+                {visibleExercises.length === 0 ? (
+                  <li className="routine-flow-empty">
+                    No exercises match this search and filter combination.
                   </li>
-                ))}
+                ) : (
+                  visibleExercises.map((exercise) => (
+                    <li key={exercise.id}>
+                      <button
+                        type="button"
+                        className="routine-flow-result"
+                        onClick={() => addStrengthExercise(exercise)}
+                      >
+                        <span>{exercise.canonicalName}</span>
+                        <small>
+                          {exercise.equipmentOptions.length > 0
+                            ? exercise.equipmentOptions
+                                .map(formatToken)
+                                .join(", ")
+                            : "No equipment"}
+                        </small>
+                      </button>
+                    </li>
+                  ))
+                )}
               </ul>
 
               <div className="routine-flow-subheader">
@@ -1150,17 +1344,22 @@ export function RoutineCreationFlow() {
                             <li
                               key={exercise.exerciseId}
                               draggable
+                              aria-label={`Drag to reorder ${exercise.canonicalName}`}
                               onDragStart={() =>
                                 onExerciseDragStart(
                                   block.blockId,
                                   exercise.exerciseId,
+                                  exercise.canonicalName,
+                                  block.label,
                                 )
                               }
+                              onDragEnd={onExerciseDragEnd}
                               onDragOver={(event) => event.preventDefault()}
                               onDrop={() =>
                                 onExerciseDrop(
                                   block.blockId,
                                   exercise.exerciseId,
+                                  exercise.canonicalName,
                                 )
                               }
                             >
@@ -1183,6 +1382,8 @@ export function RoutineCreationFlow() {
                                         block.blockId,
                                         exercise.exerciseId,
                                         -1,
+                                        exercise.canonicalName,
+                                        block.label,
                                       )
                                     }
                                   >
@@ -1197,6 +1398,8 @@ export function RoutineCreationFlow() {
                                         block.blockId,
                                         exercise.exerciseId,
                                         1,
+                                        exercise.canonicalName,
+                                        block.label,
                                       )
                                     }
                                   >
@@ -1431,7 +1634,16 @@ export function RoutineCreationFlow() {
                                     <button
                                       type="button"
                                       className="routine-flow-link"
+                                      disabled={exercise.sets.length <= 1}
+                                      title={
+                                        exercise.sets.length <= 1
+                                          ? "At least one set is required."
+                                          : undefined
+                                      }
                                       onClick={() => {
+                                        if (exercise.sets.length <= 1) {
+                                          return;
+                                        }
                                         if (
                                           !confirmDestructiveAction(
                                             "Remove this set?",
@@ -1448,6 +1660,11 @@ export function RoutineCreationFlow() {
                                     >
                                       Remove set
                                     </button>
+                                    {exercise.sets.length <= 1 ? (
+                                      <p className="routine-flow-note">
+                                        At least one set is required.
+                                      </p>
+                                    ) : null}
                                   </li>
                                 ))}
                               </ul>
@@ -1476,6 +1693,16 @@ export function RoutineCreationFlow() {
                   </article>
                 ))}
               </div>
+              {reorderAnnouncement.length > 0 ? (
+                <p
+                  className="routine-flow-visually-hidden"
+                  role="status"
+                  aria-live="polite"
+                >
+                  {reorderAnnouncement}
+                </p>
+              ) : null}
+              <MuscleMapExplorer response={routineMuscleUsageResponse} />
             </article>
           ) : (
             <article
@@ -1607,8 +1834,10 @@ export function RoutineCreationFlow() {
             </article>
           )}
 
-          <article className="routine-flow-panel routine-flow-preview-panel">
-            <h2>UI parity payload</h2>
+          <details className="routine-flow-panel routine-flow-preview-panel">
+            <summary className="routine-flow-preview-toggle">
+              Advanced preview: UI parity payload
+            </summary>
             <p className="routine-flow-helper">
               Deterministic payload emitted by the visual builder.
             </p>
@@ -1618,7 +1847,7 @@ export function RoutineCreationFlow() {
             >
               <code>{serializeRoutineDsl(routine)}</code>
             </pre>
-          </article>
+          </details>
         </div>
       ) : (
         <article

@@ -2495,6 +2495,11 @@ h1 {
   padding: 0;
 }
 
+.routine-flow-link:disabled {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
 .routine-flow-action {
   background: linear-gradient(120deg, var(--accent-deep), var(--accent));
   border: 0;
@@ -2517,6 +2522,12 @@ h1 {
 
 .routine-flow-subheader h3 {
   margin: 0;
+}
+
+.routine-flow-filter-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .routine-flow-block-list {
@@ -2589,6 +2600,17 @@ h1 {
   align-content: start;
 }
 
+.routine-flow-preview-toggle {
+  color: var(--ink-strong);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.routine-flow-preview-toggle::marker {
+  color: var(--accent-deep);
+}
+
 .routine-flow-dsl {
   background: oklch(0.96 0.02 64);
   border: 1px solid var(--line);
@@ -2598,6 +2620,25 @@ h1 {
   max-height: 28rem;
   overflow: auto;
   padding: 0.8rem;
+}
+
+.routine-flow-note {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.routine-flow-visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .routine-flow-error {
@@ -2692,6 +2733,10 @@ h1 {
   }
 
   .routine-builder-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .routine-flow-filter-grid {
     grid-template-columns: 1fr;
   }
 

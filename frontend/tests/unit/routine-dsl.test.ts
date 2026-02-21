@@ -5,6 +5,168 @@ import {
 import type { RoutineDraft } from "../../src/features/routine/types";
 
 describe("routine DSL helpers", () => {
+  it("passes representative Liftosaur-like parity fixtures without lossy simplification", () => {
+    const fixtures = [
+      {
+        routineId: "routine-strength-parity-a",
+        routineName: "Strength Parity A",
+        path: "strength",
+        strength: {
+          variables: [
+            {
+              variableId: "training-max",
+              name: "Training Max",
+              expression: "0.9 * oneRepMax",
+            },
+            {
+              variableId: "readiness-floor",
+              name: "Readiness Floor",
+              expression: "6",
+            },
+          ],
+          blocks: [
+            {
+              blockId: "block-main",
+              label: "Main",
+              repeatCount: 4,
+              condition: "readiness >= readiness_floor",
+              exercises: [
+                {
+                  exerciseId: "global-back-squat",
+                  canonicalName: "Back Squat",
+                  selectedEquipment: "barbell",
+                  regionTags: ["quads", "glutes", "spinal_erectors"],
+                  condition: "day != deload",
+                  sets: [
+                    {
+                      setId: "set-1",
+                      reps: 5,
+                      restSeconds: 210,
+                      timerSeconds: 45,
+                      progression: {
+                        strategy: "linear_add_load",
+                        value: 2.5,
+                      },
+                    },
+                    {
+                      setId: "set-2",
+                      reps: 8,
+                      restSeconds: 150,
+                      timerSeconds: null,
+                      progression: {
+                        strategy: "linear_add_reps",
+                        value: 1,
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              blockId: "block-assistance",
+              label: "Assistance",
+              repeatCount: 2,
+              condition: null,
+              exercises: [
+                {
+                  exerciseId: "global-pallof-press",
+                  canonicalName: "Pallof Press",
+                  selectedEquipment: "cable",
+                  regionTags: ["core", "obliques"],
+                  condition: null,
+                  sets: [
+                    {
+                      setId: "set-1",
+                      reps: 12,
+                      restSeconds: 75,
+                      timerSeconds: null,
+                      progression: {
+                        strategy: "percentage_wave",
+                        value: 5,
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        endurance: {
+          intervals: [],
+        },
+      },
+      {
+        routineId: "routine-hybrid-parity-b",
+        routineName: "Hybrid Parity B",
+        path: "endurance",
+        strength: {
+          variables: [
+            {
+              variableId: "auto-reg-cap",
+              name: "Auto-reg cap",
+              expression: "lastSessionRpe <= 8",
+            },
+          ],
+          blocks: [
+            {
+              blockId: "block-1",
+              label: "Primer",
+              repeatCount: 1,
+              condition: null,
+              exercises: [
+                {
+                  exerciseId: "global-bench-press",
+                  canonicalName: "Bench Press",
+                  selectedEquipment: "barbell",
+                  regionTags: ["chest", "triceps", "front_delts"],
+                  condition: "sessionType == quality",
+                  sets: [
+                    {
+                      setId: "set-1",
+                      reps: 6,
+                      restSeconds: 150,
+                      timerSeconds: null,
+                      progression: null,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        endurance: {
+          intervals: [
+            {
+              intervalId: "interval-1",
+              label: "Threshold Block",
+              durationSeconds: 600,
+              targetType: "power_watts",
+              targetValue: 290,
+            },
+            {
+              intervalId: "interval-2",
+              label: "Pace Float",
+              durationSeconds: 300,
+              targetType: "pace",
+              targetValue: 255,
+            },
+          ],
+        },
+      },
+    ] as unknown as RoutineDraft[];
+
+    for (const fixture of fixtures) {
+      const serialized = serializeRoutineDsl(fixture);
+      const parsed = parseRoutineDsl(serialized);
+
+      expect(parsed.ok).toBe(true);
+      if (!parsed.ok) {
+        return;
+      }
+      expect(parsed.value).toStrictEqual(fixture);
+    }
+  });
+
   it("round-trips routine data without losing supported fields", () => {
     const routine = {
       routineId: "routine-hybrid-a",
