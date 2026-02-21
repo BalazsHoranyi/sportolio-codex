@@ -784,6 +784,7 @@ class ExerciseCatalogService:
         catalog: list[ExerciseCatalogEntry] = []
         seen_ids: set[str] = set()
         seen_names: set[str] = set()
+        alias_to_entry_id: dict[str, str] = {}
 
         for blueprint in sorted(
             blueprints, key=lambda item: _normalize_phrase(item.canonical_name)
@@ -804,6 +805,15 @@ class ExerciseCatalogService:
             seen_ids.add(entry_id)
 
             aliases = self._build_aliases(blueprint)
+            for alias in aliases:
+                alias_key = _normalize_phrase(alias)
+                existing_entry_id = alias_to_entry_id.get(alias_key)
+                if existing_entry_id is not None and existing_entry_id != entry_id:
+                    raise ValueError(
+                        "duplicate alias detected across canonical entries: "
+                        f"{alias!r} -> {existing_entry_id}, {entry_id}"
+                    )
+                alias_to_entry_id[alias_key] = entry_id
             primary_muscles, secondary_muscles = self._resolve_muscle_groups(blueprint)
             region_tags = tuple(
                 sorted(
@@ -896,6 +906,7 @@ class ExerciseCatalogService:
         self, existing_blueprints: tuple[ExerciseBlueprint, ...]
     ) -> tuple[ExerciseBlueprint, ...]:
         existing_names = {_normalize_phrase(item.canonical_name) for item in existing_blueprints}
+        reserved_base_names = set(existing_names)
         generated: list[ExerciseBlueprint] = []
 
         for template in _CATALOG_EXPANSION_TEMPLATES:
@@ -903,6 +914,8 @@ class ExerciseCatalogService:
                 for suffix in template.suffixes:
                     base_name = f"{prefix} {suffix}".strip()
                     base_name_key = _normalize_phrase(base_name)
+                    if base_name_key in reserved_base_names:
+                        continue
                     for equipment in template.equipment_options:
                         equipment_label = EQUIPMENT_LABELS[equipment]
                         canonical_name = f"{equipment_label} {base_name}"
@@ -911,10 +924,7 @@ class ExerciseCatalogService:
                             continue
 
                         abbreviation = EQUIPMENT_ABBREVIATIONS[equipment]
-                        aliases = (
-                            base_name,
-                            f"{abbreviation} {base_name}",
-                        )
+                        aliases = (f"{abbreviation} {base_name}",)
                         generated.append(
                             ExerciseBlueprint(
                                 canonical_name=canonical_name,
@@ -930,7 +940,6 @@ class ExerciseCatalogService:
                             )
                         )
                         existing_names.add(canonical_key)
-                        existing_names.add(base_name_key)
 
         return tuple(generated)
 

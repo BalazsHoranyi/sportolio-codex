@@ -270,3 +270,39 @@ def test_catalog_seed_validation_rejects_entries_without_equipment_or_primary_mu
         service._build_catalog_from_blueprints(no_equipment)
     with pytest.raises(ValueError, match="primary"):
         service._build_catalog_from_blueprints(no_primary_muscle)
+
+
+def test_catalog_aliases_deduplicate_to_single_canonical_id() -> None:
+    service = ExerciseCatalogService()
+    catalog = service.list_exercises(scope="global")
+
+    alias_to_ids: dict[str, set[str]] = {}
+    for entry in catalog:
+        for alias in entry.aliases:
+            key = " ".join(alias.lower().replace("-", " ").split())
+            alias_to_ids.setdefault(key, set()).add(entry.id)
+
+    collisions = {alias: ids for alias, ids in alias_to_ids.items() if len(ids) > 1}
+    assert collisions == {}
+
+
+def test_catalog_seed_validation_rejects_duplicate_aliases_across_entries() -> None:
+    service = ExerciseCatalogService()
+
+    duplicate_alias_blueprints = (
+        ExerciseBlueprint(
+            canonical_name="Validation Front Squat",
+            region_tags=("quads", "glutes"),
+            equipment_options=("barbell",),
+            aliases=("Validation Squat",),
+        ),
+        ExerciseBlueprint(
+            canonical_name="Validation Back Squat",
+            region_tags=("quads", "glutes"),
+            equipment_options=("dumbbell",),
+            aliases=("Validation Squat",),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="duplicate alias"):
+        service._build_catalog_from_blueprints(duplicate_alias_blueprints)
