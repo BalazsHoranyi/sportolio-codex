@@ -15,34 +15,94 @@ vi.mock(
     }: {
       onMutation?: (mutation: {
         mutationId: string;
-        type: "workout_added";
+        type: "workout_moved";
         workoutId: string;
         title: string;
-        toDate: string;
-        source: "keyboard";
+        fromDate?: string;
+        toDate?: string;
+        source: "drag_drop";
         occurredAt: string;
-        workoutType: "recovery";
-        intensity: "easy";
+        workoutType: "strength";
+        intensity: "hard";
       }) => void;
     }) => (
-      <button
-        type="button"
-        onClick={() =>
-          onMutation?.({
-            mutationId: "mutation-test-1",
-            type: "workout_added",
-            workoutId: "workout-added-test",
-            title: "Recovery ride",
-            toDate: "2026-02-21",
-            source: "keyboard",
-            occurredAt: "2026-02-21T09:00:00.000Z",
-            workoutType: "recovery",
-            intensity: "easy",
-          })
-        }
-      >
-        Emit planner mutation
-      </button>
+      <>
+        <button
+          type="button"
+          onClick={() =>
+            onMutation?.({
+              mutationId: "mutation-test-move-1",
+              type: "workout_moved",
+              workoutId: "workout-strength-a",
+              title: "Heavy lower",
+              fromDate: "2026-02-17",
+              toDate: "2026-02-20",
+              source: "drag_drop",
+              occurredAt: "2026-02-21T09:00:00.000Z",
+              workoutType: "strength",
+              intensity: "hard",
+            })
+          }
+        >
+          Emit planner move
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            onMutation?.({
+              mutationId: "mutation-test-invalid-1",
+              type: "workout_moved",
+              workoutId: "workout-strength-a",
+              title: "Heavy lower",
+              fromDate: "2026-02-17",
+              source: "drag_drop",
+              occurredAt: "2026-02-21T09:01:00.000Z",
+              workoutType: "strength",
+              intensity: "hard",
+            })
+          }
+        >
+          Emit invalid mutation
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            onMutation?.({
+              mutationId: "mutation-test-noop-1",
+              type: "workout_moved",
+              workoutId: "workout-strength-a",
+              title: "Heavy lower",
+              fromDate: "2026-02-17",
+              toDate: "2026-02-17",
+              source: "drag_drop",
+              occurredAt: "2026-02-21T09:02:00.000Z",
+              workoutType: "strength",
+              intensity: "hard",
+            })
+          }
+        >
+          Emit no-op mutation
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            onMutation?.({
+              mutationId: "mutation-test-out-of-window-1",
+              type: "workout_moved",
+              workoutId: "workout-strength-a",
+              title: "Heavy lower",
+              fromDate: "2026-03-01",
+              toDate: "2026-03-02",
+              source: "drag_drop",
+              occurredAt: "2026-02-21T09:03:00.000Z",
+              workoutType: "strength",
+              intensity: "hard",
+            })
+          }
+        >
+          Emit out-of-window mutation
+        </button>
+      </>
     ),
   }),
 );
@@ -58,9 +118,9 @@ vi.mock("../../src/features/calendar-audit/weekly-audit-chart", () => ({
       }>;
     };
   }) => {
-    const target = response.points.find((point) => point.date === "2026-02-21");
+    const target = response.points.find((point) => point.date === "2026-02-17");
     return (
-      <output data-testid="weekly-audit-neural-feb21">
+      <output data-testid="weekly-audit-neural-feb17">
         {target?.completedAxes.neural.toFixed(2)}
       </output>
     );
@@ -68,21 +128,93 @@ vi.mock("../../src/features/calendar-audit/weekly-audit-chart", () => ({
 }));
 
 describe("CalendarPageClient integration", () => {
-  it("recomputes weekly audit response when planning calendar emits mutation events", async () => {
+  it("recomputes weekly audit response when planning calendar emits move mutation events", async () => {
     const user = userEvent.setup();
 
     render(<CalendarPageClient weeklyAudit={weeklyAuditResponseSample} />);
 
-    const before = screen.getByTestId("weekly-audit-neural-feb21").textContent;
-    expect(before).toBe("7.10");
+    const before = screen.getByTestId("weekly-audit-neural-feb17").textContent;
+    expect(before).toBe("7.40");
 
     await user.click(
       screen.getByRole("button", {
-        name: /emit planner mutation/i,
+        name: /emit planner move/i,
       }),
     );
 
-    const after = screen.getByTestId("weekly-audit-neural-feb21").textContent;
+    const after = screen.getByTestId("weekly-audit-neural-feb17").textContent;
     expect(after).not.toBe(before);
+    expect(screen.getByText(/Audit recompute events applied: 1/i)).toBeTruthy();
+  });
+
+  it("keeps prior chart values and surfaces a non-blocking warning when mutation payload is invalid", async () => {
+    const user = userEvent.setup();
+
+    render(<CalendarPageClient weeklyAudit={weeklyAuditResponseSample} />);
+
+    const before = screen.getByTestId("weekly-audit-neural-feb17").textContent;
+    expect(before).toBe("7.40");
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /emit invalid mutation/i,
+      }),
+    );
+
+    expect(screen.getByText(/calendar recompute warning/i)).toBeTruthy();
+    const after = screen.getByTestId("weekly-audit-neural-feb17").textContent;
+    expect(after).toBe(before);
+    expect(screen.getByText(/Audit recompute events applied: 0/i)).toBeTruthy();
+  });
+
+  it("clears stale warning copy after a no-op mutation without introducing chart drift", async () => {
+    const user = userEvent.setup();
+
+    render(<CalendarPageClient weeklyAudit={weeklyAuditResponseSample} />);
+
+    const before = screen.getByTestId("weekly-audit-neural-feb17").textContent;
+    expect(before).toBe("7.40");
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /emit invalid mutation/i,
+      }),
+    );
+    expect(screen.getByText(/calendar recompute warning/i)).toBeTruthy();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /emit no-op mutation/i,
+      }),
+    );
+
+    expect(screen.queryByText(/calendar recompute warning/i)).toBeNull();
+    expect(screen.getByTestId("weekly-audit-neural-feb17").textContent).toBe(
+      before,
+    );
+    expect(screen.getByText(/Audit recompute events applied: 0/i)).toBeTruthy();
+  });
+
+  it("surfaces a warning and preserves chart values when move dates are outside loaded week points", async () => {
+    const user = userEvent.setup();
+
+    render(<CalendarPageClient weeklyAudit={weeklyAuditResponseSample} />);
+
+    const before = screen.getByTestId("weekly-audit-neural-feb17").textContent;
+    expect(before).toBe("7.40");
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /emit out-of-window mutation/i,
+      }),
+    );
+
+    expect(
+      screen.getByText(/outside the loaded weekly audit window/i),
+    ).toBeTruthy();
+    expect(screen.getByTestId("weekly-audit-neural-feb17").textContent).toBe(
+      before,
+    );
+    expect(screen.getByText(/Audit recompute events applied: 0/i)).toBeTruthy();
   });
 });

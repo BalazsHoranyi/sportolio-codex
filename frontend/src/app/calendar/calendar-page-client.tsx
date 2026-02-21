@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import type { WeeklyAuditApiResponse } from "../../features/calendar-audit/types";
-import { recomputeWeeklyAuditResponse } from "../../features/calendar-audit/recompute";
+import { applyWeeklyAuditMutationIncrementally } from "../../features/calendar-audit/recompute";
 import { WeeklyAuditChart } from "../../features/calendar-audit/weekly-audit-chart";
 import { PlanningCalendarSurface } from "../../features/planning-calendar/planning-calendar-surface";
 import type { PlanningMutationEvent } from "../../features/planning-calendar/types";
@@ -14,30 +14,86 @@ interface CalendarPageClientProps {
   sessionFocus?: CalendarSessionFocus;
 }
 
+interface CalendarAuditRecomputeState {
+  response: WeeklyAuditApiResponse;
+  appliedMutationCount: number;
+  warning: string | null;
+  lastDurationMs: number | null;
+}
+
+function createInitialRecomputeState(
+  weeklyAudit: WeeklyAuditApiResponse,
+): CalendarAuditRecomputeState {
+  return {
+    response: weeklyAudit,
+    appliedMutationCount: 0,
+    warning: null,
+    lastDurationMs: null,
+  };
+}
+
 export function CalendarPageClient({
   weeklyAudit,
   sessionFocus,
 }: CalendarPageClientProps) {
-  const [mutations, setMutations] = useState<PlanningMutationEvent[]>([]);
+  const [recomputeState, setRecomputeState] =
+    useState<CalendarAuditRecomputeState>(() =>
+      createInitialRecomputeState(weeklyAudit),
+    );
 
-  const recomputedWeeklyAudit = useMemo(
-    () => recomputeWeeklyAuditResponse(weeklyAudit, mutations),
-    [weeklyAudit, mutations],
-  );
+  useEffect(() => {
+    setRecomputeState(createInitialRecomputeState(weeklyAudit));
+  }, [weeklyAudit]);
 
   const handleMutation = useCallback((mutation: PlanningMutationEvent) => {
-    setMutations((previous) => [...previous, mutation]);
+    setRecomputeState((previous) => {
+      const result = applyWeeklyAuditMutationIncrementally(
+        previous.response,
+        mutation,
+      );
+
+      if (!result.applied) {
+        return {
+          ...previous,
+          warning: result.warning ?? null,
+          lastDurationMs: result.durationMs,
+        };
+      }
+
+      return {
+        response: result.response,
+        appliedMutationCount: previous.appliedMutationCount + 1,
+        warning: result.warning ?? null,
+        lastDurationMs: result.durationMs,
+      };
+    });
   }, []);
+
+  const latencyLabel =
+    recomputeState.lastDurationMs === null
+      ? null
+      : `${recomputeState.lastDurationMs.toFixed(2)}ms`;
 
   return (
     <>
       <p className="calendar-recompute-summary" aria-live="polite">
-        Audit recompute events applied: {mutations.length}
+        Audit recompute events applied: {recomputeState.appliedMutationCount}
+        {latencyLabel ? ` | Last recompute latency: ${latencyLabel}` : ""}
       </p>
+
+      {recomputeState.warning ? (
+        <p
+          className="calendar-recompute-warning"
+          role="status"
+          aria-live="polite"
+        >
+          Calendar recompute warning: {recomputeState.warning}
+        </p>
+      ) : null}
 
       <PlanningCalendarSurface onMutation={handleMutation} />
 
-      <WeeklyAuditChart response={recomputedWeeklyAudit} />
+      <WeeklyAuditChart response={recomputeState.response} />
 
       {sessionFocus ? (
         <section
