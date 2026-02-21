@@ -54,6 +54,24 @@
 - **Validation**: `priority_mode in {strength_first, endurance_first, balanced}`
 - **Relationships**: one-to-many `macrocycle_versions`, `mesocycles`
 
+### GoalTarget
+
+- **Fields**: `id`, `athlete_profile_id`, `goal_id`, `title`, `modality`, `outcome_metric`, `outcome_target`, `priority_rank`, `competition_event_id`, `competition_event_name`, `competition_event_date`
+- **Validation**:
+  - `modality in {strength, endurance, hybrid}`
+  - `priority_rank` must be unique and contiguous per athlete goal-plan snapshot
+  - `goal_id` must be unique per athlete goal-plan snapshot
+- **Relationships**: grouped into deterministic goal-priority planning snapshots and consumed by macrocycle initialization/reflow services
+
+### GoalPriorityConflictTrace
+
+- **Fields**: `id`, `athlete_profile_id`, `left_goal_id`, `right_goal_id`, `left_event_id`, `right_event_id`, `conflict_type`, `severity`, `rationale`, `days_apart`, `window_days`, `active_goal_involved`, `compared_event_dates_json`
+- **Validation**:
+  - `conflict_type in {event_date_collision, cross_modality_overlap}`
+  - deterministic hash-based `id` from compared goal/event inputs
+  - emitted only from deterministic conflict-resolution rules
+- **Relationships**: referenced in goal-priority API responses as traceable conflict metadata
+
 ### MacrocycleVersion
 
 - **Fields**: `id`, `macrocycle_id`, `version_number`, `source_version_id`, `effective_date`, `change_reason`, `created_by`, `created_at`
