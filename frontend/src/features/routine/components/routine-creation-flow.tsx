@@ -42,6 +42,36 @@ function nextIntervalId(intervals: EnduranceIntervalDraft[]): string {
   return `interval-${nextNumericId}`;
 }
 
+function intervalsToBlocks(
+  intervals: EnduranceIntervalDraft[],
+): RoutineDraft["endurance"]["blocks"] {
+  return intervals.map((interval, index) => ({
+    blockId: `block-${index + 1}`,
+    label: interval.label,
+    repeatCount: 1,
+    segments: [
+      {
+        segmentId: `segment-${index + 1}`,
+        label: interval.label,
+        durationSeconds: interval.durationSeconds,
+        target: {
+          type: interval.targetType,
+          value: interval.targetValue,
+        },
+      },
+    ],
+  }));
+}
+
+function withSyncedEndurance(
+  intervals: EnduranceIntervalDraft[],
+): RoutineDraft["endurance"] {
+  return {
+    intervals,
+    blocks: intervalsToBlocks(intervals),
+  };
+}
+
 function nextSequentialId(values: string[], prefix: string): string {
   const nextNumericId =
     values
@@ -900,18 +930,16 @@ export function RoutineCreationFlow() {
   function addEnduranceInterval() {
     setRoutine((previous) => ({
       ...previous,
-      endurance: {
-        intervals: [
-          ...previous.endurance.intervals,
-          {
-            intervalId: nextIntervalId(previous.endurance.intervals),
-            label: `Interval ${previous.endurance.intervals.length + 1}`,
-            durationSeconds: 300,
-            targetType: "power_watts",
-            targetValue: 250,
-          },
-        ],
-      },
+      endurance: withSyncedEndurance([
+        ...previous.endurance.intervals,
+        {
+          intervalId: nextIntervalId(previous.endurance.intervals),
+          label: `Interval ${previous.endurance.intervals.length + 1}`,
+          durationSeconds: 300,
+          targetType: "power_watts",
+          targetValue: 250,
+        },
+      ]),
     }));
   }
 
@@ -921,8 +949,8 @@ export function RoutineCreationFlow() {
   ) {
     setRoutine((previous) => ({
       ...previous,
-      endurance: {
-        intervals: previous.endurance.intervals.map((interval) =>
+      endurance: withSyncedEndurance(
+        previous.endurance.intervals.map((interval) =>
           interval.intervalId === intervalId
             ? {
                 ...interval,
@@ -930,18 +958,18 @@ export function RoutineCreationFlow() {
               }
             : interval,
         ),
-      },
+      ),
     }));
   }
 
   function removeEnduranceInterval(intervalId: string) {
     setRoutine((previous) => ({
       ...previous,
-      endurance: {
-        intervals: previous.endurance.intervals.filter(
+      endurance: withSyncedEndurance(
+        previous.endurance.intervals.filter(
           (interval) => interval.intervalId !== intervalId,
         ),
-      },
+      ),
     }));
   }
 

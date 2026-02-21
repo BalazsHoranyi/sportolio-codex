@@ -5,6 +5,17 @@ The routine builder supports two synchronized modes:
 - `Visual` mode for guided editing.
 - `DSL` mode for direct JSON edits.
 
+## DSL envelope (v2)
+
+The routine DSL is versioned and uses a normalized root envelope:
+
+- `dslVersion` (currently `"2.0"`; legacy payloads are normalized to this)
+- `references` for planning lineage:
+  - `macrocycleId`
+  - `mesocycleId`
+  - `microcycleId`
+- existing routine payload (`routineId`, `routineName`, `path`, `strength`, `endurance`)
+
 ## Strength model
 
 The strength path uses explicit advanced structures:
@@ -16,6 +27,9 @@ The strength path uses explicit advanced structures:
   - `reps`
   - `restSeconds`
   - `timerSeconds`
+  - optional `load` (`unit`: `kg` | `lb` | `percent_1rm`, `value` > 0)
+  - optional `rpe` (1-10)
+  - optional `rir` (0-10)
   - optional `progression { strategy, value }`
 
 Supported progression strategies:
@@ -23,6 +37,23 @@ Supported progression strategies:
 - `linear_add_load`
 - `linear_add_reps`
 - `percentage_wave`
+
+## Endurance model
+
+Endurance supports both:
+
+- `endurance.intervals[]` (legacy + UI-friendly flat representation)
+- `endurance.blocks[]` (v2 AST representation)
+
+Each block contains:
+
+- `blockId`, `label`, `repeatCount`
+- `segments[]` with:
+  - `segmentId`, `label`, `durationSeconds`
+  - `target { type, value }` where type is `power_watts` | `pace` | `heart_rate`
+
+When only one representation is provided, parser normalization derives the other
+deterministically.
 
 ## Catalog and filtering
 
@@ -44,6 +75,7 @@ an initial default set for each exercise.
 ## Validation behavior
 
 - Invalid DSL edits show inline validation errors.
+- Validation errors include a concrete field location and a `Hint:` fix suggestion.
 - The last valid visual state is preserved until DSL becomes valid again.
 
 ## Reordering behavior

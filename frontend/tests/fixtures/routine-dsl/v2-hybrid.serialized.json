@@ -1,0 +1,101 @@
+{
+  "dslVersion": "2.0",
+  "references": {
+    "macrocycleId": "macro-2026-base",
+    "mesocycleId": "meso-1",
+    "microcycleId": "micro-3"
+  },
+  "routineId": "routine-v2-hybrid-a",
+  "routineName": "Hybrid V2",
+  "path": "endurance",
+  "strength": {
+    "variables": [
+      {
+        "variableId": "training-max",
+        "name": "Training Max",
+        "expression": "0.9 * oneRepMax"
+      }
+    ],
+    "blocks": [
+      {
+        "blockId": "strength-block-1",
+        "label": "Main",
+        "repeatCount": 1,
+        "condition": null,
+        "exercises": [
+          {
+            "instanceId": "exercise-1",
+            "exerciseId": "global-back-squat",
+            "canonicalName": "Back Squat",
+            "selectedEquipment": "barbell",
+            "regionTags": ["quads", "glutes"],
+            "condition": null,
+            "sets": [
+              {
+                "setId": "set-1",
+                "reps": 5,
+                "restSeconds": 180,
+                "timerSeconds": null,
+                "load": {
+                  "unit": "kg",
+                  "value": 145
+                },
+                "rpe": 8,
+                "rir": 2,
+                "progression": {
+                  "strategy": "linear_add_load",
+                  "value": 2.5
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "endurance": {
+    "intervals": [
+      {
+        "intervalId": "interval-1",
+        "label": "Threshold set: Work",
+        "durationSeconds": 300,
+        "targetType": "power_watts",
+        "targetValue": 285
+      },
+      {
+        "intervalId": "interval-2",
+        "label": "Threshold set: Recovery",
+        "durationSeconds": 120,
+        "targetType": "heart_rate",
+        "targetValue": 145
+      }
+    ],
+    "blocks": [
+      {
+        "blockId": "endurance-block-1",
+        "label": "Threshold set",
+        "repeatCount": 2,
+        "segments": [
+          {
+            "segmentId": "seg-1",
+            "label": "Work",
+            "durationSeconds": 300,
+            "target": {
+              "type": "power_watts",
+              "value": 285
+            }
+          },
+          {
+            "segmentId": "seg-2",
+            "label": "Recovery",
+            "durationSeconds": 120,
+            "target": {
+              "type": "heart_rate",
+              "value": 145
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
