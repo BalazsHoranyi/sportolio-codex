@@ -13,7 +13,11 @@ import type {
   MuscleUsageApiResponse,
   MuscleUsageMap,
 } from "../../muscle-map/types";
-import { parseRoutineDsl, serializeRoutineDsl } from "../routine-dsl";
+import {
+  parseRoutineDsl,
+  serializeRoutineDsl,
+  serializeRoutineDslText,
+} from "../routine-dsl";
 import {
   createDefaultStrengthSet,
   createInitialRoutineDraft,
@@ -65,6 +69,8 @@ function intervalsToBlocks(
           type: interval.targetType,
           value: interval.targetValue,
         },
+        cadenceRangeRpm: interval.cadenceRangeRpm ?? null,
+        note: interval.note ?? null,
       },
     ],
   }));
@@ -338,7 +344,7 @@ export function RoutineCreationFlow() {
     },
   );
   const [dslText, setDslText] = useState<string>(() =>
-    serializeRoutineDsl(createInitialRoutineDraft()),
+    serializeRoutineDslText(createInitialRoutineDraft()),
   );
   const [dslErrors, setDslErrors] = useState<string[]>([]);
 
@@ -459,7 +465,7 @@ export function RoutineCreationFlow() {
   }, []);
 
   useEffect(() => {
-    setDslText(serializeRoutineDsl(routine));
+    setDslText(serializeRoutineDslText(routine));
   }, [routine]);
 
   useEffect(() => {
@@ -561,7 +567,7 @@ export function RoutineCreationFlow() {
   function switchMode(nextMode: EditorMode) {
     setMode(nextMode);
     if (nextMode === "dsl") {
-      setDslText(serializeRoutineDsl(routine));
+      setDslText(serializeRoutineDslText(routine));
       setDslErrors([]);
     }
   }
@@ -1083,6 +1089,8 @@ export function RoutineCreationFlow() {
           durationSeconds: 300,
           targetType: "power_watts",
           targetValue: 250,
+          cadenceRangeRpm: null,
+          note: null,
         },
       ]),
     }));
@@ -2066,7 +2074,7 @@ export function RoutineCreationFlow() {
         >
           <h2>DSL editor</h2>
           <p className="routine-flow-helper">
-            Advanced mode uses deterministic JSON DSL. Invalid edits keep the
+            Advanced mode uses a human-friendly text DSL. Invalid edits keep the
             last valid visual state intact.
           </p>
 

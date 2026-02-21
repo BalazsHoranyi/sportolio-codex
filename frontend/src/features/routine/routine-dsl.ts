@@ -1,4 +1,5 @@
 import type {
+  CadenceRangeRpmDraft,
   EnduranceBlockDraft,
   EnduranceIntervalDraft,
   EnduranceSegmentDraft,
@@ -140,6 +141,48 @@ function parseOptionalBoundedNumber(
   }
 
   return value;
+}
+
+function parseOptionalCadenceRange(
+  value: unknown,
+  path: string,
+  errors: string[],
+): CadenceRangeRpmDraft | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (!isRecord(value)) {
+    pushValidationError(
+      errors,
+      path,
+      "must be an object or null.",
+      "Provide { min, max } cadence bounds or null.",
+    );
+    return null;
+  }
+
+  const min = value.min;
+  const max = value.max;
+  if (
+    typeof min !== "number" ||
+    !Number.isFinite(min) ||
+    min <= 0 ||
+    typeof max !== "number" ||
+    !Number.isFinite(max) ||
+    max <= 0 ||
+    min > max
+  ) {
+    pushValidationError(
+      errors,
+      path,
+      "must include positive numeric min/max where min <= max.",
+      "Provide cadenceRangeRpm like { min: 90, max: 100 }.",
+    );
+    return null;
+  }
+
+  return { min, max };
 }
 
 function resolveExerciseInstanceId(
@@ -526,6 +569,11 @@ function parseStrengthExercises(
       `${exercisePath}.condition`,
       errors,
     );
+    const note = parseOptionalCondition(
+      candidate.note,
+      `${exercisePath}.note`,
+      errors,
+    );
 
     if (!isNonEmptyString(exerciseId)) {
       pushValidationError(
@@ -587,6 +635,7 @@ function parseStrengthExercises(
       selectedEquipment,
       regionTags: [...regionTags],
       condition,
+      ...(note !== null ? { note } : {}),
       sets,
     });
   });
@@ -719,6 +768,16 @@ function parseStrengthBlocks(
     const blockId = candidate.blockId;
     const label = candidate.label;
     const repeatCount = candidate.repeatCount;
+    const weekLabel = parseOptionalCondition(
+      candidate.weekLabel,
+      `${blockPath}.weekLabel`,
+      errors,
+    );
+    const dayLabel = parseOptionalCondition(
+      candidate.dayLabel,
+      `${blockPath}.dayLabel`,
+      errors,
+    );
 
     if (!isNonEmptyString(blockId)) {
       pushValidationError(
@@ -770,6 +829,8 @@ function parseStrengthBlocks(
       label,
       repeatCount,
       condition,
+      ...(weekLabel !== null ? { weekLabel } : {}),
+      ...(dayLabel !== null ? { dayLabel } : {}),
       exercises,
     });
   });
@@ -877,6 +938,16 @@ function parseEnduranceIntervals(
     const durationSeconds = candidate.durationSeconds;
     const targetType = toTargetType(candidate.targetType);
     const targetValue = candidate.targetValue;
+    const cadenceRangeRpm = parseOptionalCadenceRange(
+      candidate.cadenceRangeRpm,
+      `${intervalPath}.cadenceRangeRpm`,
+      errors,
+    );
+    const note = parseOptionalCondition(
+      candidate.note,
+      `${intervalPath}.note`,
+      errors,
+    );
 
     if (!isNonEmptyString(intervalId)) {
       pushValidationError(
@@ -938,6 +1009,8 @@ function parseEnduranceIntervals(
       durationSeconds,
       targetType,
       targetValue,
+      ...(cadenceRangeRpm !== null ? { cadenceRangeRpm } : {}),
+      ...(note !== null ? { note } : {}),
     });
   });
 
@@ -987,6 +1060,16 @@ function parseEnduranceSegments(
     const label = candidate.label;
     const durationSeconds = candidate.durationSeconds;
     const target = candidate.target;
+    const cadenceRangeRpm = parseOptionalCadenceRange(
+      candidate.cadenceRangeRpm,
+      `${segmentPath}.cadenceRangeRpm`,
+      errors,
+    );
+    const note = parseOptionalCondition(
+      candidate.note,
+      `${segmentPath}.note`,
+      errors,
+    );
 
     if (!isNonEmptyString(segmentId)) {
       pushValidationError(
@@ -1062,6 +1145,8 @@ function parseEnduranceSegments(
         type: targetType,
         value: targetValue,
       },
+      ...(cadenceRangeRpm !== null ? { cadenceRangeRpm } : {}),
+      ...(note !== null ? { note } : {}),
     });
   });
 
@@ -1166,6 +1251,10 @@ function blocksToIntervals(
         durationSeconds: segment.durationSeconds,
         targetType: segment.target.type,
         targetValue: segment.target.value,
+        ...(segment.cadenceRangeRpm
+          ? { cadenceRangeRpm: segment.cadenceRangeRpm }
+          : {}),
+        ...(segment.note ? { note: segment.note } : {}),
       });
     });
   });
@@ -1189,6 +1278,10 @@ function intervalsToBlocks(
           type: interval.targetType,
           value: interval.targetValue,
         },
+        ...(interval.cadenceRangeRpm
+          ? { cadenceRangeRpm: interval.cadenceRangeRpm }
+          : {}),
+        ...(interval.note ? { note: interval.note } : {}),
       },
     ],
   }));
@@ -1227,6 +1320,7 @@ function cloneStrengthExercise(
     selectedEquipment: exercise.selectedEquipment,
     regionTags: [...exercise.regionTags],
     condition: exercise.condition,
+    ...(exercise.note ? { note: exercise.note } : {}),
     sets: exercise.sets.map(cloneStrengthSet),
   };
 }
@@ -1237,6 +1331,8 @@ function cloneStrengthBlock(block: StrengthBlockDraft): StrengthBlockDraft {
     label: block.label,
     repeatCount: block.repeatCount,
     condition: block.condition,
+    ...(block.weekLabel ? { weekLabel: block.weekLabel } : {}),
+    ...(block.dayLabel ? { dayLabel: block.dayLabel } : {}),
     exercises: block.exercises.map(cloneStrengthExercise),
   };
 }
@@ -1250,6 +1346,15 @@ function cloneEnduranceIntervals(
     durationSeconds: interval.durationSeconds,
     targetType: interval.targetType,
     targetValue: interval.targetValue,
+    ...(interval.cadenceRangeRpm
+      ? {
+          cadenceRangeRpm: {
+            min: interval.cadenceRangeRpm.min,
+            max: interval.cadenceRangeRpm.max,
+          },
+        }
+      : {}),
+    ...(interval.note ? { note: interval.note } : {}),
   }));
 }
 
@@ -1268,6 +1373,15 @@ function cloneEnduranceBlocks(
         type: segment.target.type,
         value: segment.target.value,
       },
+      ...(segment.cadenceRangeRpm
+        ? {
+            cadenceRangeRpm: {
+              min: segment.cadenceRangeRpm.min,
+              max: segment.cadenceRangeRpm.max,
+            },
+          }
+        : {}),
+      ...(segment.note ? { note: segment.note } : {}),
     })),
   }));
 }
@@ -1426,20 +1540,7 @@ function parseLineageReferences(
   };
 }
 
-export function parseRoutineDsl(input: string): ParseRoutineDslResult {
-  let payload: unknown;
-
-  try {
-    payload = JSON.parse(input);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unexpected JSON parse error.";
-    return {
-      ok: false,
-      errors: [`Invalid JSON: ${message}`],
-    };
-  }
-
+function parseRoutineDslPayload(payload: unknown): ParseRoutineDslResult {
   if (!isRecord(payload)) {
     return {
       ok: false,
@@ -1512,6 +1613,1364 @@ export function parseRoutineDsl(input: string): ParseRoutineDslResult {
       endurance: normalizeEndurance(endurance),
     },
   };
+}
+
+interface HumanParseFailure {
+  ok: false;
+  errors: string[];
+}
+
+interface HumanParseSuccess {
+  ok: true;
+  payload: Record<string, unknown>;
+}
+
+type HumanParseResult = HumanParseFailure | HumanParseSuccess;
+
+function slugifyToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function formatHumanError(
+  line: number,
+  column: number,
+  message: string,
+  hint: string,
+): string {
+  return `Line ${line}, column ${column}: ${message} Hint: ${hint}`;
+}
+
+function findTokenColumn(rawLine: string, token: string): number {
+  const normalizedToken = token.trim();
+  if (!normalizedToken) {
+    return 1;
+  }
+
+  const index = rawLine.indexOf(normalizedToken);
+  return index >= 0 ? index + 1 : 1;
+}
+
+function parseHumanReferenceValue(value: string): string | null {
+  return value.toLowerCase() === "null" ? null : value;
+}
+
+function parseHumanProgressionExpression(
+  expression: string,
+): StrengthSetProgressionDraft | null {
+  const trimmed = expression.trim();
+  const match = trimmed.match(
+    /^([a-z_]+)\(([-+]?\d*\.?\d+)(?:\s*(lb|kg|%1rm|percent_1rm))?\)$/i,
+  );
+  if (!match) {
+    return null;
+  }
+
+  const strategyToken = (match[1] ?? "").toLowerCase();
+  const rawValue = Number.parseFloat(match[2] ?? "");
+  if (!Number.isFinite(rawValue) || rawValue <= 0) {
+    return null;
+  }
+
+  let strategy: StrengthProgressionStrategy | null = null;
+  if (strategyToken === "lp" || strategyToken === "linear_add_load") {
+    strategy = "linear_add_load";
+  } else if (strategyToken === "reps" || strategyToken === "linear_add_reps") {
+    strategy = "linear_add_reps";
+  } else if (strategyToken === "wave" || strategyToken === "percentage_wave") {
+    strategy = "percentage_wave";
+  }
+
+  if (!strategy) {
+    return null;
+  }
+
+  return {
+    strategy,
+    value: rawValue,
+  };
+}
+
+function parseHumanSetLoadToken(value: string): StrengthSetLoadDraft | null {
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, "");
+  const match = normalized.match(/^([-+]?\d*\.?\d+)(kg|lb|%1rm|percent_1rm)$/);
+  if (!match) {
+    return null;
+  }
+
+  const numeric = Number.parseFloat(match[1] ?? "");
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return null;
+  }
+
+  const rawUnit = match[2];
+  if (!rawUnit) {
+    return null;
+  }
+  const unit: StrengthLoadUnit =
+    rawUnit === "%1rm" ? "percent_1rm" : (rawUnit as StrengthLoadUnit);
+
+  return {
+    unit,
+    value: numeric,
+  };
+}
+
+function parseHumanSetSpecs(
+  rawValue: string,
+  lineNumber: number,
+  errors: string[],
+): StrengthSetDraft[] | null {
+  const trimmed = rawValue.trim();
+  const normalized =
+    trimmed.startsWith("[") && trimmed.endsWith("]")
+      ? trimmed.slice(1, -1).trim()
+      : trimmed;
+
+  if (normalized.length === 0) {
+    errors.push(
+      formatHumanError(
+        lineNumber,
+        1,
+        "sets declaration cannot be empty.",
+        "Provide at least one set spec, for example sets: [reps=5,rest=180].",
+      ),
+    );
+    return null;
+  }
+
+  const setSpecs = normalized
+    .split(";")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  if (setSpecs.length === 0) {
+    errors.push(
+      formatHumanError(
+        lineNumber,
+        1,
+        "sets declaration cannot be empty.",
+        "Provide at least one set spec, for example sets: [reps=5,rest=180].",
+      ),
+    );
+    return null;
+  }
+
+  const parsedSets: StrengthSetDraft[] = [];
+
+  for (let index = 0; index < setSpecs.length; index += 1) {
+    const spec = setSpecs[index] ?? "";
+    const setDraft = createDefaultStrengthSet(`set-${index + 1}`);
+    const fields = spec
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    let hasReps = false;
+
+    for (const field of fields) {
+      const [rawKey, rawValuePart] = field.split("=", 2);
+      const key = (rawKey ?? "").trim().toLowerCase();
+      const valuePart = (rawValuePart ?? "").trim();
+      if (!key || !valuePart) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            1,
+            `Invalid set field "${field}".`,
+            "Use key=value pairs such as reps=5 or rest=180.",
+          ),
+        );
+        return null;
+      }
+
+      if (key === "id" || key === "setid") {
+        setDraft.setId = valuePart;
+      } else if (key === "reps") {
+        const reps = Number.parseFloat(valuePart);
+        if (!Number.isFinite(reps) || reps <= 0) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              1,
+              "Set reps must be a positive number.",
+              "Use reps=5.",
+            ),
+          );
+          return null;
+        }
+        setDraft.reps = reps;
+        hasReps = true;
+      } else if (key === "rest") {
+        const rest = Number.parseFloat(valuePart.replace(/s$/i, ""));
+        if (!Number.isFinite(rest) || rest < 0) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              1,
+              "Set rest must be a non-negative number.",
+              "Use rest=180 or rest=180s.",
+            ),
+          );
+          return null;
+        }
+        setDraft.restSeconds = rest;
+      } else if (key === "timer") {
+        if (valuePart.toLowerCase() === "null") {
+          setDraft.timerSeconds = null;
+        } else {
+          const timer = Number.parseFloat(valuePart.replace(/s$/i, ""));
+          if (!Number.isFinite(timer) || timer <= 0) {
+            errors.push(
+              formatHumanError(
+                lineNumber,
+                1,
+                "Set timer must be positive or null.",
+                "Use timer=45, timer=45s, or timer=null.",
+              ),
+            );
+            return null;
+          }
+          setDraft.timerSeconds = timer;
+        }
+      } else if (key === "load") {
+        const load = parseHumanSetLoadToken(valuePart);
+        if (!load) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              1,
+              "Invalid set load token.",
+              "Use load=145kg, load=315lb, or load=75%1rm.",
+            ),
+          );
+          return null;
+        }
+        setDraft.load = load;
+      } else if (key === "rpe") {
+        const rpe = Number.parseFloat(valuePart);
+        if (!Number.isFinite(rpe) || rpe < 1 || rpe > 10) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              1,
+              "Set RPE must be between 1 and 10.",
+              "Use rpe=8.",
+            ),
+          );
+          return null;
+        }
+        setDraft.rpe = rpe;
+      } else if (key === "rir") {
+        const rir = Number.parseFloat(valuePart);
+        if (!Number.isFinite(rir) || rir < 0 || rir > 10) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              1,
+              "Set RIR must be between 0 and 10.",
+              "Use rir=2.",
+            ),
+          );
+          return null;
+        }
+        setDraft.rir = rir;
+      } else if (key === "progress") {
+        const progression = parseHumanProgressionExpression(valuePart);
+        if (!progression) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              1,
+              "Invalid progression expression.",
+              "Use progress=lp(5lb), progress=reps(1), or progress=wave(5).",
+            ),
+          );
+          return null;
+        }
+        setDraft.progression = progression;
+      } else {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            1,
+            `Unsupported set field "${key}".`,
+            "Use supported keys: reps, rest, timer, load, rpe, rir, progress, id.",
+          ),
+        );
+        return null;
+      }
+    }
+
+    if (!hasReps) {
+      errors.push(
+        formatHumanError(
+          lineNumber,
+          1,
+          "Each set spec must include reps.",
+          "Use reps=5 in each set declaration.",
+        ),
+      );
+      return null;
+    }
+
+    parsedSets.push(setDraft);
+  }
+
+  return parsedSets;
+}
+
+function parseHumanStrengthDsl(
+  lines: string[],
+  startIndex: number,
+  errors: string[],
+): RoutineDraft["strength"] {
+  const variables: StrengthVariableDraft[] = [];
+  const blocks: StrengthBlockDraft[] = [];
+  let currentWeekLabel: string | null = null;
+  let currentBlock: StrengthBlockDraft | null = null;
+  let pendingComment: string | null = null;
+
+  function ensureBlock(
+    lineNumber: number,
+    explicitDayLabel?: string,
+  ): StrengthBlockDraft {
+    if (currentBlock) {
+      return currentBlock;
+    }
+    const dayLabel = explicitDayLabel ?? "Day 1";
+    const block: StrengthBlockDraft = {
+      blockId: `block-${blocks.length + 1}`,
+      label: currentWeekLabel ? `${currentWeekLabel} / ${dayLabel}` : dayLabel,
+      repeatCount: 1,
+      condition: null,
+      ...(currentWeekLabel ? { weekLabel: currentWeekLabel } : {}),
+      ...(dayLabel ? { dayLabel } : {}),
+      exercises: [],
+    };
+    blocks.push(block);
+    currentBlock = block;
+    return block;
+  }
+
+  for (let index = startIndex; index < lines.length; index += 1) {
+    const rawLine = lines[index] ?? "";
+    const lineNumber = index + 1;
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    const variableMatch = trimmed.match(
+      /^@var\s+([^|=]+?)(?:\s*\|\s*([^=]+?))?\s*=\s*(.+)$/i,
+    );
+    if (variableMatch) {
+      const variableId = (variableMatch[1] ?? "").trim();
+      const variableName = (variableMatch[2] ?? "").trim();
+      const expression = (variableMatch[3] ?? "").trim();
+      if (!variableId || !expression) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            1,
+            "Invalid variable declaration.",
+            "Use @var variable-id | Variable Name = expression.",
+          ),
+        );
+      } else {
+        variables.push({
+          variableId,
+          name: variableName || variableId,
+          expression,
+        });
+      }
+      continue;
+    }
+
+    if (trimmed.startsWith("# ") && !trimmed.startsWith("##")) {
+      currentWeekLabel = trimmed.slice(2).trim();
+      currentBlock = null;
+      continue;
+    }
+
+    if (trimmed.startsWith("## ")) {
+      const dayMatch = trimmed
+        .slice(3)
+        .trim()
+        .match(/^(.+?)(?:\s+(\d+)x)?(?:\s+if\s+(.+))?$/i);
+      const dayLabel = dayMatch?.[1]?.trim();
+      if (!dayLabel) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            1,
+            "Day heading is missing a label.",
+            "Use '## Day 1'.",
+          ),
+        );
+        continue;
+      }
+      const repeatCountRaw = dayMatch?.[2];
+      const repeatCount = repeatCountRaw
+        ? Number.parseInt(repeatCountRaw, 10)
+        : 1;
+      const blockCondition = dayMatch?.[3]?.trim() || null;
+      const block: StrengthBlockDraft = {
+        blockId: `block-${blocks.length + 1}`,
+        label: currentWeekLabel
+          ? `${currentWeekLabel} / ${dayLabel}`
+          : dayLabel,
+        repeatCount:
+          Number.isFinite(repeatCount) && repeatCount > 0 ? repeatCount : 1,
+        condition: blockCondition,
+        ...(currentWeekLabel ? { weekLabel: currentWeekLabel } : {}),
+        ...(dayLabel ? { dayLabel } : {}),
+        exercises: [],
+      };
+      blocks.push(block);
+      currentBlock = block;
+      continue;
+    }
+
+    if (trimmed.startsWith("//")) {
+      pendingComment = trimmed.slice(2).trim();
+      continue;
+    }
+
+    const targetBlock = ensureBlock(lineNumber);
+    const tokens = trimmed
+      .split("/")
+      .map((token) => token.trim())
+      .filter(Boolean);
+
+    if (tokens.length < 2) {
+      errors.push(
+        formatHumanError(
+          lineNumber,
+          1,
+          "Strength exercise line must include set notation.",
+          "Use 'Squat / 5x5 / progress: lp(5lb)'.",
+        ),
+      );
+      continue;
+    }
+
+    const canonicalName = tokens[0] ?? "";
+    if (!canonicalName) {
+      errors.push(
+        formatHumanError(
+          lineNumber,
+          1,
+          "Exercise name is required.",
+          "Start with an exercise name before '/' tokens.",
+        ),
+      );
+      continue;
+    }
+
+    let setCount = 0;
+    let reps = 0;
+    let restSeconds = 120;
+    let timerSeconds: number | null = null;
+    let progression: StrengthSetProgressionDraft | null = null;
+    let load: StrengthSetLoadDraft | null = null;
+    let rpe: number | null = null;
+    let rir: number | null = null;
+    let exerciseId = `dsl-${slugifyToken(canonicalName)}`;
+    let instanceId = `exercise-${targetBlock.exercises.length + 1}`;
+    let selectedEquipment: string | null = null;
+    let regionTags: string[] = [];
+    let condition: string | null = null;
+    let explicitSets: StrengthSetDraft[] | null = null;
+
+    for (const token of tokens.slice(1)) {
+      const shorthandMatch = token.match(/^(\d+)x(\d+)$/i);
+      if (shorthandMatch) {
+        setCount = Number.parseInt(shorthandMatch[1] ?? "0", 10);
+        reps = Number.parseInt(shorthandMatch[2] ?? "0", 10);
+        continue;
+      }
+
+      if (/^sets\s*:/i.test(token)) {
+        const parsedSets = parseHumanSetSpecs(
+          token.replace(/^sets\s*:/i, "").trim(),
+          lineNumber,
+          errors,
+        );
+        if (!parsedSets) {
+          continue;
+        }
+        explicitSets = parsedSets;
+        continue;
+      }
+
+      const progressionToken = token.match(/^progress\s*:\s*(.+)$/i);
+      if (progressionToken) {
+        const parsedProgression = parseHumanProgressionExpression(
+          progressionToken[1] ?? "",
+        );
+        if (!parsedProgression) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              1,
+              "Invalid progression token.",
+              "Use progress: lp(5lb), progress: reps(1), or progress: wave(5).",
+            ),
+          );
+          continue;
+        }
+        progression = parsedProgression;
+        continue;
+      }
+
+      const restToken = token.match(/^rest\s*:\s*(.+)$/i);
+      if (restToken) {
+        const column = findTokenColumn(rawLine, token);
+        const restRaw = (restToken[1] ?? "").trim();
+        const numericRest = restRaw.replace(/\s*s$/i, "");
+        if (!/^[+-]?\d*\.?\d+$/.test(numericRest)) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "Rest token must be a non-negative number.",
+              "Use rest: 180 or rest: 180s.",
+            ),
+          );
+          continue;
+        }
+        const parsedRest = Number.parseFloat(numericRest);
+        if (!Number.isFinite(parsedRest) || parsedRest < 0) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "Rest token must be a non-negative number.",
+              "Use rest: 180 or rest: 180s.",
+            ),
+          );
+          continue;
+        }
+        restSeconds = parsedRest;
+        continue;
+      }
+
+      const timerToken = token.match(/^timer\s*:\s*(.+)$/i);
+      if (timerToken) {
+        const column = findTokenColumn(rawLine, token);
+        const timerRaw = (timerToken[1] ?? "").trim();
+        if (timerRaw.toLowerCase() === "null") {
+          timerSeconds = null;
+          continue;
+        }
+
+        const numericTimer = timerRaw.replace(/\s*s$/i, "");
+        if (!/^[+-]?\d*\.?\d+$/.test(numericTimer)) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "Timer token must be a positive number or null.",
+              "Use timer: 45, timer: 45s, or timer: null.",
+            ),
+          );
+          continue;
+        }
+        const parsedTimer = Number.parseFloat(numericTimer);
+        if (!Number.isFinite(parsedTimer) || parsedTimer <= 0) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "Timer token must be a positive number or null.",
+              "Use timer: 45, timer: 45s, or timer: null.",
+            ),
+          );
+          continue;
+        }
+        timerSeconds = parsedTimer;
+        continue;
+      }
+
+      const idToken = token.match(/^id\s*:\s*(.+)$/i);
+      if (idToken) {
+        exerciseId = (idToken[1] ?? "").trim();
+        continue;
+      }
+
+      const instanceToken = token.match(/^instance\s*:\s*(.+)$/i);
+      if (instanceToken) {
+        instanceId = (instanceToken[1] ?? "").trim();
+        continue;
+      }
+
+      const equipmentToken = token.match(/^equip(?:ment)?\s*:\s*(.+)$/i);
+      if (equipmentToken) {
+        selectedEquipment = (equipmentToken[1] ?? "").trim();
+        continue;
+      }
+
+      const regionsToken = token.match(/^regions\s*:\s*(.+)$/i);
+      if (regionsToken) {
+        regionTags = (regionsToken[1] ?? "")
+          .split(",")
+          .map((part) => part.trim())
+          .filter(Boolean);
+        continue;
+      }
+
+      const conditionToken = token.match(/^if\s*:\s*(.+)$/i);
+      if (conditionToken) {
+        condition = (conditionToken[1] ?? "").trim();
+        continue;
+      }
+
+      const loadToken = token.match(/^load\s*:\s*(.+)$/i);
+      if (loadToken) {
+        const parsedLoad = parseHumanSetLoadToken(loadToken[1] ?? "");
+        if (!parsedLoad) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              1,
+              "Invalid load token.",
+              "Use load: 145kg, load: 315lb, or load: 75%1rm.",
+            ),
+          );
+          continue;
+        }
+        load = parsedLoad;
+        continue;
+      }
+
+      const rpeToken = token.match(/^rpe\s*:\s*(.+)$/i);
+      if (rpeToken) {
+        const column = findTokenColumn(rawLine, token);
+        const rpeRaw = (rpeToken[1] ?? "").trim();
+        if (!/^[+-]?\d*\.?\d+$/.test(rpeRaw)) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "RPE token must be a number between 1 and 10.",
+              "Use rpe: 8.",
+            ),
+          );
+          continue;
+        }
+        const parsedRpe = Number.parseFloat(rpeRaw);
+        if (!Number.isFinite(parsedRpe) || parsedRpe < 1 || parsedRpe > 10) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "RPE token must be a number between 1 and 10.",
+              "Use rpe: 8.",
+            ),
+          );
+          continue;
+        }
+        rpe = parsedRpe;
+        continue;
+      }
+
+      const rirToken = token.match(/^rir\s*:\s*(.+)$/i);
+      if (rirToken) {
+        const column = findTokenColumn(rawLine, token);
+        const rirRaw = (rirToken[1] ?? "").trim();
+        if (!/^[+-]?\d*\.?\d+$/.test(rirRaw)) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "RIR token must be a number between 0 and 10.",
+              "Use rir: 2.",
+            ),
+          );
+          continue;
+        }
+        const parsedRir = Number.parseFloat(rirRaw);
+        if (!Number.isFinite(parsedRir) || parsedRir < 0 || parsedRir > 10) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              column,
+              "RIR token must be a number between 0 and 10.",
+              "Use rir: 2.",
+            ),
+          );
+          continue;
+        }
+        rir = parsedRir;
+        continue;
+      }
+
+      errors.push(
+        formatHumanError(
+          lineNumber,
+          findTokenColumn(rawLine, token),
+          "Unsupported strength token.",
+          "Use rest:, timer:, progress:, load:, rpe:, rir:, id:, instance:, equip:, regions:, if:, or sets:.",
+        ),
+      );
+    }
+
+    let sets: StrengthSetDraft[] = [];
+    if (explicitSets) {
+      sets = explicitSets.map((setDraft, idx) => ({
+        ...setDraft,
+        setId: setDraft.setId || `set-${idx + 1}`,
+      }));
+    } else {
+      if (setCount <= 0 || reps <= 0) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            1,
+            "Set notation is required when no explicit sets are provided.",
+            "Use 5x5 or sets: [reps=5,rest=180].",
+          ),
+        );
+        continue;
+      }
+
+      for (let setIndex = 0; setIndex < setCount; setIndex += 1) {
+        sets.push({
+          setId: `set-${setIndex + 1}`,
+          reps,
+          restSeconds,
+          timerSeconds,
+          load,
+          rpe,
+          rir,
+          progression,
+        });
+      }
+    }
+
+    targetBlock.exercises.push({
+      instanceId,
+      exerciseId,
+      canonicalName,
+      selectedEquipment,
+      regionTags,
+      condition,
+      ...(pendingComment ? { note: pendingComment } : {}),
+      sets,
+    });
+    pendingComment = null;
+  }
+
+  return {
+    variables,
+    blocks,
+  };
+}
+
+function parseHumanEnduranceDsl(
+  lines: string[],
+  startIndex: number,
+  errors: string[],
+): RoutineDraft["endurance"] {
+  const blocks: EnduranceBlockDraft[] = [];
+  let currentBlock: EnduranceBlockDraft | null = null;
+
+  function ensureBlock(label = "Main set"): EnduranceBlockDraft {
+    if (currentBlock) {
+      return currentBlock;
+    }
+    const block: EnduranceBlockDraft = {
+      blockId: `block-${blocks.length + 1}`,
+      label,
+      repeatCount: 1,
+      segments: [],
+    };
+    blocks.push(block);
+    currentBlock = block;
+    return block;
+  }
+
+  function parseDurationSeconds(
+    rawDuration: string,
+    unit: string,
+  ): number | null {
+    const value = Number.parseFloat(rawDuration);
+    if (!Number.isFinite(value) || value <= 0) {
+      return null;
+    }
+    if (unit.toLowerCase() === "h") {
+      return Math.round(value * 3600);
+    }
+    if (unit.toLowerCase() === "m") {
+      return Math.round(value * 60);
+    }
+    return Math.round(value);
+  }
+
+  for (let index = startIndex; index < lines.length; index += 1) {
+    const rawLine = lines[index] ?? "";
+    const lineNumber = index + 1;
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    if (!trimmed.startsWith("-")) {
+      const headingMatch = trimmed.match(/^(.+?)(?:\s+(\d+)x)?$/i);
+      const label = headingMatch?.[1]?.trim();
+      if (!label) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            1,
+            "Endurance block heading is missing a label.",
+            "Use headings such as Warmup, Main set 6x, or Cooldown.",
+          ),
+        );
+        continue;
+      }
+      const repeatCountRaw = headingMatch?.[2];
+      const repeatCount = repeatCountRaw
+        ? Number.parseInt(repeatCountRaw, 10)
+        : 1;
+      const block: EnduranceBlockDraft = {
+        blockId: `block-${blocks.length + 1}`,
+        label,
+        repeatCount:
+          Number.isFinite(repeatCount) && repeatCount > 0 ? repeatCount : 1,
+        segments: [],
+      };
+      blocks.push(block);
+      currentBlock = block;
+      continue;
+    }
+
+    const block = ensureBlock();
+    const body = trimmed.replace(/^-+\s*/, "");
+    const durationMatch = body.match(/^(\d+(?:\.\d+)?)(s|m|h)\s+(.+)$/i);
+    if (!durationMatch) {
+      errors.push(
+        formatHumanError(
+          lineNumber,
+          1,
+          "Endurance segment is missing duration/target syntax.",
+          "Use '- 4m 100% 40-50rpm, note'.",
+        ),
+      );
+      continue;
+    }
+
+    const durationSeconds = parseDurationSeconds(
+      durationMatch[1] ?? "",
+      durationMatch[2] ?? "s",
+    );
+    if (!durationSeconds) {
+      errors.push(
+        formatHumanError(
+          lineNumber,
+          1,
+          "Invalid segment duration.",
+          "Use positive durations such as 20m, 4m, or 90s.",
+        ),
+      );
+      continue;
+    }
+
+    let descriptor = (durationMatch[3] ?? "").trim();
+    let note: string | null = null;
+    const commaIndex = descriptor.indexOf(",");
+    if (commaIndex >= 0) {
+      note = descriptor.slice(commaIndex + 1).trim();
+      descriptor = descriptor.slice(0, commaIndex).trim();
+    }
+
+    let cadenceRangeRpm: CadenceRangeRpmDraft | null = null;
+    const cadenceRangeMatch = descriptor.match(
+      /([-+]?\d+)\s*-\s*([-+]?\d+)\s*rpm/i,
+    );
+    if (cadenceRangeMatch) {
+      const min = Number.parseInt(cadenceRangeMatch[1] ?? "0", 10);
+      const max = Number.parseInt(cadenceRangeMatch[2] ?? "0", 10);
+      if (min <= 0 || max <= 0 || min > max) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            findTokenColumn(rawLine, cadenceRangeMatch[0] ?? "rpm"),
+            "Invalid cadence range.",
+            "Use cadence like 90-100rpm where min <= max and both values are positive.",
+          ),
+        );
+        continue;
+      }
+      cadenceRangeRpm = { min, max };
+      descriptor = descriptor.replace(cadenceRangeMatch[0], "").trim();
+    } else {
+      const cadenceSingleMatch = descriptor.match(/([-+]?\d+)\s*rpm/i);
+      if (cadenceSingleMatch) {
+        const cadence = Number.parseInt(cadenceSingleMatch[1] ?? "0", 10);
+        if (cadence <= 0) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              findTokenColumn(rawLine, cadenceSingleMatch[0] ?? "rpm"),
+              "Invalid cadence range.",
+              "Use cadence like 95rpm with a positive value.",
+            ),
+          );
+          continue;
+        }
+        cadenceRangeRpm = { min: cadence, max: cadence };
+        descriptor = descriptor.replace(cadenceSingleMatch[0], "").trim();
+      } else if (/\brpm\b/i.test(descriptor)) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            findTokenColumn(rawLine, "rpm"),
+            "Invalid cadence range.",
+            "Use cadence like 90-100rpm or 95rpm.",
+          ),
+        );
+        continue;
+      }
+    }
+
+    let targetType: EnduranceTargetType | null = null;
+    let targetValue: number | null = null;
+
+    const recoveryMatch = descriptor.match(
+      /recovery\s+at\s+([-+]?\d*\.?\d+)%/i,
+    );
+    if (recoveryMatch) {
+      targetType = "power_watts";
+      targetValue = Number.parseFloat(recoveryMatch[1] ?? "");
+    } else {
+      const percentMatch = descriptor.match(/([-+]?\d*\.?\d+)%/);
+      if (percentMatch) {
+        targetType = "power_watts";
+        targetValue = Number.parseFloat(percentMatch[1] ?? "");
+      }
+    }
+
+    if (!targetType || targetValue === null) {
+      const paceMatch = descriptor.match(/pace\s*[:=]?\s*([-+]?\d*\.?\d+)/i);
+      if (paceMatch) {
+        targetType = "pace";
+        targetValue = Number.parseFloat(paceMatch[1] ?? "");
+      }
+    }
+
+    if (!targetType || targetValue === null) {
+      const heartRatePrefixedMatch = descriptor.match(
+        /(?:hr|heart[_ -]?rate|bpm)\s*[:=]?\s*([-+]?\d*\.?\d+)/i,
+      );
+      const heartRateSuffixMatch = descriptor.match(
+        /([-+]?\d*\.?\d+)\s*bpm\b/i,
+      );
+      const heartRateToken =
+        heartRatePrefixedMatch?.[1] ?? heartRateSuffixMatch?.[1];
+      if (heartRateToken) {
+        targetType = "heart_rate";
+        targetValue = Number.parseFloat(heartRateToken);
+      }
+    }
+
+    if (!targetType || targetValue === null) {
+      const powerWattsMatch = descriptor.match(
+        /(?:power|watts?)\s*[:=]?\s*([-+]?\d*\.?\d+)/i,
+      );
+      if (powerWattsMatch) {
+        targetType = "power_watts";
+        targetValue = Number.parseFloat(powerWattsMatch[1] ?? "");
+      }
+    }
+
+    if (!targetType || targetValue === null || !Number.isFinite(targetValue)) {
+      errors.push(
+        formatHumanError(
+          lineNumber,
+          1,
+          "Unable to parse interval intensity target.",
+          "Use intensity tokens like 60%, recovery at 40%, pace:255, or hr:145.",
+        ),
+      );
+      continue;
+    }
+
+    let segmentLabel = `Segment ${block.segments.length + 1}`;
+    if (/recovery/i.test(descriptor)) {
+      segmentLabel = "Recovery";
+    } else if (/warmup/i.test(block.label)) {
+      segmentLabel = "Warmup";
+    } else if (/cooldown/i.test(block.label)) {
+      segmentLabel = "Cooldown";
+    } else if (/main/i.test(block.label) && block.segments.length === 0) {
+      segmentLabel = "Work";
+    }
+
+    block.segments.push({
+      segmentId: `segment-${block.segments.length + 1}`,
+      label: segmentLabel,
+      durationSeconds,
+      target: {
+        type: targetType,
+        value: targetValue,
+      },
+      ...(cadenceRangeRpm ? { cadenceRangeRpm } : {}),
+      ...(note ? { note } : {}),
+    });
+  }
+
+  return {
+    intervals: blocksToIntervals(blocks),
+    blocks,
+  };
+}
+
+function parseHumanRoutineDsl(input: string): HumanParseResult {
+  const lines = input.replace(/\r\n/g, "\n").split("\n");
+  const errors: string[] = [];
+
+  let cursor = 0;
+  while (cursor < lines.length && !(lines[cursor] ?? "").trim()) {
+    cursor += 1;
+  }
+
+  if (cursor >= lines.length) {
+    return {
+      ok: false,
+      errors: [
+        formatHumanError(
+          1,
+          1,
+          "Routine DSL text is empty.",
+          'Start with: routine "Name" id:routine-id path:strength',
+        ),
+      ],
+    };
+  }
+
+  const headerLineNumber = cursor + 1;
+  const header = (lines[cursor] ?? "").trim();
+  const headerMatch = header.match(
+    /^routine\s+"([^"]+)"\s+id:([^\s]+)\s+path:(strength|endurance)$/i,
+  );
+  if (!headerMatch) {
+    return {
+      ok: false,
+      errors: [
+        formatHumanError(
+          headerLineNumber,
+          1,
+          "Invalid routine header.",
+          'Use: routine "Routine Name" id:routine-id path:strength',
+        ),
+      ],
+    };
+  }
+
+  const routineName = (headerMatch[1] ?? "").trim();
+  const routineId = (headerMatch[2] ?? "").trim();
+  const path = (headerMatch[3] ?? "").toLowerCase() as RoutinePath;
+  cursor += 1;
+
+  while (cursor < lines.length && !(lines[cursor] ?? "").trim()) {
+    cursor += 1;
+  }
+
+  let references: RoutineLineageReferences = {
+    macrocycleId: null,
+    mesocycleId: null,
+    microcycleId: null,
+  };
+
+  if (cursor < lines.length) {
+    const maybeReferences = (lines[cursor] ?? "").trim();
+    const referencesMatch = maybeReferences.match(
+      /^references\s+macro:([^\s]+)\s+meso:([^\s]+)\s+micro:([^\s]+)$/i,
+    );
+    if (referencesMatch) {
+      references = {
+        macrocycleId: parseHumanReferenceValue(referencesMatch[1] ?? "null"),
+        mesocycleId: parseHumanReferenceValue(referencesMatch[2] ?? "null"),
+        microcycleId: parseHumanReferenceValue(referencesMatch[3] ?? "null"),
+      };
+      cursor += 1;
+    }
+  }
+
+  const strength =
+    path === "strength"
+      ? parseHumanStrengthDsl(lines, cursor, errors)
+      : { variables: [], blocks: [] };
+  const endurance =
+    path === "endurance"
+      ? parseHumanEnduranceDsl(lines, cursor, errors)
+      : { intervals: [], blocks: [] };
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      errors,
+    };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      dslVersion: ROUTINE_DSL_VERSION,
+      references,
+      routineId,
+      routineName,
+      path,
+      strength,
+      endurance,
+    },
+  };
+}
+
+function durationToHumanToken(durationSeconds: number): string {
+  if (durationSeconds % 3600 === 0) {
+    return `${durationSeconds / 3600}h`;
+  }
+  if (durationSeconds % 60 === 0) {
+    return `${durationSeconds / 60}m`;
+  }
+  return `${durationSeconds}s`;
+}
+
+function progressionToHumanToken(
+  progression: StrengthSetProgressionDraft | null,
+): string | null {
+  if (!progression) {
+    return null;
+  }
+  return `${progression.strategy}(${progression.value})`;
+}
+
+function loadToHumanToken(load: StrengthSetLoadDraft | null): string | null {
+  if (!load) {
+    return null;
+  }
+  const unit = load.unit === "percent_1rm" ? "%1rm" : load.unit;
+  return `${load.value}${unit}`;
+}
+
+function areStrengthSetsUniform(sets: StrengthSetDraft[]): boolean {
+  if (sets.length <= 1) {
+    return true;
+  }
+  const first = sets[0];
+  if (!first) {
+    return true;
+  }
+  return sets.every((setDraft) => {
+    return (
+      setDraft.reps === first.reps &&
+      setDraft.restSeconds === first.restSeconds &&
+      setDraft.timerSeconds === first.timerSeconds &&
+      JSON.stringify(setDraft.load) === JSON.stringify(first.load) &&
+      setDraft.rpe === first.rpe &&
+      setDraft.rir === first.rir &&
+      JSON.stringify(setDraft.progression) === JSON.stringify(first.progression)
+    );
+  });
+}
+
+function hasCanonicalStrengthSetIds(sets: StrengthSetDraft[]): boolean {
+  return sets.every((setDraft, index) => setDraft.setId === `set-${index + 1}`);
+}
+
+function formatStrengthSetSpecs(sets: StrengthSetDraft[]): string {
+  const entries = sets.map((setDraft) => {
+    const fields: string[] = [
+      `id=${setDraft.setId}`,
+      `reps=${setDraft.reps}`,
+      `rest=${setDraft.restSeconds}`,
+    ];
+
+    if (setDraft.timerSeconds !== null) {
+      fields.push(`timer=${setDraft.timerSeconds}`);
+    }
+    if (setDraft.load) {
+      fields.push(`load=${loadToHumanToken(setDraft.load)}`);
+    }
+    if (setDraft.rpe !== null) {
+      fields.push(`rpe=${setDraft.rpe}`);
+    }
+    if (setDraft.rir !== null) {
+      fields.push(`rir=${setDraft.rir}`);
+    }
+    if (setDraft.progression) {
+      fields.push(
+        `progress=${progressionToHumanToken(setDraft.progression) ?? ""}`,
+      );
+    }
+    return fields.join(",");
+  });
+
+  return `[${entries.join("; ")}]`;
+}
+
+export function serializeRoutineDslText(routine: RoutineDraft): string {
+  const normalized = JSON.parse(serializeRoutineDsl(routine)) as RoutineDraft;
+  const lines: string[] = [];
+
+  lines.push(
+    `routine "${normalized.routineName}" id:${normalized.routineId} path:${normalized.path}`,
+  );
+  lines.push(
+    `references macro:${normalized.references.macrocycleId ?? "null"} meso:${normalized.references.mesocycleId ?? "null"} micro:${normalized.references.microcycleId ?? "null"}`,
+  );
+  lines.push("");
+
+  if (normalized.path === "strength") {
+    for (const variable of normalized.strength.variables) {
+      lines.push(
+        `@var ${variable.variableId} | ${variable.name} = ${variable.expression}`,
+      );
+    }
+    if (normalized.strength.variables.length > 0) {
+      lines.push("");
+    }
+
+    let currentWeek: string | null = null;
+    for (const block of normalized.strength.blocks) {
+      const weekLabel = block.weekLabel ?? null;
+      const dayLabel = block.dayLabel ?? block.label;
+
+      if (weekLabel && weekLabel !== currentWeek) {
+        lines.push(`# ${weekLabel}`);
+        currentWeek = weekLabel;
+      }
+      const dayHeader =
+        block.repeatCount > 1 ? `${dayLabel} ${block.repeatCount}x` : dayLabel;
+      const dayHeaderWithCondition = block.condition
+        ? `${dayHeader} if ${block.condition}`
+        : dayHeader;
+      lines.push(`## ${dayHeaderWithCondition}`);
+
+      for (const exercise of block.exercises) {
+        if (exercise.note && exercise.note.trim().length > 0) {
+          lines.push(`// ${exercise.note}`);
+        }
+
+        const tokens: string[] = [exercise.canonicalName];
+        const sets = exercise.sets;
+        const firstSet = sets[0];
+
+        if (
+          sets.length > 0 &&
+          firstSet &&
+          areStrengthSetsUniform(sets) &&
+          hasCanonicalStrengthSetIds(sets)
+        ) {
+          tokens.push(`${sets.length}x${firstSet.reps}`);
+          tokens.push(`rest: ${firstSet.restSeconds}s`);
+          if (firstSet.timerSeconds !== null) {
+            tokens.push(`timer: ${firstSet.timerSeconds}s`);
+          }
+          if (firstSet.progression) {
+            tokens.push(
+              `progress: ${progressionToHumanToken(firstSet.progression) ?? ""}`,
+            );
+          }
+          if (firstSet.load) {
+            tokens.push(`load: ${loadToHumanToken(firstSet.load) ?? ""}`);
+          }
+          if (firstSet.rpe !== null) {
+            tokens.push(`rpe: ${firstSet.rpe}`);
+          }
+          if (firstSet.rir !== null) {
+            tokens.push(`rir: ${firstSet.rir}`);
+          }
+        } else {
+          tokens.push(`sets: ${formatStrengthSetSpecs(sets)}`);
+        }
+
+        tokens.push(`id: ${exercise.exerciseId}`);
+        tokens.push(`instance: ${exercise.instanceId}`);
+        if (exercise.selectedEquipment) {
+          tokens.push(`equip: ${exercise.selectedEquipment}`);
+        }
+        if (exercise.regionTags.length > 0) {
+          tokens.push(`regions: ${exercise.regionTags.join(",")}`);
+        }
+        if (exercise.condition) {
+          tokens.push(`if: ${exercise.condition}`);
+        }
+
+        lines.push(tokens.join(" / "));
+      }
+
+      lines.push("");
+    }
+  } else {
+    for (const block of normalized.endurance.blocks) {
+      const header =
+        block.repeatCount > 1
+          ? `${block.label} ${block.repeatCount}x`
+          : block.label;
+      lines.push(header);
+      for (const segment of block.segments) {
+        const targetToken =
+          segment.target.type === "power_watts"
+            ? `${segment.target.value}%`
+            : segment.target.type === "pace"
+              ? `pace:${segment.target.value}`
+              : `hr:${segment.target.value}`;
+        let line = `- ${durationToHumanToken(segment.durationSeconds)} ${targetToken}`;
+        if (segment.cadenceRangeRpm) {
+          line += ` ${segment.cadenceRangeRpm.min}-${segment.cadenceRangeRpm.max}rpm`;
+        }
+        if (segment.note && segment.note.trim().length > 0) {
+          line += `, ${segment.note}`;
+        }
+        lines.push(line);
+      }
+      lines.push("");
+    }
+  }
+
+  return lines.join("\n").trim();
+}
+
+export function parseRoutineDsl(input: string): ParseRoutineDslResult {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) {
+    return {
+      ok: false,
+      errors: [
+        formatHumanError(
+          1,
+          1,
+          "Routine DSL input is empty.",
+          'Start with: routine "Name" id:routine-id path:strength',
+        ),
+      ],
+    };
+  }
+
+  if (trimmed.startsWith("{")) {
+    try {
+      const payload = JSON.parse(trimmed);
+      return parseRoutineDslPayload(payload);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unexpected JSON parse error.";
+      return {
+        ok: false,
+        errors: [`Invalid JSON: ${message}`],
+      };
+    }
+  }
+
+  const parsedHumanDsl = parseHumanRoutineDsl(trimmed);
+  if (!parsedHumanDsl.ok) {
+    return parsedHumanDsl;
+  }
+  return parseRoutineDslPayload(parsedHumanDsl.payload);
 }
 
 export function serializeRoutineDsl(routine: RoutineDraft): string {

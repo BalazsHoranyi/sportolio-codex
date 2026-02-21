@@ -43,6 +43,7 @@ export interface StrengthExerciseDraft {
   selectedEquipment: string | null;
   regionTags: string[];
   condition: string | null;
+  note?: string | null;
   sets: StrengthSetDraft[];
 }
 
@@ -57,7 +58,14 @@ export interface StrengthBlockDraft {
   label: string;
   repeatCount: number;
   condition: string | null;
+  weekLabel?: string | null;
+  dayLabel?: string | null;
   exercises: StrengthExerciseDraft[];
+}
+
+export interface CadenceRangeRpmDraft {
+  min: number;
+  max: number;
 }
 
 export interface EnduranceIntervalDraft {
@@ -66,6 +74,8 @@ export interface EnduranceIntervalDraft {
   durationSeconds: number;
   targetType: EnduranceTargetType;
   targetValue: number;
+  cadenceRangeRpm?: CadenceRangeRpmDraft | null;
+  note?: string | null;
 }
 
 export interface EnduranceSegmentDraft {
@@ -76,6 +86,8 @@ export interface EnduranceSegmentDraft {
     type: EnduranceTargetType;
     value: number;
   };
+  cadenceRangeRpm?: CadenceRangeRpmDraft | null;
+  note?: string | null;
 }
 
 export interface EnduranceBlockDraft {
