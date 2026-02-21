@@ -95,8 +95,9 @@ class WahooIntegrationService:
 
     def reset_for_testing(self) -> None:
         self._reset_state()
-        if isinstance(self._dispatch_sink, InMemoryPipelineDispatchSink):
-            self._dispatch_sink.reset()
+        sink_reset = getattr(self._dispatch_sink, "reset", None)
+        if callable(sink_reset):
+            sink_reset()
 
     def push_workout(
         self,
@@ -329,7 +330,7 @@ class WahooIntegrationService:
         sequence_number: int,
     ) -> list[PipelineDispatch]:
         dispatches: list[PipelineDispatch] = []
-        for pipeline in ("fatigue", "analytics"):
+        for pipeline in ("workout_sync", "fatigue_recompute"):
             self._dispatch_counter += 1
             dispatch = PipelineDispatch(
                 dispatch_id=f"wahoo-dispatch-{self._dispatch_counter:06d}",

@@ -178,8 +178,8 @@ def test_sync_execution_history_reconciles_links_and_dispatches_pipelines() -> N
     assert all(entry.dedup_status == "new_linked" for entry in first_sync.entries)
     assert len(first_sync.pipeline_dispatches) == 4
     assert {dispatch.pipeline for dispatch in first_sync.pipeline_dispatches} == {
-        "fatigue",
-        "analytics",
+        "workout_sync",
+        "fatigue_recompute",
     }
     assert [athlete for athlete, _ in sink.enqueued] == [
         "athlete-1",
