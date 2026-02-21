@@ -70,6 +70,36 @@ _LEGACY_CANONICAL_IDS: dict[str, str] = {
     "barbell row": "global-barbell-row",
 }
 
+_NON_CANONICAL_EXPANSION_PREFIXES: frozenset[str] = frozenset(
+    {
+        "weighted",
+        "band resisted",
+        "half range",
+        "long range",
+        "short stride",
+        "step through",
+        "cross body",
+        "double overhand",
+        "machine supported",
+        "banded",
+    }
+)
+
+_EQUIPMENT_PREFIX_COLLISION_MARKERS: dict[str, tuple[str, ...]] = {
+    "band": ("band", "banded"),
+    "barbell": ("barbell",),
+    "cable": ("cable",),
+    "dumbbell": ("dumbbell",),
+    "ez_bar": ("ez bar", "ez"),
+    "kettlebell": ("kettlebell",),
+    "landmine": ("landmine",),
+    "machine": ("machine",),
+    "medicine_ball": ("medicine ball",),
+    "rings": ("rings", "ring"),
+    "smith_machine": ("smith machine", "smith"),
+    "trap_bar": ("trap bar", "trap"),
+}
+
 
 @dataclass(frozen=True)
 class ExerciseBlueprint:
@@ -911,12 +941,18 @@ class ExerciseCatalogService:
 
         for template in _CATALOG_EXPANSION_TEMPLATES:
             for prefix in template.prefixes:
+                if _normalize_phrase(prefix) in _NON_CANONICAL_EXPANSION_PREFIXES:
+                    continue
                 for suffix in template.suffixes:
                     base_name = f"{prefix} {suffix}".strip()
                     base_name_key = _normalize_phrase(base_name)
                     if base_name_key in reserved_base_names:
                         continue
                     for equipment in template.equipment_options:
+                        if self._prefix_conflicts_with_equipment(
+                            prefix=prefix, equipment=equipment
+                        ):
+                            continue
                         equipment_label = EQUIPMENT_LABELS[equipment]
                         canonical_name = f"{equipment_label} {base_name}"
                         canonical_key = _normalize_phrase(canonical_name)
@@ -942,6 +978,17 @@ class ExerciseCatalogService:
                         existing_names.add(canonical_key)
 
         return tuple(generated)
+
+    @staticmethod
+    def _prefix_conflicts_with_equipment(*, prefix: str, equipment: str) -> bool:
+        normalized_prefix = _normalize_phrase(prefix)
+        for marker in _EQUIPMENT_PREFIX_COLLISION_MARKERS.get(equipment, ()):
+            normalized_marker = _normalize_phrase(marker)
+            if normalized_prefix == normalized_marker or normalized_prefix.startswith(
+                f"{normalized_marker} "
+            ):
+                return True
+        return False
 
     @staticmethod
     def _build_aliases(blueprint: ExerciseBlueprint) -> tuple[str, ...]:

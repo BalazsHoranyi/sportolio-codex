@@ -219,6 +219,41 @@ def test_catalog_seed_contains_at_least_1000_active_standard_exercises() -> None
     assert len({entry.canonical_name for entry in catalog}) == len(catalog)
 
 
+def test_catalog_seed_excludes_non_canonical_generated_artifacts() -> None:
+    service = ExerciseCatalogService()
+
+    canonical_names = {entry.canonical_name for entry in service.list_exercises(scope="global")}
+
+    forbidden_examples = {
+        "Machine Machine-Supported Row",
+        "Band Banded Pull-Up",
+        "Barbell Half-Range Deadlift",
+        "Barbell Step-Through Step-Up",
+        "Landmine Landmine Deadlift",
+        "Trap Bar Trap Deadlift",
+    }
+    assert forbidden_examples.isdisjoint(canonical_names)
+
+    forbidden_fragments = (
+        "half-range",
+        "long-range",
+        "short-stride",
+        "step-through",
+        "weighted",
+        "cross-body",
+        "machine-supported",
+        "banded",
+        "double-overhand",
+        "band-resisted",
+    )
+    offenders = [
+        name
+        for name in canonical_names
+        if any(fragment in name.lower() for fragment in forbidden_fragments)
+    ]
+    assert offenders == []
+
+
 def test_catalog_entries_include_required_seed_metadata_fields() -> None:
     service = ExerciseCatalogService()
 
