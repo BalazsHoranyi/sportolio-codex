@@ -75,6 +75,9 @@ _LEGACY_CANONICAL_IDS: dict[str, str] = {
 class ExerciseBlueprint:
     canonical_name: str
     region_tags: tuple[str, ...]
+    movement_pattern: str = "general_strength"
+    primary_muscles: tuple[str, ...] = ()
+    secondary_muscles: tuple[str, ...] = ()
     equipment_options: tuple[str, ...] = ()
     aliases: tuple[str, ...] = ()
     preserve_legacy_equipment_aliases: bool = False
@@ -87,6 +90,9 @@ class ExerciseCatalogEntry:
     canonical_name: str
     aliases: tuple[str, ...]
     region_tags: tuple[str, ...]
+    movement_pattern: str
+    primary_muscles: tuple[str, ...]
+    secondary_muscles: tuple[str, ...]
     owner_user_id: str | None
     equipment_options: tuple[str, ...]
 
@@ -119,6 +125,16 @@ class PaginatedExerciseSearch:
     page_size: int
     total_items: int
     total_pages: int
+
+
+@dataclass(frozen=True)
+class CatalogExpansionTemplate:
+    movement_pattern: str
+    primary_muscles: tuple[str, ...]
+    secondary_muscles: tuple[str, ...]
+    prefixes: tuple[str, ...]
+    suffixes: tuple[str, ...]
+    equipment_options: tuple[str, ...]
 
 
 _BLUEPRINTS: tuple[ExerciseBlueprint, ...] = (
@@ -377,8 +393,302 @@ _BLUEPRINTS: tuple[ExerciseBlueprint, ...] = (
     ),
     ExerciseBlueprint(
         canonical_name="Running Easy",
+        movement_pattern="aerobic_endurance",
         region_tags=("quads", "hamstrings", "calves", "glutes"),
-        equipment_options=(),
+        equipment_options=("bodyweight",),
+        aliases=("Easy Run", "Recovery Run"),
+    ),
+)
+
+_CATALOG_EXPANSION_TEMPLATES: tuple[CatalogExpansionTemplate, ...] = (
+    CatalogExpansionTemplate(
+        movement_pattern="squat",
+        primary_muscles=("quads", "glutes"),
+        secondary_muscles=("hamstrings", "core"),
+        prefixes=(
+            "Anderson",
+            "Belt",
+            "Box",
+            "Counterbalance",
+            "Cossack",
+            "Cross-Arm",
+            "Cyclist",
+            "Front",
+            "Goblet",
+            "Hack",
+            "Hatfield",
+            "Heel-Elevated",
+            "High-Bar",
+            "Jefferson",
+            "Kickstand",
+            "Landmine",
+            "Low-Bar",
+            "Narrow-Stance",
+            "Offset",
+            "Overhead",
+            "Pin",
+            "Pistol",
+            "Safety-Bar",
+            "Shrimp",
+            "Sissy",
+            "Skater",
+            "Sumo",
+            "Wall",
+            "Wide-Stance",
+            "Zercher",
+        ),
+        suffixes=("Squat",),
+        equipment_options=("barbell", "dumbbell", "kettlebell", "machine", "smith_machine"),
+    ),
+    CatalogExpansionTemplate(
+        movement_pattern="unilateral_leg",
+        primary_muscles=("quads", "glutes"),
+        secondary_muscles=("hamstrings", "core"),
+        prefixes=(
+            "Alternating",
+            "Clock",
+            "Contralateral",
+            "Crossover",
+            "Curtsy",
+            "Deficit",
+            "Drop",
+            "Front-Foot-Elevated",
+            "Heel-Elevated",
+            "Kickstand",
+            "Lateral",
+            "Long-Stride",
+            "Offset",
+            "Overhead",
+            "Pendulum",
+            "Rear-Foot-Elevated",
+            "Reverse",
+            "Short-Stride",
+            "Skater",
+            "Split-Stance",
+            "Step-Back",
+            "Step-Through",
+            "Suitcase",
+            "Walking",
+            "Weighted",
+        ),
+        suffixes=("Lunge", "Step-Up"),
+        equipment_options=(
+            "barbell",
+            "dumbbell",
+            "kettlebell",
+            "landmine",
+            "machine",
+            "smith_machine",
+        ),
+    ),
+    CatalogExpansionTemplate(
+        movement_pattern="hinge",
+        primary_muscles=("hamstrings", "glutes"),
+        secondary_muscles=("spinal_erectors", "grip"),
+        prefixes=(
+            "Block",
+            "B-Stance",
+            "Clean-Grip",
+            "Conventional",
+            "Deficit",
+            "Double-Overhand",
+            "Inside-Grip",
+            "Jefferson",
+            "Landmine",
+            "Long-Range",
+            "Offset",
+            "Outside-Grip",
+            "Rack",
+            "Romanian",
+            "Single-Leg",
+            "Snatch-Grip",
+            "Split-Stance",
+            "Stiff-Leg",
+            "Sumo",
+            "Suitcase",
+            "Tall-Handle",
+            "Toe-Elevated",
+            "Trap",
+            "Underhand",
+            "Wide-Stance",
+            "Narrow-Stance",
+            "Half-Range",
+            "Heel-Elevated",
+            "Cross-Body",
+            "Band-Resisted",
+        ),
+        suffixes=("Deadlift",),
+        equipment_options=("barbell", "dumbbell", "kettlebell", "trap_bar", "landmine", "machine"),
+    ),
+    CatalogExpansionTemplate(
+        movement_pattern="horizontal_pull",
+        primary_muscles=("lats", "mid_back"),
+        secondary_muscles=("biceps", "rear_delts"),
+        prefixes=(
+            "Bent-Over",
+            "Chest-Supported",
+            "Close-Grip",
+            "Double-Arm",
+            "Elbows-In",
+            "Elbows-Out",
+            "Half-Kneeling",
+            "High-Elbow",
+            "Inverted",
+            "Kroc",
+            "Landmine",
+            "Low-Elbow",
+            "Machine-Supported",
+            "Meadows",
+            "Neutral-Grip",
+            "Offset",
+            "Overhand",
+            "Pendlay",
+            "Pronated",
+            "Renegade",
+            "Seal",
+            "Single-Arm",
+            "Split-Stance",
+            "Standing",
+            "Supinated",
+            "T-Bar",
+            "Underhand",
+            "Wide-Grip",
+            "Yates",
+            "Seated",
+        ),
+        suffixes=("Row",),
+        equipment_options=("barbell", "dumbbell", "cable", "machine", "rings"),
+    ),
+    CatalogExpansionTemplate(
+        movement_pattern="press",
+        primary_muscles=("chest", "front_delts"),
+        secondary_muscles=("triceps", "upper_chest"),
+        prefixes=(
+            "Arnold",
+            "Board",
+            "Bradford",
+            "Close-Grip",
+            "Decline",
+            "Double-Arm",
+            "Flat",
+            "Floor",
+            "Guillotine",
+            "Half-Kneeling",
+            "Hex",
+            "Incline",
+            "Jerk",
+            "Landmine",
+            "Neutral-Grip",
+            "Offset",
+            "Overhand",
+            "Pin",
+            "Push",
+            "Seated",
+            "Single-Arm",
+            "Spoto",
+            "Standing",
+            "Swiss-Bar",
+            "Tall-Kneeling",
+            "Underhand",
+            "Wide-Grip",
+            "Z-Press",
+            "Converging",
+            "Iso-Lateral",
+        ),
+        suffixes=("Press",),
+        equipment_options=("barbell", "dumbbell", "cable", "machine", "ez_bar"),
+    ),
+    CatalogExpansionTemplate(
+        movement_pattern="vertical_pull",
+        primary_muscles=("lats", "upper_back"),
+        secondary_muscles=("biceps", "rear_delts"),
+        prefixes=(
+            "Alternating",
+            "Assisted",
+            "Behind-Neck",
+            "Close-Grip",
+            "Cross-Body",
+            "Double-Arm",
+            "Front-of-Body",
+            "Half-Kneeling",
+            "High-Angle",
+            "Iso-Lateral",
+            "Lat",
+            "Low-Angle",
+            "Neutral-Grip",
+            "Offset",
+            "Pronated",
+            "Seated",
+            "Single-Arm",
+            "Standing",
+            "Supinated",
+            "Tall-Kneeling",
+            "V-Bar",
+            "Wide-Grip",
+            "Weighted",
+            "Banded",
+            "Scapular",
+        ),
+        suffixes=("Pulldown", "Pull-Up"),
+        equipment_options=("cable", "machine", "band", "rings", "pullup_bar"),
+    ),
+    CatalogExpansionTemplate(
+        movement_pattern="arm_isolation",
+        primary_muscles=("biceps", "triceps"),
+        secondary_muscles=("forearms", "grip"),
+        prefixes=(
+            "Alternating",
+            "Bayesian",
+            "Concentration",
+            "Cross-Body",
+            "Decline",
+            "Drag",
+            "Hammer",
+            "Incline",
+            "Lying",
+            "Overhead",
+            "Preacher",
+            "Pronating",
+            "Reverse",
+            "Rope",
+            "Seated",
+            "Single-Arm",
+            "Spider",
+            "Standing",
+            "Supinating",
+            "Zottman",
+        ),
+        suffixes=("Curl", "Extension"),
+        equipment_options=("dumbbell", "barbell", "cable", "ez_bar", "band"),
+    ),
+    CatalogExpansionTemplate(
+        movement_pattern="core_carry",
+        primary_muscles=("core", "obliques"),
+        secondary_muscles=("hip_stabilizers", "grip"),
+        prefixes=(
+            "Alternating",
+            "Cross-Body",
+            "Double-Arm",
+            "Farmers",
+            "Forward",
+            "Front-Rack",
+            "Half-Kneeling",
+            "Lateral",
+            "Marching",
+            "Offset",
+            "Overhead",
+            "Rack",
+            "Reverse",
+            "Seated",
+            "Single-Arm",
+            "Standing",
+            "Suitcase",
+            "Tall-Kneeling",
+            "Waiter",
+            "Back-Rack",
+        ),
+        suffixes=("Carry", "Chop"),
+        equipment_options=("dumbbell", "kettlebell", "medicine_ball", "cable"),
     ),
 )
 
@@ -466,13 +776,19 @@ class ExerciseCatalogService:
         ]
 
     def _build_catalog(self) -> tuple[ExerciseCatalogEntry, ...]:
+        return self._build_catalog_from_blueprints(self._combined_blueprints())
+
+    def _build_catalog_from_blueprints(
+        self, blueprints: tuple[ExerciseBlueprint, ...]
+    ) -> tuple[ExerciseCatalogEntry, ...]:
         catalog: list[ExerciseCatalogEntry] = []
         seen_ids: set[str] = set()
         seen_names: set[str] = set()
 
         for blueprint in sorted(
-            _BLUEPRINTS, key=lambda item: _normalize_phrase(item.canonical_name)
+            blueprints, key=lambda item: _normalize_phrase(item.canonical_name)
         ):
+            self._validate_blueprint(blueprint)
             canonical_key = _normalize_phrase(blueprint.canonical_name)
             if canonical_key in seen_names:
                 raise ValueError(
@@ -488,21 +804,135 @@ class ExerciseCatalogService:
             seen_ids.add(entry_id)
 
             aliases = self._build_aliases(blueprint)
+            primary_muscles, secondary_muscles = self._resolve_muscle_groups(blueprint)
+            region_tags = tuple(
+                sorted(
+                    {
+                        _normalize_token(tag)
+                        for tag in (
+                            *blueprint.region_tags,
+                            *primary_muscles,
+                            *secondary_muscles,
+                        )
+                    }
+                )
+            )
             catalog.append(
                 ExerciseCatalogEntry(
                     id=entry_id,
                     scope="global",
                     canonical_name=blueprint.canonical_name,
                     aliases=aliases,
-                    region_tags=tuple(
-                        sorted({_normalize_token(tag) for tag in blueprint.region_tags})
-                    ),
+                    region_tags=region_tags,
+                    movement_pattern=_normalize_token(blueprint.movement_pattern),
+                    primary_muscles=primary_muscles,
+                    secondary_muscles=secondary_muscles,
                     owner_user_id=None,
                     equipment_options=tuple(blueprint.equipment_options),
                 )
             )
 
         return tuple(catalog)
+
+    @staticmethod
+    def _resolve_muscle_groups(
+        blueprint: ExerciseBlueprint,
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        primary_source = blueprint.primary_muscles or blueprint.region_tags[:2]
+        secondary_source = blueprint.secondary_muscles or tuple(
+            tag for tag in blueprint.region_tags if tag not in primary_source
+        )
+
+        primary = tuple(sorted({_normalize_token(tag) for tag in primary_source}))
+        secondary = tuple(
+            sorted(
+                {
+                    _normalize_token(tag)
+                    for tag in secondary_source
+                    if _normalize_token(tag) not in set(primary)
+                }
+            )
+        )
+        if not secondary:
+            secondary = (primary[-1],)
+
+        return primary, secondary
+
+    @staticmethod
+    def _validate_blueprint(blueprint: ExerciseBlueprint) -> None:
+        canonical = _normalize_phrase(blueprint.canonical_name)
+        if not canonical:
+            raise ValueError("canonical_name must be non-empty")
+
+        movement_pattern = _normalize_token(blueprint.movement_pattern)
+        if not movement_pattern:
+            raise ValueError(f"movement_pattern missing for {blueprint.canonical_name}")
+
+        if not blueprint.equipment_options:
+            raise ValueError(
+                f"equipment_options must include at least one value for {blueprint.canonical_name}"
+            )
+        unknown_equipment = [
+            token
+            for token in blueprint.equipment_options
+            if _normalize_token(token) not in EQUIPMENT_LABELS
+        ]
+        if unknown_equipment:
+            raise ValueError(
+                f"unknown equipment token(s) {unknown_equipment} for {blueprint.canonical_name}"
+            )
+
+        primary_source = blueprint.primary_muscles or blueprint.region_tags[:2]
+        if not primary_source:
+            raise ValueError(
+                "primary muscles are required for "
+                f"{blueprint.canonical_name}; provide primary_muscles or region_tags"
+            )
+
+    def _combined_blueprints(self) -> tuple[ExerciseBlueprint, ...]:
+        return (*_BLUEPRINTS, *self._generate_expansion_blueprints(_BLUEPRINTS))
+
+    def _generate_expansion_blueprints(
+        self, existing_blueprints: tuple[ExerciseBlueprint, ...]
+    ) -> tuple[ExerciseBlueprint, ...]:
+        existing_names = {_normalize_phrase(item.canonical_name) for item in existing_blueprints}
+        generated: list[ExerciseBlueprint] = []
+
+        for template in _CATALOG_EXPANSION_TEMPLATES:
+            for prefix in template.prefixes:
+                for suffix in template.suffixes:
+                    base_name = f"{prefix} {suffix}".strip()
+                    base_name_key = _normalize_phrase(base_name)
+                    for equipment in template.equipment_options:
+                        equipment_label = EQUIPMENT_LABELS[equipment]
+                        canonical_name = f"{equipment_label} {base_name}"
+                        canonical_key = _normalize_phrase(canonical_name)
+                        if canonical_key in existing_names:
+                            continue
+
+                        abbreviation = EQUIPMENT_ABBREVIATIONS[equipment]
+                        aliases = (
+                            base_name,
+                            f"{abbreviation} {base_name}",
+                        )
+                        generated.append(
+                            ExerciseBlueprint(
+                                canonical_name=canonical_name,
+                                movement_pattern=template.movement_pattern,
+                                primary_muscles=template.primary_muscles,
+                                secondary_muscles=template.secondary_muscles,
+                                region_tags=(
+                                    *template.primary_muscles,
+                                    *template.secondary_muscles,
+                                ),
+                                equipment_options=(equipment,),
+                                aliases=aliases,
+                            )
+                        )
+                        existing_names.add(canonical_key)
+                        existing_names.add(base_name_key)
+
+        return tuple(generated)
 
     @staticmethod
     def _build_aliases(blueprint: ExerciseBlueprint) -> tuple[str, ...]:

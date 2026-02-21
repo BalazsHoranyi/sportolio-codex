@@ -48,6 +48,9 @@ async def list_exercises(
                 canonical_name=item.entry.canonical_name,
                 aliases=list(item.entry.aliases),
                 region_tags=list(item.entry.region_tags),
+                movement_pattern=item.entry.movement_pattern,
+                primary_muscles=list(item.entry.primary_muscles),
+                secondary_muscles=list(item.entry.secondary_muscles),
                 equipment_options=list(item.entry.equipment_options),
                 owner_user_id=item.entry.owner_user_id,
                 match_metadata=(

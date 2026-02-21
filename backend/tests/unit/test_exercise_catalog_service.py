@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from sportolo.services.exercise_catalog_service import (
     EQUIPMENT_ABBREVIATIONS,
     EQUIPMENT_LABELS,
+    ExerciseBlueprint,
     ExerciseCatalogService,
 )
 
@@ -204,3 +207,66 @@ def test_search_exercises_includes_match_metadata_for_alias_queries() -> None:
     assert top_match.match_metadata.highlight is not None
     assert top_match.match_metadata.highlight.field == "alias"
     assert top_match.match_metadata.highlight.value == "Cable Pallof Press"
+
+
+def test_catalog_seed_contains_at_least_1000_active_standard_exercises() -> None:
+    service = ExerciseCatalogService()
+
+    catalog = service.list_exercises(scope="global")
+
+    assert len(catalog) >= 1000
+    assert len({entry.id for entry in catalog}) == len(catalog)
+    assert len({entry.canonical_name for entry in catalog}) == len(catalog)
+
+
+def test_catalog_entries_include_required_seed_metadata_fields() -> None:
+    service = ExerciseCatalogService()
+
+    catalog = service.list_exercises(scope="global")
+
+    assert catalog
+    for entry in catalog:
+        assert entry.equipment_options
+        assert entry.region_tags
+        assert entry.movement_pattern
+        assert entry.primary_muscles
+        assert entry.secondary_muscles
+
+
+def test_catalog_seed_validation_rejects_malformed_entries() -> None:
+    service = ExerciseCatalogService()
+
+    malformed_blueprints = (
+        ExerciseBlueprint(
+            canonical_name="",
+            region_tags=("quads",),
+            equipment_options=("barbell",),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="canonical"):
+        service._build_catalog_from_blueprints(malformed_blueprints)
+
+
+def test_catalog_seed_validation_rejects_entries_without_equipment_or_primary_muscles() -> None:
+    service = ExerciseCatalogService()
+
+    no_equipment = (
+        ExerciseBlueprint(
+            canonical_name="Validation Squat",
+            region_tags=("quads",),
+            equipment_options=(),
+        ),
+    )
+    no_primary_muscle = (
+        ExerciseBlueprint(
+            canonical_name="Validation Row",
+            region_tags=(),
+            equipment_options=("barbell",),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="equipment"):
+        service._build_catalog_from_blueprints(no_equipment)
+    with pytest.raises(ValueError, match="primary"):
+        service._build_catalog_from_blueprints(no_primary_muscle)
