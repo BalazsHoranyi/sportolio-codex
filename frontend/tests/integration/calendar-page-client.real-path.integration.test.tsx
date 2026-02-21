@@ -91,17 +91,22 @@ describe("CalendarPageClient real-path integration", () => {
 
     expect(extractNeuralValueForFeb17()).toBe("7.4");
 
+    const interactionStartedAtMs = performance.now();
     await user.click(
       screen.getByRole("button", {
         name: /trigger drag move/i,
       }),
     );
-
     await screen.findByText(/Audit recompute events applied: 1/i);
     expect(extractNeuralValueForFeb17()).toBe("6.5");
-    const latencyMs = extractLastLatencyValueInMs();
-    expect(Number.isFinite(latencyMs)).toBe(true);
-    expect(latencyMs).toBeGreaterThanOrEqual(0);
-    expect(latencyMs).toBeLessThan(200);
+
+    const endToEndLatencyMs = performance.now() - interactionStartedAtMs;
+    expect(Number.isFinite(endToEndLatencyMs)).toBe(true);
+    expect(endToEndLatencyMs).toBeGreaterThanOrEqual(0);
+    expect(endToEndLatencyMs).toBeLessThan(200);
+
+    const recomputeLatencyMs = extractLastLatencyValueInMs();
+    expect(Number.isFinite(recomputeLatencyMs)).toBe(true);
+    expect(recomputeLatencyMs).toBeGreaterThanOrEqual(0);
   });
 });

@@ -227,27 +227,29 @@ describe("recomputeWeeklyAuditResponse", () => {
     const timestamps = [10, 142];
     nowSpy.mockImplementation(() => timestamps.shift() ?? 142);
 
-    const moveMutation: PlanningMutationEvent = {
-      mutationId: "mutation-latency-budget-1",
-      type: "workout_moved",
-      workoutId: "workout-strength-a",
-      title: "Heavy lower",
-      fromDate: "2026-02-17",
-      toDate: "2026-02-20",
-      source: "drag_drop",
-      occurredAt: "2026-02-21T08:03:00.000Z",
-      workoutType: "strength",
-      intensity: "hard",
-    };
+    try {
+      const moveMutation: PlanningMutationEvent = {
+        mutationId: "mutation-latency-budget-1",
+        type: "workout_moved",
+        workoutId: "workout-strength-a",
+        title: "Heavy lower",
+        fromDate: "2026-02-17",
+        toDate: "2026-02-20",
+        source: "drag_drop",
+        occurredAt: "2026-02-21T08:03:00.000Z",
+        workoutType: "strength",
+        intensity: "hard",
+      };
 
-    const result = applyWeeklyAuditMutationIncrementally(
-      weeklyAuditResponseSample,
-      moveMutation,
-    );
+      const result = applyWeeklyAuditMutationIncrementally(
+        weeklyAuditResponseSample,
+        moveMutation,
+      );
 
-    expect(result.durationMs).toBe(132);
-    expect(result.durationMs).toBeLessThan(200);
-
-    nowSpy.mockRestore();
+      expect(result.durationMs).toBe(132);
+      expect(result.durationMs).toBeLessThan(200);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 });
