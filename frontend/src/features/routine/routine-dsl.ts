@@ -1644,6 +1644,16 @@ function formatHumanError(
   return `Line ${line}, column ${column}: ${message} Hint: ${hint}`;
 }
 
+function findTokenColumn(rawLine: string, token: string): number {
+  const normalizedToken = token.trim();
+  if (!normalizedToken) {
+    return 1;
+  }
+
+  const index = rawLine.indexOf(normalizedToken);
+  return index >= 0 ? index + 1 : 1;
+}
+
 function parseHumanReferenceValue(value: string): string | null {
   return value.toLowerCase() === "null" ? null : value;
 }
@@ -2189,6 +2199,15 @@ function parseHumanStrengthDsl(
         rir = Number.parseFloat(rirToken[1] ?? "");
         continue;
       }
+
+      errors.push(
+        formatHumanError(
+          lineNumber,
+          findTokenColumn(rawLine, token),
+          "Unsupported strength token.",
+          "Use rest:, timer:, progress:, load:, rpe:, rir:, id:, instance:, equip:, regions:, if:, or sets:.",
+        ),
+      );
     }
 
     let sets: StrengthSetDraft[] = [];
@@ -2361,22 +2380,52 @@ function parseHumanEnduranceDsl(
     }
 
     let cadenceRangeRpm: CadenceRangeRpmDraft | null = null;
-    const cadenceRangeMatch = descriptor.match(/(\d+)\s*-\s*(\d+)\s*rpm/i);
+    const cadenceRangeMatch = descriptor.match(
+      /([-+]?\d+)\s*-\s*([-+]?\d+)\s*rpm/i,
+    );
     if (cadenceRangeMatch) {
       const min = Number.parseInt(cadenceRangeMatch[1] ?? "0", 10);
       const max = Number.parseInt(cadenceRangeMatch[2] ?? "0", 10);
-      if (min > 0 && max > 0 && min <= max) {
-        cadenceRangeRpm = { min, max };
+      if (min <= 0 || max <= 0 || min > max) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            findTokenColumn(rawLine, cadenceRangeMatch[0] ?? "rpm"),
+            "Invalid cadence range.",
+            "Use cadence like 90-100rpm where min <= max and both values are positive.",
+          ),
+        );
+        continue;
       }
+      cadenceRangeRpm = { min, max };
       descriptor = descriptor.replace(cadenceRangeMatch[0], "").trim();
     } else {
-      const cadenceSingleMatch = descriptor.match(/(\d+)\s*rpm/i);
+      const cadenceSingleMatch = descriptor.match(/([-+]?\d+)\s*rpm/i);
       if (cadenceSingleMatch) {
         const cadence = Number.parseInt(cadenceSingleMatch[1] ?? "0", 10);
-        if (cadence > 0) {
-          cadenceRangeRpm = { min: cadence, max: cadence };
+        if (cadence <= 0) {
+          errors.push(
+            formatHumanError(
+              lineNumber,
+              findTokenColumn(rawLine, cadenceSingleMatch[0] ?? "rpm"),
+              "Invalid cadence range.",
+              "Use cadence like 95rpm with a positive value.",
+            ),
+          );
+          continue;
         }
+        cadenceRangeRpm = { min: cadence, max: cadence };
         descriptor = descriptor.replace(cadenceSingleMatch[0], "").trim();
+      } else if (/\brpm\b/i.test(descriptor)) {
+        errors.push(
+          formatHumanError(
+            lineNumber,
+            findTokenColumn(rawLine, "rpm"),
+            "Invalid cadence range.",
+            "Use cadence like 90-100rpm or 95rpm.",
+          ),
+        );
+        continue;
       }
     }
 
@@ -2617,6 +2666,10 @@ function areStrengthSetsUniform(sets: StrengthSetDraft[]): boolean {
   });
 }
 
+function hasCanonicalStrengthSetIds(sets: StrengthSetDraft[]): boolean {
+  return sets.every((setDraft, index) => setDraft.setId === `set-${index + 1}`);
+}
+
 function formatStrengthSetSpecs(sets: StrengthSetDraft[]): string {
   const entries = sets.map((setDraft) => {
     const fields: string[] = [
@@ -2695,7 +2748,12 @@ export function serializeRoutineDslText(routine: RoutineDraft): string {
         const sets = exercise.sets;
         const firstSet = sets[0];
 
-        if (sets.length > 0 && firstSet && areStrengthSetsUniform(sets)) {
+        if (
+          sets.length > 0 &&
+          firstSet &&
+          areStrengthSetsUniform(sets) &&
+          hasCanonicalStrengthSetIds(sets)
+        ) {
           tokens.push(`${sets.length}x${firstSet.reps}`);
           tokens.push(`rest: ${firstSet.restSeconds}s`);
           if (firstSet.timerSeconds !== null) {

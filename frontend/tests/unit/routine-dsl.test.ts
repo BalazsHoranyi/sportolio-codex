@@ -537,6 +537,127 @@ Cooldown
     expect(parsed.value.endurance.intervals).toHaveLength(4);
   });
 
+  it("returns actionable errors for unsupported strength tokens", () => {
+    const parsed = parseRoutineDsl(
+      `
+routine "Strength Token Validation" id:routine-strength-token-validation path:strength
+references macro:null meso:null micro:null
+
+## Day 1
+Squat / 5x5 / rests: 210s
+`.trim(),
+    );
+
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) {
+      return;
+    }
+
+    expect(parsed.errors[0]).toContain("Line");
+    expect(parsed.errors[0]).toContain("column");
+    expect(parsed.errors[0]).toContain("Unsupported strength token");
+    expect(parsed.errors[0]).toContain("Hint:");
+  });
+
+  it("round-trips custom strength set IDs without semantic loss", () => {
+    const routine = {
+      dslVersion: "2.0",
+      references: {
+        macrocycleId: null,
+        mesocycleId: null,
+        microcycleId: null,
+      },
+      routineId: "routine-strength-custom-setids",
+      routineName: "Strength Custom Set IDs",
+      path: "strength",
+      strength: {
+        variables: [],
+        blocks: [
+          {
+            blockId: "block-1",
+            label: "Day 1",
+            repeatCount: 1,
+            condition: null,
+            exercises: [
+              {
+                instanceId: "exercise-1",
+                exerciseId: "global-back-squat",
+                canonicalName: "Back Squat",
+                selectedEquipment: null,
+                regionTags: [],
+                condition: null,
+                sets: [
+                  {
+                    setId: "top-set",
+                    reps: 5,
+                    restSeconds: 180,
+                    timerSeconds: null,
+                    load: null,
+                    rpe: null,
+                    rir: null,
+                    progression: null,
+                  },
+                  {
+                    setId: "backoff-set",
+                    reps: 5,
+                    restSeconds: 180,
+                    timerSeconds: null,
+                    load: null,
+                    rpe: null,
+                    rir: null,
+                    progression: null,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      endurance: {
+        intervals: [],
+        blocks: [],
+      },
+    } as unknown as RoutineDraft;
+
+    const rendered = serializeRoutineDslText(routine);
+    expect(rendered).toContain("sets: [id=top-set");
+    expect(rendered).toContain("id=backoff-set");
+
+    const reparsed = parseRoutineDsl(rendered);
+    expect(reparsed.ok).toBe(true);
+    if (!reparsed.ok) {
+      return;
+    }
+
+    expect(
+      reparsed.value.strength.blocks[0]?.exercises[0]?.sets.map(
+        (setDraft) => setDraft.setId,
+      ),
+    ).toStrictEqual(["top-set", "backoff-set"]);
+  });
+
+  it("returns actionable errors for invalid cadence ranges", () => {
+    const parsed = parseRoutineDsl(
+      `
+routine "Endurance Cadence Validation" id:routine-endurance-cadence-validation path:endurance
+references macro:null meso:null micro:null
+
+Main set
+- 4m 100% 100-90rpm
+`.trim(),
+    );
+
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) {
+      return;
+    }
+
+    expect(parsed.errors[0]).toContain("Line");
+    expect(parsed.errors[0]).toContain("column");
+    expect(parsed.errors[0]).toContain("Invalid cadence range");
+    expect(parsed.errors[0]).toContain("Hint:");
+  });
+
   it("round-trips human DSL rendering without semantic loss for supported constructs", () => {
     const routine = {
       dslVersion: "2.0",
