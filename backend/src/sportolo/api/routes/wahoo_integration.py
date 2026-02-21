@@ -4,13 +4,17 @@ from sportolo.api.schemas.muscle_usage import ValidationError
 from sportolo.api.schemas.wahoo_integration import (
     WahooExecutionHistorySyncRequest,
     WahooExecutionHistorySyncResponse,
+    WahooTrainerControlRequest,
+    WahooTrainerControlResponse,
     WahooWorkoutPushRequest,
     WahooWorkoutPushResponse,
 )
+from sportolo.services.wahoo_control_service import WahooControlService
 from sportolo.services.wahoo_integration_service import WahooIntegrationService
 
 router = APIRouter(tags=["Integrations"])
 service = WahooIntegrationService()
+control_service = WahooControlService()
 
 
 @router.post(
@@ -37,3 +41,16 @@ async def sync_wahoo_execution_history(
     athlete_id: str = Path(alias="athleteId"),
 ) -> WahooExecutionHistorySyncResponse:
     return service.sync_execution_history(athlete_id=athlete_id, request=request)
+
+
+@router.post(
+    "/v1/athletes/{athleteId}/integrations/wahoo/trainers/control",
+    response_model=WahooTrainerControlResponse,
+    operation_id="controlWahooTrainer",
+    responses={422: {"model": ValidationError}},
+)
+async def control_wahoo_trainer(
+    request: WahooTrainerControlRequest,
+    athlete_id: str = Path(alias="athleteId"),
+) -> WahooTrainerControlResponse:
+    return control_service.send_control_command(athlete_id=athlete_id, request=request)

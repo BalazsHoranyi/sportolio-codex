@@ -113,3 +113,21 @@ Sync behavior:
   - `analytics`
 - Enqueues each new dispatch through the integration dispatch sink so fatigue/analytics pipelines can process imports.
 - Sync retries with the same `idempotencyKey` replay the exact prior response and do not duplicate dispatch side effects.
+
+## Wahoo trainer control API
+
+`SPRT-45` introduces deterministic trainer control endpoint:
+
+- `POST /v1/athletes/{athleteId}/integrations/wahoo/trainers/control`
+
+Control behavior:
+
+- Supports mode commands for:
+  - `erg` with `targetUnit=watts`
+  - `resistance` with `targetUnit=ratio` (`0..1`)
+  - `slope` with `targetUnit=percent` (`-25..25`)
+- Uses `idempotencyKey` replay semantics; identical retries return the original response and payload drift is rejected.
+- Performs reconnect attempt when trainer state is disconnected before applying the requested mode.
+- Applies immediate deterministic safety fallback (`resistance`, `0.0`, `ratio`) when reconnect or command apply fails.
+- Returns explicit transition + status fields (`applied`, `safety_fallback`, `failed`) with failure reason metadata.
+- Emits telemetry events for command issue, acknowledgements/failures, reconnect attempts, and safety fallback path.
