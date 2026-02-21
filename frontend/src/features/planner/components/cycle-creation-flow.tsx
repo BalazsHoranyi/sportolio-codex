@@ -281,12 +281,18 @@ export function CycleCreationFlow() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] =
     useState<PlannerMacroTemplateId>(defaultMacroTemplateId);
+  const [autoSyncTemplateId, setAutoSyncTemplateId] =
+    useState<PlannerMacroTemplateId>(defaultMacroTemplateId);
   const [autoSyncTimeline, setAutoSyncTimeline] = useState(false);
 
   const currentStep = stepSequence[currentStepIndex]?.key ?? "macro";
   const selectedTemplate =
     macroTemplateProfiles.find(
       (template) => template.id === selectedTemplateId,
+    ) ?? macroTemplateProfiles[0];
+  const autoSyncTemplate =
+    macroTemplateProfiles.find(
+      (template) => template.id === autoSyncTemplateId,
     ) ?? macroTemplateProfiles[0];
 
   const advisories = useMemo(() => evaluatePlannerAdvisories(draft), [draft]);
@@ -302,6 +308,20 @@ export function CycleCreationFlow() {
       selectedTemplate?.cooldownWeeks,
       selectedTemplate?.leadWeeks,
       selectedTemplate?.minimumWeeks,
+    ],
+  );
+  const autoSyncTimelinePreview = useMemo(
+    () =>
+      buildMacroTimelinePreview(draft, {
+        leadWeeks: autoSyncTemplate?.leadWeeks,
+        cooldownWeeks: autoSyncTemplate?.cooldownWeeks,
+        minimumWeeks: autoSyncTemplate?.minimumWeeks,
+      }),
+    [
+      autoSyncTemplate?.cooldownWeeks,
+      autoSyncTemplate?.leadWeeks,
+      autoSyncTemplate?.minimumWeeks,
+      draft,
     ],
   );
   const strategyResults = useMemo(
@@ -341,22 +361,22 @@ export function CycleCreationFlow() {
 
     setDraft((previous) => {
       if (
-        previous.startDate === macroTimelinePreview.suggestedStartDate &&
-        previous.endDate === macroTimelinePreview.suggestedEndDate
+        previous.startDate === autoSyncTimelinePreview.suggestedStartDate &&
+        previous.endDate === autoSyncTimelinePreview.suggestedEndDate
       ) {
         return previous;
       }
 
       return {
         ...previous,
-        startDate: macroTimelinePreview.suggestedStartDate,
-        endDate: macroTimelinePreview.suggestedEndDate,
+        startDate: autoSyncTimelinePreview.suggestedStartDate,
+        endDate: autoSyncTimelinePreview.suggestedEndDate,
       };
     });
   }, [
     autoSyncTimeline,
-    macroTimelinePreview.suggestedEndDate,
-    macroTimelinePreview.suggestedStartDate,
+    autoSyncTimelinePreview.suggestedEndDate,
+    autoSyncTimelinePreview.suggestedStartDate,
   ]);
 
   function updateDraft(update: (previous: PlannerDraft) => PlannerDraft) {
@@ -374,6 +394,7 @@ export function CycleCreationFlow() {
     setCurrentStepIndex(0);
     setValidationErrors([]);
     setAutoSyncTimeline(false);
+    setAutoSyncTemplateId(defaultMacroTemplateId);
     setSelectedTemplateId(defaultMacroTemplateId);
     setStatusMessage("Draft cleared.");
   }
@@ -385,6 +406,7 @@ export function CycleCreationFlow() {
     });
 
     setDraft(nextDraft);
+    setAutoSyncTemplateId(selectedTemplateId);
     setAutoSyncTimeline(true);
     setValidationErrors([]);
     setStatusMessage(
@@ -775,6 +797,9 @@ export function CycleCreationFlow() {
                 checked={autoSyncTimeline}
                 onChange={(event) => {
                   const enabled = event.target.checked;
+                  if (enabled) {
+                    setAutoSyncTemplateId(selectedTemplateId);
+                  }
                   setAutoSyncTimeline(enabled);
                   if (enabled) {
                     alignMacroTimelineToAnchors();

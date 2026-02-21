@@ -6,6 +6,10 @@ import {
 import { createInitialPlannerDraft } from "../../src/features/planner/types";
 
 describe("planner macro templates", () => {
+  function toDateAtUtcMidnight(isoDate: string): Date {
+    return new Date(`${isoDate}T00:00:00.000Z`);
+  }
+
   it("provides all required hybrid profile templates", () => {
     const templates = getMacroTemplates();
 
@@ -91,5 +95,36 @@ describe("planner macro templates", () => {
     expect(movedEventPreview.suggestedEndDate).not.toBe(
       firstPreview.suggestedEndDate,
     );
+  });
+
+  it("keeps suggested dates and total weeks aligned when minimum weeks expands a single-anchor plan", () => {
+    const baseDraft = createInitialPlannerDraft();
+    const singleAnchorDraft = {
+      ...baseDraft,
+      goals: [
+        {
+          ...baseDraft.goals[0],
+          title: "Deadlift peak",
+          metric: "1RM deadlift",
+          targetDate: "2026-07-20",
+        },
+      ],
+      events: [],
+    };
+
+    const preview = buildMacroTimelinePreview(singleAnchorDraft, {
+      leadWeeks: 12,
+      cooldownWeeks: 2,
+      minimumWeeks: 16,
+    });
+
+    const startDate = toDateAtUtcMidnight(preview.suggestedStartDate);
+    const endDate = toDateAtUtcMidnight(preview.suggestedEndDate);
+    const inclusiveDays =
+      Math.floor((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1;
+    const weeksByDates = Math.ceil(inclusiveDays / 7);
+
+    expect(preview.totalWeeks).toBe(16);
+    expect(weeksByDates).toBe(preview.totalWeeks);
   });
 });

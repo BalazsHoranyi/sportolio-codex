@@ -185,6 +185,42 @@ describe("CycleCreationFlow", () => {
     });
   });
 
+  it("does not mutate timeline dates when browsing templates before re-applying", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "powerlifting_5k",
+    );
+    await user.click(screen.getByRole("button", { name: /apply template/i }));
+
+    const startDateInput = screen.getByLabelText(
+      /^start date$/i,
+    ) as HTMLInputElement;
+    const endDateInput = screen.getByLabelText(
+      /target end date/i,
+    ) as HTMLInputElement;
+
+    const appliedStartDate = startDateInput.value;
+    const appliedEndDate = endDateInput.value;
+
+    await user.selectOptions(
+      screen.getByLabelText(/macro template profile/i),
+      "triathlon_strength",
+    );
+
+    await waitFor(() => {
+      expect(
+        (screen.getByLabelText(/^start date$/i) as HTMLInputElement).value,
+      ).toBe(appliedStartDate);
+      expect(
+        (screen.getByLabelText(/target end date/i) as HTMLInputElement).value,
+      ).toBe(appliedEndDate);
+    });
+  });
+
   it("requires explicit unique priorities for multiple goals", async () => {
     const user = userEvent.setup();
 

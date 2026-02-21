@@ -599,14 +599,18 @@ export function buildMacroTimelinePreview(
     ? addDays(earliestAnchorDate, -(leadWeeks * 7))
     : fallbackStartDate;
 
-  const suggestedEndDate = latestAnchorDate
+  const seededSuggestedEndDate = latestAnchorDate
     ? addDays(latestAnchorDate, cooldownWeeks * 7)
     : addDays(suggestedStartDate, minimumWeeks * 7 - 1);
 
   const rawTotalWeeks = Math.ceil(
-    diffDaysInclusive(suggestedStartDate, suggestedEndDate) / 7,
+    diffDaysInclusive(suggestedStartDate, seededSuggestedEndDate) / 7,
   );
   const totalWeeks = Math.max(minimumWeeks, rawTotalWeeks);
+  const suggestedEndDate =
+    totalWeeks === rawTotalWeeks
+      ? seededSuggestedEndDate
+      : addDays(suggestedStartDate, totalWeeks * 7 - 1);
 
   let cursor = suggestedStartDate;
   const mesocycleBands: MacroTimelineBand[] = draft.mesocycles.map(
