@@ -97,3 +97,76 @@ def downgrade() -> None:
 
     assert result.returncode == 1
     assert "destructive" in result.stdout.lower()
+
+
+def test_migration_lint_rejects_multiline_destructive_sql_without_waiver() -> None:
+    with TemporaryDirectory() as temp_dir:
+        migration_dir = Path(temp_dir)
+        (migration_dir / "0002_sprt13_multiline_destructive_sql.py").write_text(
+            """\
+\"\"\"Bad migration.\"\"\"
+
+from __future__ import annotations
+
+import sqlalchemy as sa
+from alembic import op
+
+revision = "0002_sprt13"
+down_revision = "0001_sprt26"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    op.execute(
+        sa.text(
+            \"\"\"
+            DELETE FROM fatigue_snapshots
+            WHERE snapshot_date < '2026-01-01'
+            \"\"\"
+        )
+    )
+
+
+def downgrade() -> None:
+    op.execute(sa.text("SELECT 1"))
+""",
+            encoding="utf-8",
+        )
+
+        result = _run_migration_lint(migration_dir)
+
+    assert result.returncode == 1
+    assert "destructive" in result.stdout.lower()
+
+
+def test_migration_lint_allows_unannotated_upgrade_and_downgrade_functions() -> None:
+    with TemporaryDirectory() as temp_dir:
+        migration_dir = Path(temp_dir)
+        (migration_dir / "0002_sprt13_unannotated_functions.py").write_text(
+            """\
+\"\"\"Good migration.\"\"\"
+
+from __future__ import annotations
+
+from alembic import op
+
+revision = "0002_sprt13"
+down_revision = "0001_sprt26"
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    op.create_table("temporary_table")
+
+
+def downgrade():
+    op.drop_table("temporary_table")
+""",
+            encoding="utf-8",
+        )
+
+        result = _run_migration_lint(migration_dir)
+
+    assert result.returncode == 0, result.stdout + result.stderr

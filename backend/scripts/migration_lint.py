@@ -18,7 +18,11 @@ DESTRUCTIVE_UPGRADE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "destructive_sql",
         re.compile(
-            r"\bop\.execute\([^\n]*(?:DELETE\s+FROM|TRUNCATE\s+TABLE|DROP\s+TABLE)", re.IGNORECASE
+            (
+                r"\bop\.execute\(\s*(?:sa\.text\(\s*)?[\"']{1,3}[\s\S]*?"
+                r"(?:DELETE\s+FROM|TRUNCATE\s+TABLE|DROP\s+TABLE|ALTER\s+TABLE\s+\S+\s+DROP\s+COLUMN)"
+            ),
+            re.IGNORECASE,
         ),
     ),
 )
@@ -36,7 +40,7 @@ class MigrationLintViolation:
 
 def _extract_function_body(source: str, function_name: str) -> str | None:
     start_pattern = re.compile(
-        rf"^def\s+{function_name}\s*\(\s*\)\s*->\s*None\s*:\s*$", re.MULTILINE
+        rf"^def\s+{function_name}\s*\(\s*\)\s*(?:->\s*None\s*)?:\s*$", re.MULTILINE
     )
     match = start_pattern.search(source)
     if match is None:

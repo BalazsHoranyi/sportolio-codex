@@ -19,6 +19,7 @@ Inside each migration file:
 - `revision` must match the filename prefix (`0001_sprt26` for `0001_sprt26_fatigue_snapshots.py`).
 - `down_revision` must always be explicitly set.
 - `upgrade()` and `downgrade()` must both exist.
+- `upgrade()` / `downgrade()` can be declared with or without `-> None`.
 - `downgrade()` cannot be a no-op (`pass`, `...`, `raise NotImplementedError`).
 
 ## Automated Migration Checks
