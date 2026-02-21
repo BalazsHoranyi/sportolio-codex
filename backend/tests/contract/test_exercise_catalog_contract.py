@@ -8,14 +8,14 @@ from sportolo.main import app
 def test_list_exercises_contract_response_shape_and_non_productized_canonical_names() -> None:
     client = TestClient(app)
 
-    response = client.get("/v1/exercises")
+    response = client.get("/v1/exercises", params={"pageSize": 100})
 
     assert response.status_code == 200
     body = response.json()
     assert set(body) == {"items", "pagination"}
     assert isinstance(body["items"], list)
     assert body["pagination"]["page"] == 1
-    assert body["pagination"]["pageSize"] == 25
+    assert body["pagination"]["pageSize"] == 100
 
     names = {item["canonicalName"] for item in body["items"]}
     assert "Split Squat" in names
@@ -87,6 +87,24 @@ def test_list_exercises_supports_typo_tolerant_search() -> None:
     body = response.json()
     assert body["items"]
     assert body["items"][0]["canonicalName"] == "Split Squat"
+
+
+def test_list_exercises_supports_backfilled_alias_discoverability() -> None:
+    client = TestClient(app)
+
+    rfess_response = client.get("/v1/exercises", params={"search": "rfess"})
+    military_press_response = client.get("/v1/exercises", params={"search": "military press"})
+
+    assert rfess_response.status_code == 200
+    assert military_press_response.status_code == 200
+
+    rfess_body = rfess_response.json()
+    military_press_body = military_press_response.json()
+
+    assert rfess_body["items"]
+    assert rfess_body["items"][0]["canonicalName"] == "Split Squat"
+    assert military_press_body["items"]
+    assert military_press_body["items"][0]["canonicalName"] == "Shoulder Press"
 
 
 def test_list_exercises_openapi_metadata_matches_contract() -> None:

@@ -44,3 +44,10 @@ Behavior:
 - Legacy equipment-prefixed aliases are preserved for backwards-compatible lookup (`Barbell Split Squat` resolves to `Split Squat`).
 - Expanded equipment labels/abbreviations include `landmine`, `ez_bar`, `medicine_ball`, `preacher_bench`, `ghd`, `bosu`, `stability_ball`, and `rings`.
 - Responses are deterministic for identical query inputs.
+
+`SPRT-71` backfills missing strength families and naming coverage gaps in the same endpoint:
+
+- Lower-body coverage now includes stationary split squats, cable pull-throughs, glute-ham raises, hip adduction, Copenhagen plank, tibialis raises, and dorsiflexion.
+- Upper-body push/pull naming now includes shoulder/military press mapping, landmine press, triceps pressdowns, and straight-arm pulldowns.
+- Forearm/rotator-cuff/core gaps now include wrist curls, reverse wrist curls, pronation/supination, gripper squeezes, external/internal rotations, Cuban press, dead bug, offset carry, and ab wheel rollout.
+- Common aliases are explicitly searchable (`RFESS`, `Hyperextension`, `Adductor Machine`, `Military Press`, `Pressdown`, `GHR`, and related variants).
