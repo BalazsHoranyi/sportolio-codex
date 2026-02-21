@@ -55,7 +55,7 @@ export function CalendarPageClient({
       if (!result.applied) {
         return {
           ...previous,
-          warning: result.warning ?? previous.warning,
+          warning: result.warning ?? null,
           lastDurationMs: result.durationMs,
         };
       }
