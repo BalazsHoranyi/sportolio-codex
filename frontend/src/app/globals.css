@@ -2806,6 +2806,14 @@ h1 {
   max-width: 64ch;
 }
 
+.routine-flow-mode-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.4rem;
+}
+
 .routine-flow-mode-tabs {
   background: oklch(0.96 0.02 68 / 0.9);
   border: 1px solid var(--line);
@@ -2813,7 +2821,7 @@ h1 {
   display: grid;
   gap: 0.4rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 1.4rem;
+  flex: 1 1 18rem;
   padding: 0.3rem;
 }
 
@@ -2846,6 +2854,7 @@ h1 {
 .routine-flow-tab:focus-visible,
 .routine-flow-pill:focus-visible,
 .routine-flow-action:focus-visible,
+.routine-flow-history-button:focus-visible,
 .routine-flow-link:focus-visible,
 .routine-flow-result:focus-visible,
 .routine-flow-input:focus-visible,
@@ -2853,6 +2862,31 @@ h1 {
 .routine-flow-textarea:focus-visible {
   outline: 2px solid oklch(0.42 0.17 40);
   outline-offset: 2px;
+}
+
+.routine-flow-history-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.routine-flow-history-button {
+  background: oklch(0.95 0.02 66);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-strong);
+  cursor: pointer;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-height: 2.1rem;
+  min-width: 4.8rem;
+  padding: 0.25rem 0.72rem;
+}
+
+.routine-flow-history-button:disabled {
+  color: var(--ink-muted);
+  cursor: not-allowed;
 }
 
 .routine-flow-path-tabs {

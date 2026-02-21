@@ -26,9 +26,16 @@ import {
 } from "../types";
 
 type EditorMode = "visual" | "dsl";
+type RoutineTransition = (previous: RoutineDraft) => RoutineDraft;
+type RoutineHistoryState = {
+  past: RoutineDraft[];
+  present: RoutineDraft;
+  future: RoutineDraft[];
+};
 
 const editorModeOrder: EditorMode[] = ["visual", "dsl"];
 const routinePathOrder: RoutinePath[] = ["strength", "endurance"];
+const MAX_ROUTINE_HISTORY_ENTRIES = 100;
 
 function nextIntervalId(intervals: EnduranceIntervalDraft[]): string {
   const nextNumericId =
@@ -284,10 +291,51 @@ function confirmDestructiveAction(message: string): boolean {
   return window.confirm(message);
 }
 
+function isEditableElement(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+  return (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    target.isContentEditable
+  );
+}
+
+function routinesAreEqual(left: RoutineDraft, right: RoutineDraft): boolean {
+  return serializeRoutineDsl(left) === serializeRoutineDsl(right);
+}
+
+function trimHistoryEntries(entries: RoutineDraft[]): RoutineDraft[] {
+  if (entries.length <= MAX_ROUTINE_HISTORY_ENTRIES) {
+    return entries;
+  }
+
+  return entries.slice(entries.length - MAX_ROUTINE_HISTORY_ENTRIES);
+}
+
+function trimFutureEntries(entries: RoutineDraft[]): RoutineDraft[] {
+  if (entries.length <= MAX_ROUTINE_HISTORY_ENTRIES) {
+    return entries;
+  }
+
+  return entries.slice(0, MAX_ROUTINE_HISTORY_ENTRIES);
+}
+
 export function RoutineCreationFlow() {
   const [mode, setMode] = useState<EditorMode>("visual");
-  const [routine, setRoutine] = useState<RoutineDraft>(
-    createInitialRoutineDraft,
+  const [routineHistory, setRoutineHistory] = useState<RoutineHistoryState>(
+    () => {
+      const initialRoutine = createInitialRoutineDraft();
+      return {
+        past: [],
+        present: initialRoutine,
+        future: [],
+      };
+    },
   );
   const [dslText, setDslText] = useState<string>(() =>
     serializeRoutineDsl(createInitialRoutineDraft()),
@@ -312,6 +360,68 @@ export function RoutineCreationFlow() {
     exerciseName: string;
     blockLabel: string;
   } | null>(null);
+  const routine = routineHistory.present;
+
+  function applyRoutineChange(transition: RoutineTransition) {
+    setRoutineHistory((previousHistory) => {
+      const nextRoutine = transition(previousHistory.present);
+      if (routinesAreEqual(previousHistory.present, nextRoutine)) {
+        return previousHistory;
+      }
+
+      return {
+        past: trimHistoryEntries([
+          ...previousHistory.past,
+          previousHistory.present,
+        ]),
+        present: nextRoutine,
+        future: [],
+      };
+    });
+  }
+
+  function pushRoutineSnapshot(nextRoutine: RoutineDraft) {
+    applyRoutineChange(() => nextRoutine);
+  }
+
+  function undoRoutineChange() {
+    setRoutineHistory((previousHistory) => {
+      const previousSnapshot =
+        previousHistory.past[previousHistory.past.length - 1];
+      if (!previousSnapshot) {
+        return previousHistory;
+      }
+
+      return {
+        past: previousHistory.past.slice(0, -1),
+        present: previousSnapshot,
+        future: trimFutureEntries([
+          previousHistory.present,
+          ...previousHistory.future,
+        ]),
+      };
+    });
+    setDslErrors([]);
+  }
+
+  function redoRoutineChange() {
+    setRoutineHistory((previousHistory) => {
+      const [nextSnapshot, ...remainingFuture] = previousHistory.future;
+      if (!nextSnapshot) {
+        return previousHistory;
+      }
+
+      return {
+        past: trimHistoryEntries([
+          ...previousHistory.past,
+          previousHistory.present,
+        ]),
+        present: nextSnapshot,
+        future: remainingFuture,
+      };
+    });
+    setDslErrors([]);
+  }
 
   useEffect(() => {
     let active = true;
@@ -405,9 +515,40 @@ export function RoutineCreationFlow() {
   const activeBlock =
     routine.strength.blocks.find((block) => block.blockId === activeBlockId) ??
     routine.strength.blocks[0];
+  const canUndo = routineHistory.past.length > 0;
+  const canRedo = routineHistory.future.length > 0;
+
+  useEffect(() => {
+    function onHistoryShortcut(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) {
+        return;
+      }
+
+      if (isEditableElement(event.target)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      const isUndoShortcut = key === "z" && !event.shiftKey;
+      const isRedoShortcut = key === "y" || (key === "z" && event.shiftKey);
+
+      if (isUndoShortcut && canUndo) {
+        event.preventDefault();
+        undoRoutineChange();
+      } else if (isRedoShortcut && canRedo) {
+        event.preventDefault();
+        redoRoutineChange();
+      }
+    }
+
+    window.addEventListener("keydown", onHistoryShortcut);
+    return () => {
+      window.removeEventListener("keydown", onHistoryShortcut);
+    };
+  }, [canRedo, canUndo]);
 
   function setPath(path: RoutinePath) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       path,
     }));
@@ -486,7 +627,7 @@ export function RoutineCreationFlow() {
   }
 
   function addVariable() {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -511,7 +652,7 @@ export function RoutineCreationFlow() {
     variableId: string,
     update: Partial<{ name: string; expression: string }>,
   ) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -528,7 +669,7 @@ export function RoutineCreationFlow() {
   }
 
   function removeVariable(variableId: string) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -545,7 +686,7 @@ export function RoutineCreationFlow() {
       "block",
     );
 
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -571,7 +712,7 @@ export function RoutineCreationFlow() {
       Pick<StrengthBlockDraft, "label" | "repeatCount" | "condition">
     >,
   ) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -588,7 +729,7 @@ export function RoutineCreationFlow() {
   }
 
   function removeBlock(blockId: string) {
-    setRoutine((previous) => {
+    applyRoutineChange((previous) => {
       const remainingBlocks = previous.strength.blocks.filter(
         (block) => block.blockId !== blockId,
       );
@@ -617,7 +758,7 @@ export function RoutineCreationFlow() {
   }
 
   function addStrengthExercise(exercise: SearchableExerciseCatalogItem) {
-    setRoutine((previous) => {
+    applyRoutineChange((previous) => {
       const targetBlockId =
         activeBlock?.blockId ?? previous.strength.blocks[0]?.blockId;
       if (!targetBlockId) {
@@ -661,7 +802,7 @@ export function RoutineCreationFlow() {
       >
     >,
   ) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -685,7 +826,7 @@ export function RoutineCreationFlow() {
   }
 
   function removeStrengthExercise(blockId: string, exerciseInstanceId: string) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -704,7 +845,7 @@ export function RoutineCreationFlow() {
   }
 
   function addStrengthSet(blockId: string, exerciseInstanceId: string) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -745,7 +886,7 @@ export function RoutineCreationFlow() {
       RoutineDraft["strength"]["blocks"][number]["exercises"][number]["sets"][number]
     >,
   ) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -780,7 +921,7 @@ export function RoutineCreationFlow() {
     exerciseInstanceId: string,
     setId: string,
   ) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -820,7 +961,7 @@ export function RoutineCreationFlow() {
     blockLabel: string,
   ) {
     let moved = false;
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -888,7 +1029,7 @@ export function RoutineCreationFlow() {
     }
 
     let reordered = false;
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       strength: {
         ...previous.strength,
@@ -928,7 +1069,7 @@ export function RoutineCreationFlow() {
   }
 
   function addEnduranceInterval() {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       endurance: withSyncedEndurance([
         ...previous.endurance.intervals,
@@ -947,7 +1088,7 @@ export function RoutineCreationFlow() {
     intervalId: string,
     update: Partial<EnduranceIntervalDraft>,
   ) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       endurance: withSyncedEndurance(
         previous.endurance.intervals.map((interval) =>
@@ -963,7 +1104,7 @@ export function RoutineCreationFlow() {
   }
 
   function removeEnduranceInterval(intervalId: string) {
-    setRoutine((previous) => ({
+    applyRoutineChange((previous) => ({
       ...previous,
       endurance: withSyncedEndurance(
         previous.endurance.intervals.filter(
@@ -978,7 +1119,7 @@ export function RoutineCreationFlow() {
 
     const parsed = parseRoutineDsl(nextValue);
     if (parsed.ok) {
-      setRoutine(parsed.value);
+      pushRoutineSnapshot(parsed.value);
       setDslErrors([]);
       return;
     }
@@ -1000,45 +1141,73 @@ export function RoutineCreationFlow() {
         </p>
       </header>
 
-      <div
-        className="routine-flow-mode-tabs"
-        role="tablist"
-        aria-label="Editor mode"
-      >
-        <button
-          id={modeTabId("visual")}
-          type="button"
-          role="tab"
-          tabIndex={mode === "visual" ? 0 : -1}
-          aria-selected={mode === "visual"}
-          aria-controls={modePanelId("visual")}
-          className={
-            mode === "visual"
-              ? "routine-flow-tab routine-flow-tab-active"
-              : "routine-flow-tab"
-          }
-          onClick={() => switchMode("visual")}
-          onKeyDown={(event) => onModeTabKeyDown(event, "visual")}
+      <div className="routine-flow-mode-row">
+        <div
+          className="routine-flow-mode-tabs"
+          role="tablist"
+          aria-label="Editor mode"
         >
-          Visual
-        </button>
-        <button
-          id={modeTabId("dsl")}
-          type="button"
-          role="tab"
-          tabIndex={mode === "dsl" ? 0 : -1}
-          aria-selected={mode === "dsl"}
-          aria-controls={modePanelId("dsl")}
-          className={
-            mode === "dsl"
-              ? "routine-flow-tab routine-flow-tab-active"
-              : "routine-flow-tab"
-          }
-          onClick={() => switchMode("dsl")}
-          onKeyDown={(event) => onModeTabKeyDown(event, "dsl")}
+          <button
+            id={modeTabId("visual")}
+            type="button"
+            role="tab"
+            tabIndex={mode === "visual" ? 0 : -1}
+            aria-selected={mode === "visual"}
+            aria-controls={modePanelId("visual")}
+            className={
+              mode === "visual"
+                ? "routine-flow-tab routine-flow-tab-active"
+                : "routine-flow-tab"
+            }
+            onClick={() => switchMode("visual")}
+            onKeyDown={(event) => onModeTabKeyDown(event, "visual")}
+          >
+            Visual
+          </button>
+          <button
+            id={modeTabId("dsl")}
+            type="button"
+            role="tab"
+            tabIndex={mode === "dsl" ? 0 : -1}
+            aria-selected={mode === "dsl"}
+            aria-controls={modePanelId("dsl")}
+            className={
+              mode === "dsl"
+                ? "routine-flow-tab routine-flow-tab-active"
+                : "routine-flow-tab"
+            }
+            onClick={() => switchMode("dsl")}
+            onKeyDown={(event) => onModeTabKeyDown(event, "dsl")}
+          >
+            DSL
+          </button>
+        </div>
+        <div
+          className="routine-flow-history-actions"
+          role="group"
+          aria-label="Edit history"
         >
-          DSL
-        </button>
+          <button
+            type="button"
+            className="routine-flow-history-button"
+            onClick={undoRoutineChange}
+            disabled={!canUndo}
+            aria-label="Undo"
+            title="Undo (Ctrl/Cmd+Z)"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            className="routine-flow-history-button"
+            onClick={redoRoutineChange}
+            disabled={!canRedo}
+            aria-label="Redo"
+            title="Redo (Ctrl+Y / Cmd/Ctrl+Shift+Z)"
+          >
+            Redo
+          </button>
+        </div>
       </div>
 
       <div

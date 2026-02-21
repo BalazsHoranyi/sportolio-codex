@@ -78,6 +78,18 @@ an initial default set for each exercise.
 - Validation errors include a concrete field location and a `Hint:` fix suggestion.
 - The last valid visual state is preserved until DSL becomes valid again.
 
+## Edit history behavior
+
+- Valid routine-model changes from either mode (Visual controls or valid DSL edits)
+  are captured in a bounded undo/redo stack.
+- Invalid DSL text edits are **not** added to history; they keep inline validation
+  errors while preserving the last valid routine snapshot.
+- Creating a new valid edit after undo clears the redo stack deterministically.
+- History controls are available in the UI (`Undo`, `Redo`) and via keyboard
+  shortcuts when focus is outside form fields:
+  - `Ctrl/Cmd+Z` for undo
+  - `Ctrl+Y` or `Ctrl/Cmd+Shift+Z` for redo
+
 ## Reordering behavior
 
 Strength exercise order inside a block can be changed using:
