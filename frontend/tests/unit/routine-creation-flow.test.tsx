@@ -849,4 +849,92 @@ describe("RoutineCreationFlow", () => {
     });
     expect(within(listAfterRedo).getByText("Split Squat")).toBeTruthy();
   });
+
+  it("clears redo history after creating a new edit from an undone state", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /bench press/i,
+      }),
+    );
+
+    const undoButton = screen.getByRole("button", { name: /^undo$/i });
+    const redoButton = screen.getByRole("button", { name: /^redo$/i });
+
+    await user.click(undoButton);
+    expect(
+      within(
+        screen.getByRole("list", { name: /selected strength exercises/i }),
+      ).queryByText("Bench Press"),
+    ).toBeNull();
+
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /bench press/i,
+      }),
+    );
+
+    expect(
+      within(
+        screen.getByRole("list", { name: /selected strength exercises/i }),
+      ).getAllByText("Bench Press"),
+    ).toHaveLength(1);
+    expect((redoButton as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("does not apply history shortcuts when the event was already prevented", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    const selectedStrengthList = screen.getByRole("list", {
+      name: /selected strength exercises/i,
+    });
+    expect(within(selectedStrengthList).getByText("Split Squat")).toBeTruthy();
+
+    function preventHistoryShortcut(event: KeyboardEvent) {
+      event.preventDefault();
+    }
+
+    window.addEventListener("keydown", preventHistoryShortcut, {
+      capture: true,
+      once: true,
+    });
+    fireEvent.keyDown(document.body, {
+      key: "z",
+      ctrlKey: true,
+    });
+
+    expect(
+      within(
+        screen.getByRole("list", {
+          name: /selected strength exercises/i,
+        }),
+      ).getByText("Split Squat"),
+    ).toBeTruthy();
+  });
 });

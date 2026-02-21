@@ -520,6 +520,10 @@ export function RoutineCreationFlow() {
 
   useEffect(() => {
     function onHistoryShortcut(event: KeyboardEvent) {
+      if (event.defaultPrevented) {
+        return;
+      }
+
       if (!(event.metaKey || event.ctrlKey) || event.altKey) {
         return;
       }
