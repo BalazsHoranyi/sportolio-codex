@@ -9,6 +9,11 @@ import type {
   WorkoutTemplate,
 } from "./types";
 
+interface WorkoutScheduleSnapshot {
+  date?: string;
+  sessionOrder?: number;
+}
+
 export interface PlanningMutationOutcome {
   state: PlanningCalendarState;
   applied: boolean;
@@ -85,21 +90,88 @@ function ensureWorkoutHistoryKey(
 
 function appendWorkoutHistory(
   history: PlanningCalendarState["workoutHistory"],
+  workoutId: string,
   mutation: PlanningMutationEvent,
+  fromSchedule?: WorkoutScheduleSnapshot,
+  toSchedule?: WorkoutScheduleSnapshot,
 ) {
-  ensureWorkoutHistoryKey(history, mutation.workoutId);
+  ensureWorkoutHistoryKey(history, workoutId);
   const entry: WorkoutScheduleHistoryEntry = {
     mutationId: mutation.mutationId,
     type: mutation.type,
     source: mutation.source,
     occurredAt: mutation.occurredAt,
-    fromDate: mutation.fromDate,
-    toDate: mutation.toDate,
-    fromOrder: mutation.fromOrder,
-    toOrder: mutation.toOrder,
+    fromDate: fromSchedule?.date,
+    toDate: toSchedule?.date,
+    fromOrder: fromSchedule?.sessionOrder,
+    toOrder: toSchedule?.sessionOrder,
     overrideApplied: mutation.overrideApplied,
   };
-  history[mutation.workoutId] = [...history[mutation.workoutId], entry];
+  history[workoutId] = [...history[workoutId], entry];
+}
+
+function scheduleByWorkoutId(
+  workouts: PlannedWorkout[],
+): Record<string, WorkoutScheduleSnapshot> {
+  return Object.fromEntries(
+    workouts.map((workout) => [
+      workout.workoutId,
+      {
+        date: workout.date,
+        sessionOrder: workout.sessionOrder,
+      },
+    ]),
+  );
+}
+
+function hasScheduleDelta(
+  previous?: WorkoutScheduleSnapshot,
+  next?: WorkoutScheduleSnapshot,
+): boolean {
+  if (!previous || !next) {
+    return previous !== next;
+  }
+
+  return (
+    previous.date !== next.date || previous.sessionOrder !== next.sessionOrder
+  );
+}
+
+function appendHistoryForScheduleChanges(
+  previous: PlanningCalendarState,
+  workouts: PlannedWorkout[],
+  history: PlanningCalendarState["workoutHistory"],
+  mutation: PlanningMutationEvent,
+) {
+  const previousSchedules = scheduleByWorkoutId(previous.workouts);
+  const nextSchedules = scheduleByWorkoutId(workouts);
+  const changedWorkoutIds = new Set<string>([
+    ...Object.keys(previousSchedules),
+    ...Object.keys(nextSchedules),
+  ]);
+  changedWorkoutIds.add(mutation.workoutId);
+
+  for (const workoutId of [...changedWorkoutIds].sort((left, right) =>
+    left.localeCompare(right),
+  )) {
+    const previousSchedule = previousSchedules[workoutId];
+    const nextSchedule = nextSchedules[workoutId];
+
+    if (
+      workoutId !== mutation.workoutId &&
+      !hasScheduleDelta(previousSchedule, nextSchedule)
+    ) {
+      continue;
+    }
+
+    appendWorkoutHistory(
+      history,
+      workoutId,
+      mutation,
+      previousSchedule,
+      nextSchedule,
+    );
+  }
 }
 
 function normalizeDayOrdering(workouts: PlannedWorkout[], date: string) {
@@ -180,7 +252,7 @@ function applyMutationAndHistory(
   history: PlanningCalendarState["workoutHistory"],
   mutation: PlanningMutationEvent,
 ): PlanningMutationOutcome {
-  appendWorkoutHistory(history, mutation);
+  appendHistoryForScheduleChanges(previous, workouts, history, mutation);
 
   return {
     state: {
