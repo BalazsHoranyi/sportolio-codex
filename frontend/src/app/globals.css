@@ -72,6 +72,9 @@
     var(--primary) 78%,
     var(--foreground) 22%
   );
+  --layout-shell-max-width: 76rem;
+  --layout-shell-gap: clamp(1rem, 2.1vw, 1.4rem);
+  --layout-bento-gap: clamp(0.85rem, 1.5vw, 1.1rem);
   --radius: 0.5rem;
   --calendar-neural: var(--chart-1);
   --calendar-metabolic: var(--chart-2);
@@ -346,6 +349,11 @@ a:focus-visible {
   color: var(--ink-strong);
 }
 
+.app-shell-nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .app-shell-nav-link.is-active {
   background: color-mix(in oklch, var(--primary) 30%, var(--background));
   color: var(--ink-strong);
@@ -389,6 +397,12 @@ a:focus-visible {
   padding: 0.5rem 0.9rem;
 }
 
+.app-shell-mobile-menu > summary:focus-visible,
+.app-shell-brand:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .app-shell-mobile-menu > summary::-webkit-details-marker {
   display: none;
 }
@@ -410,7 +424,10 @@ a:focus-visible {
 
 .app-shell-main {
   display: grid;
-  gap: 1rem;
+  gap: var(--layout-shell-gap);
+  margin: 0 auto;
+  max-width: var(--layout-shell-max-width);
+  width: 100%;
 }
 
 .app-page-intro {
@@ -429,7 +446,13 @@ a:focus-visible {
 
 .bento-grid {
   display: grid;
-  gap: 0.85rem;
+  gap: var(--layout-bento-gap);
+}
+
+.ui-badge {
+  align-items: center;
+  display: inline-flex;
+  line-height: 1;
 }
 
 .bento-grid-item {

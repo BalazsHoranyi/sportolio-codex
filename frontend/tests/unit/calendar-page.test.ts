@@ -42,6 +42,7 @@ describe("CalendarPage", () => {
     expect(html).toContain("Session focus");
     expect(html).toContain("Heavy lower session");
     expect(html).toContain("completed-before-boundary");
+    expect(html).toContain('data-slot="button"');
   });
 
   it("renders deterministic fallback chart data when API loading is unavailable", async () => {
