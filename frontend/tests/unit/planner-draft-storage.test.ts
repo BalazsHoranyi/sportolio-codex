@@ -23,6 +23,14 @@ function createDraft(): PlannerDraft {
         priority: 1,
       },
     ],
+    events: [
+      {
+        eventId: "event-1",
+        name: "Regional meet",
+        eventDate: "2026-05-20",
+        eventType: "meet",
+      },
+    ],
     mesocycles: [
       {
         mesocycleId: "meso-1",
@@ -63,6 +71,22 @@ describe("planner draft storage", () => {
     localStorage.setItem("sportolo.planner.draft.v1", "{not-valid");
 
     expect(loadPlannerDraft()).toBeNull();
+  });
+
+  it("loads legacy persisted payloads that predate events support", () => {
+    const legacyDraft = createDraft();
+    localStorage.setItem(
+      "sportolo.planner.draft.v1",
+      JSON.stringify({
+        ...legacyDraft,
+        events: undefined,
+      }),
+    );
+
+    expect(loadPlannerDraft()).toEqual({
+      ...legacyDraft,
+      events: [],
+    });
   });
 
   it("clears persisted planner draft", () => {

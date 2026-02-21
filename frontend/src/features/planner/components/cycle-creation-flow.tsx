@@ -11,6 +11,8 @@ import {
 import {
   createInitialPlannerDraft,
   type MesocycleFocus,
+  type PlannerEventDraft,
+  type PlannerEventType,
   type PeriodizationType,
   type PlannerDraft,
   type PlannerGoalDraft,
@@ -110,6 +112,29 @@ function validateMacroStep(draft: PlannerDraft): string[] {
     }
   });
 
+  draft.events.forEach((event, index) => {
+    const eventPosition = index + 1;
+
+    if (event.name.trim().length === 0) {
+      errors.push(`Event ${eventPosition}: name is required.`);
+    }
+
+    if (!event.eventDate) {
+      errors.push(`Event ${eventPosition}: date is required.`);
+    }
+
+    if (
+      event.eventDate &&
+      draft.startDate &&
+      draft.endDate &&
+      (event.eventDate < draft.startDate || event.eventDate > draft.endDate)
+    ) {
+      errors.push(
+        `Event ${eventPosition}: date must be inside the plan start/end window.`,
+      );
+    }
+  });
+
   return errors;
 }
 
@@ -192,7 +217,6 @@ export function CycleCreationFlow() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [didRestoreDraft, setDidRestoreDraft] = useState(false);
 
   const currentStep = stepSequence[currentStepIndex]?.key ?? "macro";
 
@@ -205,7 +229,6 @@ export function CycleCreationFlow() {
     }
 
     setDraft(restored);
-    setDidRestoreDraft(true);
     setStatusMessage("Restored saved draft.");
   }, []);
 
@@ -224,7 +247,6 @@ export function CycleCreationFlow() {
     setCurrentStepIndex(0);
     setValidationErrors([]);
     setStatusMessage("Draft cleared.");
-    setDidRestoreDraft(false);
   }
 
   function goBack() {
@@ -298,6 +320,45 @@ export function CycleCreationFlow() {
         goals: previous.goals.filter((goal) => goal.goalId !== goalId),
       };
     });
+  }
+
+  function updateEvent(eventId: string, update: Partial<PlannerEventDraft>) {
+    updateDraft((previous) => ({
+      ...previous,
+      events: previous.events.map((event) =>
+        event.eventId === eventId
+          ? {
+              ...event,
+              ...update,
+            }
+          : event,
+      ),
+    }));
+  }
+
+  function addEvent() {
+    updateDraft((previous) => ({
+      ...previous,
+      events: [
+        ...previous.events,
+        {
+          eventId: nextNumericId(
+            "event",
+            previous.events.map((event) => event.eventId),
+          ),
+          name: "",
+          eventDate: "",
+          eventType: "race",
+        },
+      ],
+    }));
+  }
+
+  function removeEvent(eventId: string) {
+    updateDraft((previous) => ({
+      ...previous,
+      events: previous.events.filter((event) => event.eventId !== eventId),
+    }));
   }
 
   function updateMesocycle(
@@ -438,12 +499,6 @@ export function CycleCreationFlow() {
         ))}
       </ol>
 
-      {didRestoreDraft ? (
-        <p className="planner-flow-notice" role="status" aria-live="polite">
-          Restored saved draft.
-        </p>
-      ) : null}
-
       {statusMessage ? (
         <p className="planner-flow-status" role="status" aria-live="polite">
           {statusMessage}
@@ -473,10 +528,12 @@ export function CycleCreationFlow() {
           </p>
 
           <div className="planner-flow-grid planner-flow-grid-two">
-            <label>
+            <label htmlFor="plan-name">
               Plan name
               <input
+                id="plan-name"
                 className="planner-flow-input"
+                name="planName"
                 value={draft.planName}
                 onChange={(event) =>
                   updateDraft((previous) => ({
@@ -487,10 +544,12 @@ export function CycleCreationFlow() {
               />
             </label>
 
-            <label>
+            <label htmlFor="plan-start-date">
               Start date
               <input
+                id="plan-start-date"
                 className="planner-flow-input"
+                name="startDate"
                 type="date"
                 value={draft.startDate}
                 onChange={(event) =>
@@ -502,10 +561,12 @@ export function CycleCreationFlow() {
               />
             </label>
 
-            <label>
+            <label htmlFor="plan-end-date">
               Target end date
               <input
+                id="plan-end-date"
                 className="planner-flow-input"
+                name="endDate"
                 type="date"
                 value={draft.endDate}
                 onChange={(event) =>
@@ -530,98 +591,214 @@ export function CycleCreationFlow() {
           </div>
 
           <ul className="planner-flow-card-list" aria-label="Configured goals">
-            {draft.goals.map((goal) => (
-              <li key={goal.goalId}>
-                <div className="planner-flow-grid planner-flow-grid-two">
-                  <label>
-                    Goal title
-                    <input
-                      className="planner-flow-input"
-                      value={goal.title}
-                      onChange={(event) =>
-                        updateGoal(goal.goalId, {
-                          title: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
+            {draft.goals.map((goal) => {
+              const goalTitleId = `goal-title-${goal.goalId}`;
+              const goalMetricId = `goal-metric-${goal.goalId}`;
+              const goalTargetDateId = `goal-target-date-${goal.goalId}`;
+              const goalModalityId = `goal-modality-${goal.goalId}`;
+              const goalPriorityId = `goal-priority-${goal.goalId}`;
 
-                  <label>
-                    Target metric
-                    <input
-                      className="planner-flow-input"
-                      value={goal.metric}
-                      onChange={(event) =>
-                        updateGoal(goal.goalId, {
-                          metric: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
+              return (
+                <li key={goal.goalId}>
+                  <div className="planner-flow-grid planner-flow-grid-two">
+                    <label htmlFor={goalTitleId}>
+                      Goal title
+                      <input
+                        id={goalTitleId}
+                        className="planner-flow-input"
+                        name={goalTitleId}
+                        value={goal.title}
+                        onChange={(event) =>
+                          updateGoal(goal.goalId, {
+                            title: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
 
-                  <label>
-                    Goal target date
-                    <input
-                      className="planner-flow-input"
-                      type="date"
-                      value={goal.targetDate}
-                      onChange={(event) =>
-                        updateGoal(goal.goalId, {
-                          targetDate: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
+                    <label htmlFor={goalMetricId}>
+                      Target metric
+                      <input
+                        id={goalMetricId}
+                        className="planner-flow-input"
+                        name={goalMetricId}
+                        value={goal.metric}
+                        onChange={(event) =>
+                          updateGoal(goal.goalId, {
+                            metric: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
 
-                  <label>
-                    Modality
-                    <select
-                      className="planner-flow-select"
-                      value={goal.modality}
-                      onChange={(event) =>
-                        updateGoal(goal.goalId, {
-                          modality: event.target
-                            .value as PlannerGoalDraft["modality"],
-                        })
-                      }
-                    >
-                      <option value="strength">Strength</option>
-                      <option value="endurance">Endurance</option>
-                    </select>
-                  </label>
+                    <label htmlFor={goalTargetDateId}>
+                      Goal target date
+                      <input
+                        id={goalTargetDateId}
+                        className="planner-flow-input"
+                        name={goalTargetDateId}
+                        type="date"
+                        value={goal.targetDate}
+                        onChange={(event) =>
+                          updateGoal(goal.goalId, {
+                            targetDate: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
 
-                  <label>
-                    Priority rank
-                    <select
-                      className="planner-flow-select"
-                      value={goal.priority}
-                      onChange={(event) =>
-                        updateGoal(goal.goalId, {
-                          priority: asPositiveInteger(event.target.value, 1),
-                        })
-                      }
-                    >
-                      {Array.from({
-                        length: Math.max(8, draft.goals.length + 2),
-                      }).map((_, index) => (
-                        <option key={`priority-${index + 1}`} value={index + 1}>
-                          {index + 1}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                    <label htmlFor={goalModalityId}>
+                      Modality
+                      <select
+                        id={goalModalityId}
+                        className="planner-flow-select"
+                        name={goalModalityId}
+                        value={goal.modality}
+                        onChange={(event) =>
+                          updateGoal(goal.goalId, {
+                            modality: event.target
+                              .value as PlannerGoalDraft["modality"],
+                          })
+                        }
+                      >
+                        <option value="strength">Strength</option>
+                        <option value="endurance">Endurance</option>
+                      </select>
+                    </label>
 
-                <button
-                  className="planner-flow-link"
-                  type="button"
-                  onClick={() => removeGoal(goal.goalId)}
-                >
-                  Remove goal
-                </button>
-              </li>
-            ))}
+                    <label htmlFor={goalPriorityId}>
+                      Priority rank
+                      <select
+                        id={goalPriorityId}
+                        className="planner-flow-select"
+                        name={goalPriorityId}
+                        value={goal.priority}
+                        onChange={(event) =>
+                          updateGoal(goal.goalId, {
+                            priority: asPositiveInteger(event.target.value, 1),
+                          })
+                        }
+                      >
+                        {Array.from({
+                          length: Math.max(8, draft.goals.length + 2),
+                        }).map((_, index) => (
+                          <option
+                            key={`priority-${index + 1}`}
+                            value={index + 1}
+                          >
+                            {index + 1}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <button
+                    className="planner-flow-link"
+                    type="button"
+                    onClick={() => removeGoal(goal.goalId)}
+                  >
+                    Remove goal
+                  </button>
+                </li>
+              );
+            })}
           </ul>
+
+          <div className="planner-flow-subheader">
+            <h3>Events</h3>
+            <button
+              className="planner-flow-action"
+              type="button"
+              onClick={addEvent}
+            >
+              Add event
+            </button>
+          </div>
+
+          {draft.events.length === 0 ? (
+            <p className="planner-flow-empty">
+              No events configured. Add races, meets, or assessments if your
+              cycle has fixed dates.
+            </p>
+          ) : (
+            <ul
+              className="planner-flow-card-list"
+              aria-label="Configured events"
+            >
+              {draft.events.map((event) => {
+                const eventNameId = `event-name-${event.eventId}`;
+                const eventDateId = `event-date-${event.eventId}`;
+                const eventTypeId = `event-type-${event.eventId}`;
+
+                return (
+                  <li key={event.eventId}>
+                    <div className="planner-flow-grid planner-flow-grid-two">
+                      <label htmlFor={eventNameId}>
+                        Event name
+                        <input
+                          id={eventNameId}
+                          className="planner-flow-input"
+                          name={eventNameId}
+                          value={event.name}
+                          onChange={(inputEvent) =>
+                            updateEvent(event.eventId, {
+                              name: inputEvent.target.value,
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={eventDateId}>
+                        Event date
+                        <input
+                          id={eventDateId}
+                          className="planner-flow-input"
+                          name={eventDateId}
+                          type="date"
+                          value={event.eventDate}
+                          onChange={(inputEvent) =>
+                            updateEvent(event.eventId, {
+                              eventDate: inputEvent.target.value,
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={eventTypeId}>
+                        Event type
+                        <select
+                          id={eventTypeId}
+                          className="planner-flow-select"
+                          name={eventTypeId}
+                          value={event.eventType}
+                          onChange={(inputEvent) =>
+                            updateEvent(event.eventId, {
+                              eventType: inputEvent.target
+                                .value as PlannerEventType,
+                            })
+                          }
+                        >
+                          <option value="race">Race</option>
+                          <option value="meet">Meet</option>
+                          <option value="assessment">Assessment</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <button
+                      className="planner-flow-link"
+                      type="button"
+                      onClick={() => removeEvent(event.eventId)}
+                    >
+                      Remove event
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </article>
       ) : null}
 
@@ -648,86 +825,101 @@ export function CycleCreationFlow() {
             className="planner-flow-card-list"
             aria-label="Configured mesocycles"
           >
-            {draft.mesocycles.map((mesocycle) => (
-              <li key={mesocycle.mesocycleId}>
-                <div className="planner-flow-grid planner-flow-grid-two">
-                  <label>
-                    Mesocycle name
-                    <input
-                      className="planner-flow-input"
-                      value={mesocycle.name}
-                      onChange={(event) =>
-                        updateMesocycle(mesocycle.mesocycleId, {
-                          name: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
+            {draft.mesocycles.map((mesocycle) => {
+              const mesocycleNameId = `mesocycle-name-${mesocycle.mesocycleId}`;
+              const mesocyclePeriodizationId = `mesocycle-periodization-${mesocycle.mesocycleId}`;
+              const mesocycleFocusId = `mesocycle-focus-${mesocycle.mesocycleId}`;
+              const mesocycleDurationId = `mesocycle-duration-${mesocycle.mesocycleId}`;
 
-                  <label>
-                    Periodization type
-                    <select
-                      className="planner-flow-select"
-                      value={mesocycle.periodization}
-                      onChange={(event) =>
-                        updateMesocycle(mesocycle.mesocycleId, {
-                          periodization: event.target
-                            .value as PeriodizationType,
-                        })
-                      }
-                    >
-                      <option value="block">Block</option>
-                      <option value="dup">DUP</option>
-                      <option value="linear">Linear</option>
-                    </select>
-                  </label>
+              return (
+                <li key={mesocycle.mesocycleId}>
+                  <div className="planner-flow-grid planner-flow-grid-two">
+                    <label htmlFor={mesocycleNameId}>
+                      Mesocycle name
+                      <input
+                        id={mesocycleNameId}
+                        className="planner-flow-input"
+                        name={mesocycleNameId}
+                        value={mesocycle.name}
+                        onChange={(event) =>
+                          updateMesocycle(mesocycle.mesocycleId, {
+                            name: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
 
-                  <label>
-                    Focus modality
-                    <select
-                      className="planner-flow-select"
-                      value={mesocycle.focus}
-                      onChange={(event) =>
-                        updateMesocycle(mesocycle.mesocycleId, {
-                          focus: event.target.value as MesocycleFocus,
-                        })
-                      }
-                    >
-                      <option value="hybrid">Hybrid</option>
-                      <option value="strength">Strength</option>
-                      <option value="endurance">Endurance</option>
-                    </select>
-                  </label>
+                    <label htmlFor={mesocyclePeriodizationId}>
+                      Periodization type
+                      <select
+                        id={mesocyclePeriodizationId}
+                        className="planner-flow-select"
+                        name={mesocyclePeriodizationId}
+                        value={mesocycle.periodization}
+                        onChange={(event) =>
+                          updateMesocycle(mesocycle.mesocycleId, {
+                            periodization: event.target
+                              .value as PeriodizationType,
+                          })
+                        }
+                      >
+                        <option value="block">Block</option>
+                        <option value="dup">DUP</option>
+                        <option value="linear">Linear</option>
+                      </select>
+                    </label>
 
-                  <label>
-                    Duration (weeks)
-                    <input
-                      className="planner-flow-input"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={mesocycle.durationWeeks}
-                      onChange={(event) =>
-                        updateMesocycle(mesocycle.mesocycleId, {
-                          durationWeeks: asPositiveInteger(
-                            event.target.value,
-                            1,
-                          ),
-                        })
-                      }
-                    />
-                  </label>
-                </div>
+                    <label htmlFor={mesocycleFocusId}>
+                      Focus modality
+                      <select
+                        id={mesocycleFocusId}
+                        className="planner-flow-select"
+                        name={mesocycleFocusId}
+                        value={mesocycle.focus}
+                        onChange={(event) =>
+                          updateMesocycle(mesocycle.mesocycleId, {
+                            focus: event.target.value as MesocycleFocus,
+                          })
+                        }
+                      >
+                        <option value="hybrid">Hybrid</option>
+                        <option value="strength">Strength</option>
+                        <option value="endurance">Endurance</option>
+                      </select>
+                    </label>
 
-                <button
-                  className="planner-flow-link"
-                  type="button"
-                  onClick={() => removeMesocycle(mesocycle.mesocycleId)}
-                >
-                  Remove mesocycle
-                </button>
-              </li>
-            ))}
+                    <label htmlFor={mesocycleDurationId}>
+                      Duration (weeks)
+                      <input
+                        id={mesocycleDurationId}
+                        className="planner-flow-input"
+                        name={mesocycleDurationId}
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={mesocycle.durationWeeks}
+                        onChange={(event) =>
+                          updateMesocycle(mesocycle.mesocycleId, {
+                            durationWeeks: asPositiveInteger(
+                              event.target.value,
+                              1,
+                            ),
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    className="planner-flow-link"
+                    type="button"
+                    onClick={() => removeMesocycle(mesocycle.mesocycleId)}
+                  >
+                    Remove mesocycle
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </article>
       ) : null}
@@ -755,85 +947,100 @@ export function CycleCreationFlow() {
             className="planner-flow-card-list"
             aria-label="Configured workouts"
           >
-            {draft.microcycle.workouts.map((workout) => (
-              <li key={workout.workoutId}>
-                <div className="planner-flow-grid planner-flow-grid-two">
-                  <label>
-                    Workout label
-                    <input
-                      className="planner-flow-input"
-                      value={workout.label}
-                      onChange={(event) =>
-                        updateWorkout(workout.workoutId, {
-                          label: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
+            {draft.microcycle.workouts.map((workout) => {
+              const workoutLabelId = `workout-label-${workout.workoutId}`;
+              const workoutDayId = `workout-day-${workout.workoutId}`;
+              const workoutTypeId = `workout-type-${workout.workoutId}`;
+              const workoutIntensityId = `workout-intensity-${workout.workoutId}`;
 
-                  <label>
-                    Day
-                    <select
-                      className="planner-flow-select"
-                      value={workout.day}
-                      onChange={(event) =>
-                        updateWorkout(workout.workoutId, {
-                          day: event.target.value as WorkoutDay,
-                        })
-                      }
-                    >
-                      {weekDays.map((day) => (
-                        <option key={day} value={day}>
-                          {formatToken(day)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+              return (
+                <li key={workout.workoutId}>
+                  <div className="planner-flow-grid planner-flow-grid-two">
+                    <label htmlFor={workoutLabelId}>
+                      Workout label
+                      <input
+                        id={workoutLabelId}
+                        className="planner-flow-input"
+                        name={workoutLabelId}
+                        value={workout.label}
+                        onChange={(event) =>
+                          updateWorkout(workout.workoutId, {
+                            label: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
 
-                  <label>
-                    Workout type
-                    <select
-                      className="planner-flow-select"
-                      value={workout.type}
-                      onChange={(event) =>
-                        updateWorkout(workout.workoutId, {
-                          type: event.target.value as WorkoutType,
-                        })
-                      }
-                    >
-                      <option value="strength">Strength</option>
-                      <option value="endurance">Endurance</option>
-                      <option value="recovery">Recovery</option>
-                    </select>
-                  </label>
+                    <label htmlFor={workoutDayId}>
+                      Day
+                      <select
+                        id={workoutDayId}
+                        className="planner-flow-select"
+                        name={workoutDayId}
+                        value={workout.day}
+                        onChange={(event) =>
+                          updateWorkout(workout.workoutId, {
+                            day: event.target.value as WorkoutDay,
+                          })
+                        }
+                      >
+                        {weekDays.map((day) => (
+                          <option key={day} value={day}>
+                            {formatToken(day)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-                  <label>
-                    Intensity
-                    <select
-                      className="planner-flow-select"
-                      value={workout.intensity}
-                      onChange={(event) =>
-                        updateWorkout(workout.workoutId, {
-                          intensity: event.target.value as WorkoutIntensity,
-                        })
-                      }
-                    >
-                      <option value="easy">Easy</option>
-                      <option value="moderate">Moderate</option>
-                      <option value="hard">Hard</option>
-                    </select>
-                  </label>
-                </div>
+                    <label htmlFor={workoutTypeId}>
+                      Workout type
+                      <select
+                        id={workoutTypeId}
+                        className="planner-flow-select"
+                        name={workoutTypeId}
+                        value={workout.type}
+                        onChange={(event) =>
+                          updateWorkout(workout.workoutId, {
+                            type: event.target.value as WorkoutType,
+                          })
+                        }
+                      >
+                        <option value="strength">Strength</option>
+                        <option value="endurance">Endurance</option>
+                        <option value="recovery">Recovery</option>
+                      </select>
+                    </label>
 
-                <button
-                  className="planner-flow-link"
-                  type="button"
-                  onClick={() => removeWorkout(workout.workoutId)}
-                >
-                  Remove workout
-                </button>
-              </li>
-            ))}
+                    <label htmlFor={workoutIntensityId}>
+                      Intensity
+                      <select
+                        id={workoutIntensityId}
+                        className="planner-flow-select"
+                        name={workoutIntensityId}
+                        value={workout.intensity}
+                        onChange={(event) =>
+                          updateWorkout(workout.workoutId, {
+                            intensity: event.target.value as WorkoutIntensity,
+                          })
+                        }
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <button
+                    className="planner-flow-link"
+                    type="button"
+                    onClick={() => removeWorkout(workout.workoutId)}
+                  >
+                    Remove workout
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </article>
       ) : null}
@@ -886,6 +1093,28 @@ export function CycleCreationFlow() {
                 </ul>
               )}
             </section>
+
+            <section className="planner-review-card">
+              <h3>Key events</h3>
+              {draft.events.length === 0 ? (
+                <p className="planner-flow-empty">No events configured.</p>
+              ) : (
+                <ul
+                  className="planner-review-list"
+                  aria-label="Configured events"
+                >
+                  {draft.events.map((event) => (
+                    <li key={event.eventId}>
+                      <p>{event.name}</p>
+                      <small>
+                        {event.eventDate || "No date"} ·{" "}
+                        {formatToken(event.eventType)}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
 
           <section className="planner-review-summary">
@@ -902,6 +1131,10 @@ export function CycleCreationFlow() {
               <div>
                 <dt>Mesocycles</dt>
                 <dd>{draft.mesocycles.length}</dd>
+              </div>
+              <div>
+                <dt>Events</dt>
+                <dd>{draft.events.length}</dd>
               </div>
               <div>
                 <dt>Workouts</dt>

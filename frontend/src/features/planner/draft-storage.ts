@@ -1,5 +1,6 @@
 import type {
   PlannerDraft,
+  PlannerEventDraft,
   PlannerGoalDraft,
   PlannerMesocycleDraft,
   PlannerWorkoutDraft,
@@ -38,6 +39,19 @@ function isMesocycleDraft(value: unknown): value is PlannerMesocycleDraft {
   );
 }
 
+function isEventDraft(value: unknown): value is PlannerEventDraft {
+  return (
+    hasObjectShape(value) &&
+    typeof value.eventId === "string" &&
+    typeof value.name === "string" &&
+    typeof value.eventDate === "string" &&
+    (value.eventType === "race" ||
+      value.eventType === "meet" ||
+      value.eventType === "assessment" ||
+      value.eventType === "other")
+  );
+}
+
 function isWorkoutDraft(value: unknown): value is PlannerWorkoutDraft {
   return (
     hasObjectShape(value) &&
@@ -60,6 +74,30 @@ function isWorkoutDraft(value: unknown): value is PlannerWorkoutDraft {
 }
 
 function isPlannerDraft(value: unknown): value is PlannerDraft {
+  if (!hasObjectShape(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.planId === "string" &&
+    typeof value.planName === "string" &&
+    typeof value.startDate === "string" &&
+    typeof value.endDate === "string" &&
+    Array.isArray(value.goals) &&
+    value.goals.every(isGoalDraft) &&
+    Array.isArray(value.events) &&
+    value.events.every(isEventDraft) &&
+    Array.isArray(value.mesocycles) &&
+    value.mesocycles.every(isMesocycleDraft) &&
+    hasObjectShape(value.microcycle) &&
+    Array.isArray(value.microcycle.workouts) &&
+    value.microcycle.workouts.every(isWorkoutDraft)
+  );
+}
+
+function isLegacyPlannerDraftWithoutEvents(
+  value: unknown,
+): value is Omit<PlannerDraft, "events"> {
   if (!hasObjectShape(value)) {
     return false;
   }
@@ -106,7 +144,14 @@ export function loadPlannerDraft(): PlannerDraft | null {
   try {
     const parsed: unknown = JSON.parse(rawValue);
     if (!isPlannerDraft(parsed)) {
-      return null;
+      if (!isLegacyPlannerDraftWithoutEvents(parsed)) {
+        return null;
+      }
+
+      return {
+        ...parsed,
+        events: [],
+      };
     }
 
     return parsed;

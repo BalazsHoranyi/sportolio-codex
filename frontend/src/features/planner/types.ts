@@ -16,6 +16,7 @@ export type WorkoutDay =
 export type WorkoutType = "strength" | "endurance" | "recovery";
 
 export type WorkoutIntensity = "easy" | "moderate" | "hard";
+export type PlannerEventType = "race" | "meet" | "assessment" | "other";
 
 export interface PlannerGoalDraft {
   goalId: string;
@@ -42,12 +43,20 @@ export interface PlannerWorkoutDraft {
   intensity: WorkoutIntensity;
 }
 
+export interface PlannerEventDraft {
+  eventId: string;
+  name: string;
+  eventDate: string;
+  eventType: PlannerEventType;
+}
+
 export interface PlannerDraft {
   planId: string;
   planName: string;
   startDate: string;
   endDate: string;
   goals: PlannerGoalDraft[];
+  events: PlannerEventDraft[];
   mesocycles: PlannerMesocycleDraft[];
   microcycle: {
     workouts: PlannerWorkoutDraft[];
@@ -80,6 +89,7 @@ export function createInitialPlannerDraft(): PlannerDraft {
         priority: 1,
       },
     ],
+    events: [],
     mesocycles: [
       {
         mesocycleId: "mesocycle-1",

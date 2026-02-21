@@ -6,6 +6,28 @@ import userEvent from "@testing-library/user-event";
 
 import { CycleCreationFlow } from "../../src/features/planner/components/cycle-creation-flow";
 
+function expectVisibleControlsToHaveLabelMetadata() {
+  const controls = Array.from(
+    document.querySelectorAll("input, select"),
+  ) as Array<HTMLInputElement | HTMLSelectElement>;
+
+  expect(controls.length).toBeGreaterThan(0);
+
+  controls.forEach((control) => {
+    const id = control.getAttribute("id");
+    const name = control.getAttribute("name");
+
+    expect(id).toBeTruthy();
+    expect(name).toBeTruthy();
+
+    if (!id) {
+      return;
+    }
+
+    expect(document.querySelector(`label[for="${id}"]`)).toBeTruthy();
+  });
+}
+
 describe("CycleCreationFlow", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -65,6 +87,44 @@ describe("CycleCreationFlow", () => {
     ).toBeTruthy();
   });
 
+  it("supports explicit event setup and surfaces it in review", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    await user.type(screen.getByLabelText(/plan name/i), "Spring race build");
+    await user.type(screen.getByLabelText(/^start date$/i), "2026-03-01");
+    await user.type(screen.getByLabelText(/target end date/i), "2026-06-01");
+    await user.type(screen.getByLabelText(/goal title/i), "Run PR");
+    await user.type(screen.getByLabelText(/target metric/i), "Sub-1:40 half");
+    await user.type(screen.getByLabelText(/goal target date/i), "2026-05-25");
+
+    await user.click(screen.getByRole("button", { name: /add event/i }));
+    await user.type(
+      screen.getByLabelText(/event name/i),
+      "Spring half marathon",
+    );
+    await user.type(screen.getByLabelText(/event date/i), "2026-05-24");
+
+    await user.click(
+      screen.getByRole("button", { name: /next: mesocycle strategy/i }),
+    );
+    await user.type(
+      screen.getByLabelText(/mesocycle name/i),
+      "Specific preparation",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /next: microcycle details/i }),
+    );
+    await user.type(screen.getByLabelText(/workout label/i), "Long tempo run");
+    await user.click(screen.getByRole("button", { name: /next: review/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /review and publish/i }),
+    ).toBeTruthy();
+    expect(screen.getByText(/spring half marathon/i)).toBeTruthy();
+  });
+
   it("requires explicit unique priorities for multiple goals", async () => {
     const user = userEvent.setup();
 
@@ -103,13 +163,38 @@ describe("CycleCreationFlow", () => {
     render(<CycleCreationFlow />);
 
     await waitFor(() => {
-      expect(
-        screen.getAllByText(/restored saved draft/i).length,
-      ).toBeGreaterThan(0);
+      expect(screen.getAllByText(/restored saved draft/i)).toHaveLength(1);
     });
 
     expect(
       (screen.getByLabelText(/plan name/i) as HTMLInputElement).value,
     ).toBe("Saved Plan");
+  });
+
+  it("provides id and name metadata for visible controls on each editable step", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    expectVisibleControlsToHaveLabelMetadata();
+
+    await user.type(screen.getByLabelText(/plan name/i), "Metadata validation");
+    await user.type(screen.getByLabelText(/^start date$/i), "2026-03-01");
+    await user.type(screen.getByLabelText(/target end date/i), "2026-06-01");
+    await user.type(screen.getByLabelText(/goal title/i), "Goal");
+    await user.type(screen.getByLabelText(/target metric/i), "Metric");
+    await user.type(screen.getByLabelText(/goal target date/i), "2026-05-25");
+    await user.click(
+      screen.getByRole("button", { name: /next: mesocycle strategy/i }),
+    );
+
+    expectVisibleControlsToHaveLabelMetadata();
+
+    await user.type(screen.getByLabelText(/mesocycle name/i), "Build");
+    await user.click(
+      screen.getByRole("button", { name: /next: microcycle details/i }),
+    );
+
+    expectVisibleControlsToHaveLabelMetadata();
   });
 });

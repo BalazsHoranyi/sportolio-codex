@@ -25,6 +25,7 @@ function createDraft(overrides: Partial<PlannerDraft> = {}): PlannerDraft {
         priority: 2,
       },
     ],
+    events: [],
     mesocycles: [
       {
         mesocycleId: "meso-1",
