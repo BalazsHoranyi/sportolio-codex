@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CycleCreationFlow } from "../../src/features/planner/components/cycle-creation-flow";
@@ -196,5 +196,53 @@ describe("CycleCreationFlow", () => {
     );
 
     expectVisibleControlsToHaveLabelMetadata();
+  });
+
+  it("preserves strategy-specific values across strategy switching and reflows projections", async () => {
+    const user = userEvent.setup();
+
+    render(<CycleCreationFlow />);
+
+    await user.type(screen.getByLabelText(/plan name/i), "Strategy plan");
+    await user.type(screen.getByLabelText(/^start date$/i), "2026-03-01");
+    await user.type(screen.getByLabelText(/target end date/i), "2026-06-01");
+    await user.type(screen.getByLabelText(/goal title/i), "Deadlift 600");
+    await user.type(screen.getByLabelText(/target metric/i), "1RM");
+    await user.type(screen.getByLabelText(/goal target date/i), "2026-05-20");
+
+    await user.click(
+      screen.getByRole("button", { name: /next: mesocycle strategy/i }),
+    );
+
+    await user.type(screen.getByLabelText(/mesocycle name/i), "Primary block");
+
+    fireEvent.change(screen.getByLabelText(/block accumulation weeks/i), {
+      target: { value: "2" },
+    });
+    fireEvent.change(screen.getByLabelText(/block intensification weeks/i), {
+      target: { value: "2" },
+    });
+
+    expect(screen.getByText(/expected modality emphasis/i)).toBeTruthy();
+    expect(screen.getByText(/upcoming microcycle reflow/i)).toBeTruthy();
+
+    await user.selectOptions(
+      screen.getByLabelText(/periodization type/i),
+      "linear",
+    );
+    fireEvent.change(screen.getByLabelText(/weekly progression %/i), {
+      target: { value: "7" },
+    });
+
+    await user.selectOptions(
+      screen.getByLabelText(/periodization type/i),
+      "block",
+    );
+
+    expect(
+      (screen.getByLabelText(/block accumulation weeks/i) as HTMLInputElement)
+        .value,
+    ).toBe("2");
+    expect(screen.getByText(/week 1/i)).toBeTruthy();
   });
 });

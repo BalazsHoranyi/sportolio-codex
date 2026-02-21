@@ -2127,6 +2127,23 @@ h1 {
   margin: 0;
 }
 
+.planner-flow-toggle {
+  align-items: center;
+  color: var(--ink-body);
+  display: inline-flex;
+  font-size: 0.86rem;
+  font-weight: 600;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+}
+
+.planner-flow-toggle input {
+  accent-color: var(--accent-deep);
+  height: 1rem;
+  margin: 0;
+  width: 1rem;
+}
+
 .planner-flow-card-list {
   display: grid;
   gap: 0.6rem;
@@ -2166,6 +2183,52 @@ h1 {
   font-weight: 700;
   min-height: 2.1rem;
   padding: 0.3rem 0.9rem;
+}
+
+.planner-mesocycle-output {
+  background: oklch(0.974 0.016 67 / 0.95);
+  border: 1px solid oklch(0.86 0.03 57);
+  border-radius: 0.66rem;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.72rem;
+}
+
+.planner-mesocycle-output-title {
+  color: var(--ink-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.planner-mesocycle-preview {
+  display: grid;
+  gap: 0.32rem;
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.planner-mesocycle-preview li {
+  color: var(--ink-body);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.planner-flow-inline-error {
+  background: oklch(0.95 0.06 34 / 0.42);
+  border: 1px solid oklch(0.77 0.12 30);
+  border-radius: 0.62rem;
+  color: oklch(0.39 0.14 28);
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.2rem 0 0;
+  padding: 0.5rem 0.62rem;
+}
+
+.planner-flow-inline-error li {
+  line-height: 1.35;
 }
 
 .planner-review-grid {
@@ -2220,7 +2283,7 @@ h1 {
 .planner-review-summary dl {
   display: grid;
   gap: 0.55rem;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0.65rem 0 0;
 }
 
