@@ -18,24 +18,27 @@ vi.mock("@fullcalendar/react", () => ({
           type="button"
           onClick={() =>
             (
-              props.drop as (args: {
-                dateStr: string;
-                draggedEl: {
-                  getAttribute: (attribute: string) => string | null;
+              props.eventReceive as (args: {
+                event: {
+                  startStr: string;
+                  extendedProps: {
+                    templateId?: string;
+                  };
+                  remove: () => void;
                 };
               }) => void
             )({
-              dateStr: "2026-02-21",
-              draggedEl: {
-                getAttribute: (attribute) =>
-                  attribute === "data-template-id"
-                    ? "template-recovery-ride"
-                    : null,
+              event: {
+                startStr: "2026-02-21",
+                extendedProps: {
+                  templateId: "template-recovery-ride",
+                },
+                remove: vi.fn(),
               },
             })
           }
         >
-          Trigger external drop
+          Trigger external receive
         </button>
         <button
           type="button"
@@ -68,6 +71,9 @@ vi.mock("@fullcalendar/timegrid", () => ({
 
 vi.mock("@fullcalendar/interaction", () => ({
   default: {},
+  Draggable: vi.fn(() => ({
+    destroy: vi.fn(),
+  })),
 }));
 
 import { PlanningCalendarSurface } from "../../src/features/planning-calendar/planning-calendar-surface";
@@ -88,7 +94,7 @@ describe("PlanningCalendarSurface", () => {
     ).toBeTruthy();
 
     await user.click(
-      screen.getByRole("button", { name: /trigger external drop/i }),
+      screen.getByRole("button", { name: /trigger external receive/i }),
     );
     await user.click(
       screen.getByRole("button", { name: /trigger event move/i }),
@@ -126,5 +132,15 @@ describe("PlanningCalendarSurface", () => {
         source: "keyboard",
       }),
     );
+  });
+
+  it("exposes keyboard add button with readable spacing for assistive tech", () => {
+    render(<PlanningCalendarSurface />);
+
+    expect(
+      screen.getByRole("button", {
+        name: "Add recovery ride to Saturday, Feb 21",
+      }),
+    ).toBeTruthy();
   });
 });

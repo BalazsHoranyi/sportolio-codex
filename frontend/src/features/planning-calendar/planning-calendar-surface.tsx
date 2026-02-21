@@ -1,8 +1,9 @@
 "use client";
 
 import FullCalendar from "@fullcalendar/react";
+import type { EventDropArg } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
+import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import React, {
   useCallback,
@@ -27,6 +28,27 @@ import type {
 interface PlanningCalendarSurfaceProps {
   initialState?: PlanningCalendarState;
   onMutation?: (mutation: PlanningMutationEvent) => void;
+}
+
+interface ExternalEventReceiveArg {
+  event: {
+    startStr: string;
+    extendedProps: Record<string, unknown>;
+    remove: () => void;
+  };
+}
+
+interface CalendarEventDragStartArg {
+  event: {
+    id: string;
+  };
+}
+
+interface CalendarEventDragStopArg {
+  jsEvent: {
+    clientX: number;
+    clientY: number;
+  };
 }
 
 function formatLongDateLabel(date: string): string {
@@ -55,6 +77,19 @@ function nowIsoTimestamp(): string {
   return new Date().toISOString();
 }
 
+function normalizeCalendarDate(value: string): string | undefined {
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return value.slice(0, 10);
+  }
+
+  const asDate = new Date(value);
+  if (Number.isNaN(asDate.valueOf())) {
+    return undefined;
+  }
+
+  return asDate.toISOString().slice(0, 10);
+}
+
 export function PlanningCalendarSurface({
   initialState,
   onMutation,
@@ -73,6 +108,7 @@ export function PlanningCalendarSurface({
   );
 
   const removeDropZoneRef = useRef<HTMLDivElement | null>(null);
+  const templatePaletteRef = useRef<HTMLUListElement | null>(null);
   const mutationCounterRef = useRef(0);
   const addedWorkoutCounterRef = useRef(0);
   const draggingWorkoutIdRef = useRef<string | null>(null);
@@ -103,6 +139,42 @@ export function PlanningCalendarSurface({
       return changed ? next : previous;
     });
   }, [planningState.workouts]);
+
+  useEffect(() => {
+    const templatePalette = templatePaletteRef.current;
+    if (!templatePalette) {
+      return;
+    }
+
+    const draggable = new Draggable(templatePalette, {
+      itemSelector: ".planning-template-chip",
+      eventData: (eventEl) => {
+        const templateId = eventEl.getAttribute("data-template-id");
+        const template = workoutTemplateCatalog.find(
+          (entry) => entry.templateId === templateId,
+        );
+        if (!templateId || !template) {
+          return {
+            title: "",
+            create: false,
+          };
+        }
+
+        return {
+          title: template.title,
+          allDay: true,
+          duration: { days: 1 },
+          extendedProps: {
+            templateId,
+          },
+        };
+      },
+    });
+
+    return () => {
+      draggable.destroy();
+    };
+  }, []);
 
   const workoutsById = useMemo(() => {
     const map = new Map<string, PlannedWorkout>();
@@ -142,13 +214,20 @@ export function PlanningCalendarSurface({
     [onMutation],
   );
 
-  const handleExternalDrop = useCallback(
-    (args: {
-      dateStr: string;
-      draggedEl: { getAttribute: (attribute: string) => string | null };
-    }) => {
-      const templateId = args.draggedEl.getAttribute("data-template-id");
+  const handleExternalEventReceive = useCallback(
+    (args: ExternalEventReceiveArg) => {
+      const templateId =
+        typeof args.event.extendedProps.templateId === "string"
+          ? args.event.extendedProps.templateId
+          : undefined;
+      const toDate = normalizeCalendarDate(args.event.startStr);
       if (!templateId) {
+        args.event.remove();
+        return;
+      }
+
+      if (!toDate) {
+        args.event.remove();
         return;
       }
 
@@ -157,11 +236,12 @@ export function PlanningCalendarSurface({
         mutationId: "temporary",
         templateId,
         workoutId: `workout-added-${addedWorkoutCounterRef.current}`,
-        toDate: args.dateStr,
+        toDate,
         source: "drag_drop",
         occurredAt: nowIsoTimestamp(),
       });
       if (!mutation) {
+        args.event.remove();
         return;
       }
 
@@ -172,15 +252,13 @@ export function PlanningCalendarSurface({
       };
       delete mutationWithoutId.mutationId;
       commitMutation(mutationWithoutId);
+      args.event.remove();
     },
     [commitMutation],
   );
 
   const handleEventDrop = useCallback(
-    (args: {
-      event: { id: string; title: string; startStr: string };
-      oldEvent: { startStr: string };
-    }) => {
+    (args: EventDropArg) => {
       const currentWorkout = workoutsById.get(args.event.id);
       if (!currentWorkout) {
         return;
@@ -200,14 +278,14 @@ export function PlanningCalendarSurface({
   );
 
   const handleEventDragStart = useCallback(
-    (args: { event: { id: string } }) => {
+    (args: CalendarEventDragStartArg) => {
       draggingWorkoutIdRef.current = args.event.id;
     },
     [],
   );
 
   const handleEventDragStop = useCallback(
-    (args: { jsEvent: { clientX: number; clientY: number } }) => {
+    (args: CalendarEventDragStopArg) => {
       const dragWorkoutId = draggingWorkoutIdRef.current;
       draggingWorkoutIdRef.current = null;
       if (!dragWorkoutId) {
@@ -293,6 +371,11 @@ export function PlanningCalendarSurface({
     });
   }
 
+  const keyboardAddTargetDate = planningWeekDateOptions[4];
+  const keyboardAddLabel = `Add recovery ride to ${formatLongDateLabel(
+    keyboardAddTargetDate,
+  )}`;
+
   return (
     <section
       className="planning-calendar-shell"
@@ -314,19 +397,12 @@ export function PlanningCalendarSurface({
         >
           <h3>Workout palette</h3>
           <p>Drag a template into the calendar to add a workout.</p>
-          <ul className="planning-template-list">
+          <ul ref={templatePaletteRef} className="planning-template-list">
             {workoutTemplateCatalog.map((template) => (
               <li key={template.templateId}>
                 <button
                   className="planning-template-chip"
                   data-template-id={template.templateId}
-                  draggable
-                  onDragStart={(event) => {
-                    event.dataTransfer?.setData(
-                      "text/plain",
-                      template.templateId,
-                    );
-                  }}
                   type="button"
                 >
                   {template.title}
@@ -343,12 +419,11 @@ export function PlanningCalendarSurface({
               onClick={() =>
                 addWorkoutWithKeyboard(
                   "template-recovery-ride",
-                  planningWeekDateOptions[4],
+                  keyboardAddTargetDate,
                 )
               }
             >
-              Add recovery ride to{" "}
-              {formatLongDateLabel(planningWeekDateOptions[4])}
+              {keyboardAddLabel}
             </button>
           </div>
         </aside>
@@ -368,7 +443,7 @@ export function PlanningCalendarSurface({
             droppable
             height="auto"
             events={calendarEvents}
-            drop={handleExternalDrop}
+            eventReceive={handleExternalEventReceive}
             eventDrop={handleEventDrop}
             eventDragStart={handleEventDragStart}
             eventDragStop={handleEventDragStop}
