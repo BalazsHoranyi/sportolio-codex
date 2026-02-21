@@ -1,14 +1,24 @@
 from __future__ import annotations
 
+import math
 from datetime import UTC, datetime
 
+import pytest
+
 from sportolo.api.schemas.fatigue_today import (
+    CombinedScoreContext,
     FatigueAxes,
     SessionFatigueInput,
     SleepEventInput,
+    SystemCapacityInput,
     TodayAccumulationRequest,
 )
 from sportolo.services.today_accumulation_service import TodayAccumulationService
+
+
+@pytest.fixture
+def service() -> TodayAccumulationService:
+    return TodayAccumulationService()
 
 
 def _axes(value: float) -> FatigueAxes:
@@ -20,8 +30,9 @@ def _axes(value: float) -> FatigueAxes:
     )
 
 
-def test_today_accumulation_prefers_latest_qualifying_sleep_event_and_completed_only() -> None:
-    service = TodayAccumulationService()
+def test_today_accumulation_prefers_latest_qualifying_sleep_event_and_completed_only(
+    service: TodayAccumulationService,
+) -> None:
     request = TodayAccumulationRequest(
         as_of=datetime(2026, 2, 20, 15, 0, tzinfo=UTC),
         timezone="America/New_York",
@@ -76,8 +87,9 @@ def test_today_accumulation_prefers_latest_qualifying_sleep_event_and_completed_
     }
 
 
-def test_today_accumulation_falls_back_to_local_midnight_without_sleep_event() -> None:
-    service = TodayAccumulationService()
+def test_today_accumulation_falls_back_to_local_midnight_without_sleep_event(
+    service: TodayAccumulationService,
+) -> None:
     request = TodayAccumulationRequest(
         as_of=datetime(2026, 2, 20, 15, 0, tzinfo=UTC),
         timezone="America/New_York",
@@ -113,8 +125,9 @@ def test_today_accumulation_falls_back_to_local_midnight_without_sleep_event() -
     assert "after-midnight" in result.excluded_session_ids
 
 
-def test_today_accumulation_is_deterministic_across_explicit_timezone_changes() -> None:
-    service = TodayAccumulationService()
+def test_today_accumulation_is_deterministic_across_explicit_timezone_changes(
+    service: TodayAccumulationService,
+) -> None:
     as_of = datetime(2026, 6, 1, 0, 30, tzinfo=UTC)
     sessions = [
         SessionFatigueInput(
@@ -145,3 +158,122 @@ def test_today_accumulation_is_deterministic_across_explicit_timezone_changes() 
     assert budapest.boundary.boundary_end.isoformat() == "2026-06-01T00:00:00+02:00"
     assert first_la.included_session_ids == []
     assert budapest.included_session_ids == ["cross-zone-session"]
+
+
+def test_combined_score_applies_strict_weight_neural_capacity_order(
+    service: TodayAccumulationService,
+) -> None:
+    request = TodayAccumulationRequest(
+        as_of=datetime(2026, 2, 20, 15, 0, tzinfo=UTC),
+        timezone="America/New_York",
+        sleep_events=[SleepEventInput(sleep_ended_at=datetime(2026, 2, 20, 10, 45, tzinfo=UTC))],
+        sessions=[
+            SessionFatigueInput(
+                session_id="completed-before-boundary",
+                state="completed",
+                ended_at=datetime(2026, 2, 20, 10, 0, tzinfo=UTC),
+                fatigue_axes=FatigueAxes(
+                    neural=8.0,
+                    metabolic=4.0,
+                    mechanical=3.0,
+                    recruitment=5.0,
+                ),
+            )
+        ],
+        combined_score_context=CombinedScoreContext(workout_type="strength"),
+        system_capacity=SystemCapacityInput(sleep=2, fuel=2, stress=4),
+    )
+
+    result = service.compute_today_accumulation(request)
+
+    debug = result.combined_score.debug
+    assert result.combined_score.interpretation == (
+        "probability next hard session degrades adaptation"
+    )
+    assert debug.base_weighted_score == pytest.approx(3.8527, abs=1e-4)
+    assert debug.neural_gate_factor == pytest.approx(1.27, abs=1e-4)
+    assert debug.neural_gated_score == pytest.approx(4.8929, abs=1e-4)
+    assert debug.capacity_gate_factor == pytest.approx(1.09, abs=1e-4)
+    assert debug.capacity_gated_score == pytest.approx(5.3333, abs=1e-4)
+    assert result.combined_score.value == pytest.approx(5.3333, abs=1e-4)
+
+
+def test_combined_score_renormalizes_workout_type_weight_modifiers(
+    service: TodayAccumulationService,
+) -> None:
+    request = TodayAccumulationRequest(
+        as_of=datetime(2026, 2, 20, 15, 0, tzinfo=UTC),
+        timezone="America/New_York",
+        combined_score_context=CombinedScoreContext(workout_type="endurance"),
+    )
+
+    result = service.compute_today_accumulation(request)
+
+    effective = result.combined_score.debug.effective_weights
+    assert math.isclose(
+        effective.metabolic + effective.mechanical + effective.recruitment,
+        1.0,
+        rel_tol=1e-4,
+        abs_tol=1e-4,
+    )
+    assert effective.metabolic > result.combined_score.debug.base_weights.metabolic
+
+
+def test_combined_score_defaults_missing_sleep_to_normal_value(
+    service: TodayAccumulationService,
+) -> None:
+    shared_request_kwargs = {
+        "as_of": datetime(2026, 2, 20, 15, 0, tzinfo=UTC),
+        "timezone": "America/New_York",
+        "sleep_events": [SleepEventInput(sleep_ended_at=datetime(2026, 2, 20, 10, 45, tzinfo=UTC))],
+        "sessions": [
+            SessionFatigueInput(
+                session_id="completed-before-boundary",
+                state="completed",
+                ended_at=datetime(2026, 2, 20, 10, 0, tzinfo=UTC),
+                fatigue_axes=_axes(4.0),
+            )
+        ],
+    }
+
+    missing_sleep = TodayAccumulationRequest(
+        **shared_request_kwargs,
+        system_capacity=SystemCapacityInput(sleep=None, fuel=4, stress=2),
+    )
+    explicit_normal_sleep = TodayAccumulationRequest(
+        **shared_request_kwargs,
+        system_capacity=SystemCapacityInput(sleep=3, fuel=4, stress=2),
+    )
+
+    missing_sleep_result = service.compute_today_accumulation(missing_sleep)
+    explicit_sleep_result = service.compute_today_accumulation(explicit_normal_sleep)
+
+    assert missing_sleep_result.combined_score.value == explicit_sleep_result.combined_score.value
+    assert missing_sleep_result.combined_score.debug.default_sleep_applied is True
+    assert explicit_sleep_result.combined_score.debug.default_sleep_applied is False
+
+
+def test_combined_score_emits_weight_debug_logs(
+    caplog: pytest.LogCaptureFixture,
+    service: TodayAccumulationService,
+) -> None:
+    request = TodayAccumulationRequest(
+        as_of=datetime(2026, 2, 20, 15, 0, tzinfo=UTC),
+        timezone="America/New_York",
+        sleep_events=[SleepEventInput(sleep_ended_at=datetime(2026, 2, 20, 10, 45, tzinfo=UTC))],
+        sessions=[
+            SessionFatigueInput(
+                session_id="completed-before-boundary",
+                state="completed",
+                ended_at=datetime(2026, 2, 20, 10, 0, tzinfo=UTC),
+                fatigue_axes=_axes(2.0),
+            )
+        ],
+    )
+
+    caplog.set_level("DEBUG")
+
+    service.compute_today_accumulation(request)
+
+    assert any("base_weights" in message for message in caplog.messages)
+    assert any("effective_weights" in message for message in caplog.messages)
