@@ -128,4 +128,21 @@ describe("CalendarPageClient integration", () => {
     expect(after).toBe(before);
     expect(screen.getByText(/Audit recompute events applied: 0/i)).toBeTruthy();
   });
+
+  it("keeps move interaction latency under 200ms for the standard week payload", async () => {
+    const user = userEvent.setup();
+
+    render(<CalendarPageClient weeklyAudit={weeklyAuditResponseSample} />);
+
+    const startedAtMs = performance.now();
+    await user.click(
+      screen.getByRole("button", {
+        name: /emit planner move/i,
+      }),
+    );
+    await screen.findByText(/Audit recompute events applied: 1/i);
+
+    const elapsedMs = performance.now() - startedAtMs;
+    expect(elapsedMs).toBeLessThan(200);
+  });
 });
