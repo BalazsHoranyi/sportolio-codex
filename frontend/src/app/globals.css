@@ -245,6 +245,50 @@ h1 {
   position: relative;
 }
 
+.session-focus-card {
+  background:
+    radial-gradient(
+      circle at 12% 24%,
+      oklch(0.96 0.05 73 / 0.6),
+      transparent 48%
+    ),
+    linear-gradient(180deg, oklch(0.987 0.012 75), oklch(0.965 0.02 69));
+  display: grid;
+  gap: 0.6rem;
+}
+
+.session-focus-head h2 {
+  font-size: clamp(1.4rem, 2.8vw, 1.85rem);
+  margin-top: 0.2rem;
+}
+
+.session-focus-copy {
+  margin: 0;
+  max-width: 70ch;
+}
+
+.session-focus-id {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.session-focus-id code {
+  background: oklch(0.95 0.02 72);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  color: var(--ink-strong);
+  display: inline-block;
+  font-size: 0.82rem;
+  margin-left: 0.35rem;
+  padding: 0.15rem 0.45rem;
+}
+
+.session-focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .section-header h2 {
   font-size: clamp(1.5rem, 3vw, 2rem);
   margin-bottom: 0.45rem;
@@ -1165,6 +1209,226 @@ h1 {
   z-index: 3;
 }
 
+.today-page {
+  margin: 0 auto;
+  max-width: 74rem;
+  padding: clamp(1.4rem, 4vw, 2.4rem) clamp(1rem, 3vw, 2rem)
+    clamp(2.4rem, 6vw, 4rem);
+}
+
+.today-nav-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.today-shell {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.95rem;
+}
+
+.today-header {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: clamp(1rem, 2.8vw, 1.4rem);
+}
+
+.today-header h1 {
+  font-size: clamp(1.55rem, 3.6vw, 2.25rem);
+}
+
+.today-header p {
+  margin: 0.55rem 0 0;
+  max-width: 62ch;
+}
+
+.today-boundary {
+  background: oklch(0.98 0.01 73 / 0.94);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0.95rem;
+}
+
+.today-boundary div {
+  border-left: 1px solid var(--line);
+  padding-left: 0.7rem;
+}
+
+.today-boundary div:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.today-boundary dt {
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.03em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.today-boundary dd {
+  color: var(--ink-strong);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0.35rem 0 0;
+}
+
+.today-axis-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.today-axis-card,
+.today-recruitment-card,
+.today-decision-card,
+.today-why-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 0.95rem;
+}
+
+.today-axis-head {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.today-axis-head h2,
+.today-recruitment-card h2,
+.today-decision-card h2,
+.today-why-card h2 {
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.today-axis-head p {
+  color: var(--ink-strong);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.today-gauge-track {
+  background: oklch(0.91 0.02 62);
+  border-radius: 999px;
+  height: 0.65rem;
+  margin-top: 0.7rem;
+  overflow: hidden;
+}
+
+.today-gauge-track span {
+  background: linear-gradient(120deg, var(--accent-deep), var(--accent));
+  border-radius: 999px;
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.today-axis-card[data-threshold-state="high"] .today-gauge-track span,
+.today-recruitment-card[data-threshold-state="high"] .today-recruitment-value,
+.today-decision-card[data-threshold-state="high"] .today-decision-value {
+  background: linear-gradient(120deg, oklch(0.58 0.2 28), oklch(0.5 0.19 24));
+  color: oklch(0.45 0.2 28);
+}
+
+.today-recruitment-card {
+  align-content: center;
+  display: grid;
+}
+
+.today-recruitment-value {
+  color: var(--accent-deep);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin: 0.45rem 0 0;
+}
+
+.today-recruitment-copy {
+  margin: 0.45rem 0 0;
+}
+
+.today-decision-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.today-decision-value {
+  color: var(--ink-strong);
+  font-size: clamp(1.7rem, 4vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1;
+  margin: 0.5rem 0 0;
+}
+
+.today-decision-copy {
+  margin: 0.5rem 0 0;
+}
+
+.today-alert,
+.today-safe {
+  font-size: 0.84rem;
+  font-weight: 600;
+  margin: 0.6rem 0 0;
+}
+
+.today-alert {
+  color: oklch(0.5 0.19 24);
+}
+
+.today-safe {
+  color: var(--ink-muted);
+}
+
+.today-why-card p {
+  margin: 0.45rem 0 0;
+}
+
+.today-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.today-chip {
+  background: oklch(0.95 0.02 64);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-strong);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
+.today-chip:hover {
+  background: oklch(0.93 0.02 63);
+}
+
+.today-empty {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
 @media (max-width: 980px) {
   .auth-grid {
     grid-template-columns: 1fr;
@@ -1211,6 +1475,11 @@ h1 {
     grid-template-columns: 1fr;
   }
 
+  .session-focus-actions .button {
+    justify-content: center;
+    width: 100%;
+  }
+
   .hero-metrics {
     grid-template-columns: 1fr;
   }
@@ -1250,6 +1519,43 @@ h1 {
   }
 
   .muscle-map-focus {
+    grid-template-columns: 1fr;
+  }
+
+  .today-nav-actions {
+    width: 100%;
+  }
+
+  .today-nav-actions .button,
+  .today-nav-actions form {
+    width: 100%;
+  }
+
+  .today-nav-actions .button {
+    justify-content: center;
+  }
+
+  .today-boundary {
+    grid-template-columns: 1fr;
+  }
+
+  .today-boundary div {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-left: 0;
+    padding-top: 0.5rem;
+  }
+
+  .today-boundary div:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .today-axis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .today-decision-grid {
     grid-template-columns: 1fr;
   }
 }

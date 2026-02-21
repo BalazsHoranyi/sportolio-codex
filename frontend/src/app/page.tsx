@@ -7,8 +7,13 @@ import {
   muscleUsageRequestSample,
   muscleUsageSample,
 } from "../features/muscle-map/sample-data";
+import type { CalendarSessionFocus } from "../features/today/session-focus";
 
 export const dynamic = "force-dynamic";
+
+interface HomePageProps {
+  sessionFocus?: CalendarSessionFocus;
+}
 
 const launchPaths = [
   {
@@ -61,7 +66,7 @@ async function loadHomePageMuscleUsage() {
   }
 }
 
-export default async function HomePage() {
+export default async function HomePage({ sessionFocus }: HomePageProps = {}) {
   const muscleUsageResponse = await loadHomePageMuscleUsage();
 
   return (
@@ -91,6 +96,9 @@ export default async function HomePage() {
           <a className="button button-primary" href="#start-here">
             Start here
           </a>
+          <a className="button button-secondary" href="/today">
+            Open Today
+          </a>
           <a className="button button-secondary" href="#integration">
             See integration checklist
           </a>
@@ -110,6 +118,31 @@ export default async function HomePage() {
           </div>
         </dl>
       </section>
+
+      {sessionFocus ? (
+        <section
+          id="session-focus"
+          className="section session-focus-card fade-in delay-1"
+          aria-labelledby="session-focus-title"
+        >
+          <header className="session-focus-head">
+            <p className="eyebrow">Session focus</p>
+            <h2 id="session-focus-title">{sessionFocus.label}</h2>
+          </header>
+          <p className="session-focus-copy">{sessionFocus.description}</p>
+          <p className="session-focus-id">
+            Session ID: <code>{sessionFocus.sessionId}</code>
+          </p>
+          <div className="session-focus-actions">
+            <a className="button button-secondary" href="/today">
+              Back to Today
+            </a>
+            <a className="button button-secondary" href="#start-here">
+              Continue setup
+            </a>
+          </div>
+        </section>
+      ) : null}
 
       <section
         id="start-here"
