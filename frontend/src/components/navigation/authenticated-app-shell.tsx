@@ -1,6 +1,8 @@
 import React, { type ReactNode } from "react";
 import Link from "next/link";
 
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { APP_NAV_ITEMS, type AppNavItem } from "./nav-config";
 
 interface AuthenticatedAppShellProps {
@@ -14,16 +16,16 @@ interface AuthenticatedAppShellProps {
 function renderNavLink(item: AppNavItem, activeItem: AppNavItem["id"]) {
   const isActive = item.id === activeItem;
   return (
-    <Link
-      aria-current={isActive ? "page" : undefined}
-      className={
-        isActive ? "app-shell-nav-link is-active" : "app-shell-nav-link"
-      }
-      href={item.href}
+    <Button
+      asChild
+      variant="nav"
+      className={isActive ? "is-active" : undefined}
       key={item.id}
     >
-      {item.label}
-    </Link>
+      <Link aria-current={isActive ? "page" : undefined} href={item.href}>
+        {item.label}
+      </Link>
+    </Button>
   );
 }
 
@@ -53,17 +55,13 @@ export function AuthenticatedAppShell({
           </nav>
 
           <div className="app-shell-utility-desktop">
-            <p
-              className="app-shell-session-pill"
-              role="status"
-              aria-live="polite"
-            >
+            <Badge variant="status" role="status" aria-live="polite">
               Authenticated session active
-            </p>
+            </Badge>
             <form action="/api/auth/logout?redirect=/login" method="post">
-              <button className="button button-secondary" type="submit">
+              <Button type="submit" variant="secondary">
                 Logout
-              </button>
+              </Button>
             </form>
           </div>
 
@@ -77,12 +75,13 @@ export function AuthenticatedAppShell({
                 {APP_NAV_ITEMS.map((item) => renderNavLink(item, activeItem))}
               </nav>
               <form action="/api/auth/logout?redirect=/login" method="post">
-                <button
-                  className="button button-secondary app-shell-mobile-logout"
+                <Button
+                  className="app-shell-mobile-logout"
                   type="submit"
+                  variant="secondary"
                 >
                   Logout
-                </button>
+                </Button>
               </form>
             </div>
           </details>

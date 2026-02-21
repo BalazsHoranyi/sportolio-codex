@@ -94,6 +94,25 @@ describe("midnight bloom token contract", () => {
     expect(css).toMatch(/--line:\s*var\(--border\)/);
   });
 
+  it("defines shared layout tokens for shell and bento surface primitives", () => {
+    const rootCss = readRootBlock(readGlobalsCss());
+
+    expect(rootCss).toMatch(/--layout-shell-max-width:/);
+    expect(rootCss).toMatch(/--layout-shell-gap:/);
+    expect(rootCss).toMatch(/--layout-bento-gap:/);
+  });
+
+  it("uses shared layout token primitives in shell and bento classes", () => {
+    const css = readGlobalsCss();
+
+    expect(css).toMatch(
+      /\.app-shell-main\s*{[\s\S]*gap:\s*var\(--layout-shell-gap\)/,
+    );
+    expect(css).toMatch(
+      /\.bento-grid\s*{[\s\S]*gap:\s*var\(--layout-bento-gap\)/,
+    );
+  });
+
   it("avoids self-referential token declarations in @theme inline", () => {
     const themeInline = readThemeInlineBlock(readGlobalsCss());
 

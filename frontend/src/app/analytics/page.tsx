@@ -1,6 +1,8 @@
 import React from "react";
+import Link from "next/link";
 
 import { AuthenticatedAppShell } from "../../components/navigation/authenticated-app-shell";
+import { Button } from "../../components/ui/button";
 import { BentoGrid, BentoGridItem } from "../../components/ui/bento-grid";
 import { loadWeeklyAuditResponse } from "../../features/calendar-audit/api";
 import { weeklyAuditResponseSample } from "../../features/calendar-audit/sample-data";
@@ -100,9 +102,9 @@ export default async function AnalyticsPage() {
               Use calendar move/skip events and completed-session status to
               audit weekly execution consistency.
             </p>
-            <a className="button button-secondary" href="/calendar">
-              Open calendar audit
-            </a>
+            <Button asChild variant="secondary">
+              <Link href="/calendar">Open calendar audit</Link>
+            </Button>
           </BentoGridItem>
         </BentoGrid>
       </section>

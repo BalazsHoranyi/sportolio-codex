@@ -1,6 +1,8 @@
 import React from "react";
+import Link from "next/link";
 
 import { AuthenticatedAppShell } from "../../components/navigation/authenticated-app-shell";
+import { Button } from "../../components/ui/button";
 import { BentoGrid, BentoGridItem } from "../../components/ui/bento-grid";
 import { CycleCreationFlow } from "../../features/planner/components/cycle-creation-flow";
 
@@ -25,9 +27,9 @@ export default async function PlannerPage() {
               Build macro to micro structure in planner, then jump into the
               routine editor for exercise-level authoring.
             </p>
-            <a className="button button-secondary" href="/routine">
-              Open routine builder
-            </a>
+            <Button asChild variant="secondary">
+              <Link href="/routine">Open routine builder</Link>
+            </Button>
           </BentoGridItem>
 
           <BentoGridItem

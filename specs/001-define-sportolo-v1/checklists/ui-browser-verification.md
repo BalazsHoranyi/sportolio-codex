@@ -186,3 +186,47 @@
 - Lena: confirmed mobile traversal across all migrated routes remains readable and operable with no overflow regressions.
 - Nora: validated desktop/mobile transitions across migrated routes and verified landmark-based structure is intact.
 - Priya: repeated the full route matrix and confirmed focused page intent remains intact after Bento migration.
+
+## SPRT-64 Verification Addendum (February 21, 2026)
+
+- Scope: establish shadcn-first shell/action primitives and shared layout token baseline across authenticated web surfaces.
+- Tooling: `agent-browser` persona walkthrough + `chrome-devtools-mcp` changed-screen validation.
+
+### SPRT-64 Evidence Artifacts
+
+- Persona validation screenshots (`agent-browser`):
+- sprt64-persona-diego-desktop.png
+- sprt64-persona-diego-mobile.png
+- sprt64-persona-evan-desktop.png
+- sprt64-persona-evan-mobile.png
+- sprt64-persona-hybrid-desktop.png
+- sprt64-persona-hybrid-mobile.png
+- sprt64-persona-lena-desktop.png
+- sprt64-persona-lena-mobile.png
+- sprt64-persona-nora-desktop.png
+- sprt64-persona-nora-mobile.png
+- sprt64-persona-priya-desktop.png
+- sprt64-persona-priya-mobile.png
+
+- Changed-route validation screenshots (`chrome-devtools-mcp`):
+- sprt64-devtools-home-desktop.png
+- sprt64-devtools-home-mobile.png
+- sprt64-devtools-today-desktop.png
+- sprt64-devtools-today-mobile.png
+- sprt64-devtools-calendar-desktop.png
+- sprt64-devtools-calendar-mobile.png
+- sprt64-devtools-planner-desktop.png
+- sprt64-devtools-planner-mobile.png
+- sprt64-devtools-analytics-desktop.png
+- sprt64-devtools-analytics-mobile.png
+- sprt64-devtools-settings-desktop.png
+- sprt64-devtools-settings-mobile.png
+- sprt64-devtools-routine-desktop.png
+- sprt64-devtools-routine-mobile.png
+
+### SPRT-64 Validation Notes
+
+- Focus order: keyboard-first path still lands on `Skip to main content` before route controls.
+- Labels/landmarks: shell/navigation and route Bento landmarks remain present and test-backed.
+- Contrast/readability: updated primitive controls remain legible on desktop/mobile breakpoints with no low-contrast regressions observed.
+- Responsive behavior: shared shell + CTA primitives verified with no horizontal overflow on changed routes.

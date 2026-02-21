@@ -13,5 +13,6 @@ describe("AnalyticsPage", () => {
     expect(html).toContain("Session compliance");
     expect(html).toContain('aria-label="Analytics bento layout"');
     expect(html).toContain('aria-current="page"');
+    expect(html).toContain('data-slot="button"');
   });
 });

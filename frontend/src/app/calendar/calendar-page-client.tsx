@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
+import { Button } from "../../components/ui/button";
 import { BentoGrid, BentoGridItem } from "../../components/ui/bento-grid";
 import type { WeeklyAuditApiResponse } from "../../features/calendar-audit/types";
 import { applyWeeklyAuditMutationIncrementally } from "../../features/calendar-audit/recompute";
@@ -129,12 +131,12 @@ export function CalendarPageClient({
               Session ID: <code>{sessionFocus.sessionId}</code>
             </p>
             <div className="session-focus-actions">
-              <a className="button button-secondary" href="/today">
-                Back to Today
-              </a>
-              <a className="button button-secondary" href="/calendar">
-                Return to weekly audit
-              </a>
+              <Button asChild variant="secondary">
+                <Link href="/today">Back to Today</Link>
+              </Button>
+              <Button asChild variant="secondary">
+                <Link href="/calendar">Return to weekly audit</Link>
+              </Button>
             </div>
           </BentoGridItem>
         ) : null}
