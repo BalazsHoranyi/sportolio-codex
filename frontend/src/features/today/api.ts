@@ -107,19 +107,23 @@ export async function loadTodaySnapshot({
     resolvedApiBaseUrl,
     athleteId ?? defaultAthleteId(),
   );
-  const response = await fetchImpl(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(request),
-    cache: "no-store",
-  });
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const payload = (await response.json()) as unknown;
+    return isTodayAccumulationResponse(payload) ? payload : undefined;
+  } catch {
     return undefined;
   }
-
-  const payload = (await response.json()) as unknown;
-  return isTodayAccumulationResponse(payload) ? payload : undefined;
 }

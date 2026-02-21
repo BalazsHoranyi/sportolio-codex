@@ -7,14 +7,22 @@ import {
   todayContributorSample,
 } from "../../features/today/sample-data";
 import { TodayDashboard } from "../../features/today/today-dashboard";
+import type { TodayAccumulationResponse } from "../../features/today/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function TodayPage() {
-  const loadedSnapshot = await loadTodaySnapshot({
-    request: todayAccumulationRequestSample,
-  });
+  let loadedSnapshot: TodayAccumulationResponse | undefined;
+  try {
+    loadedSnapshot = await loadTodaySnapshot({
+      request: todayAccumulationRequestSample,
+    });
+  } catch {
+    loadedSnapshot = undefined;
+  }
+
   const snapshot = loadedSnapshot ?? todayAccumulationResponseSample;
+  const contributors = loadedSnapshot ? undefined : todayContributorSample;
 
   return (
     <main className="today-page" id="main-content">
@@ -35,10 +43,7 @@ export default async function TodayPage() {
         </div>
       </div>
 
-      <TodayDashboard
-        snapshot={snapshot}
-        contributors={todayContributorSample}
-      />
+      <TodayDashboard snapshot={snapshot} contributors={contributors} />
     </main>
   );
 }

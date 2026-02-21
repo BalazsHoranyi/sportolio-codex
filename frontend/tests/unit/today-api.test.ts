@@ -60,4 +60,18 @@ describe("today api", () => {
 
     expect(snapshot).toBeUndefined();
   });
+
+  it("returns undefined when the fetch request throws", async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("network failure");
+    });
+
+    await expect(
+      loadTodaySnapshot({
+        request: todayAccumulationRequestSample,
+        apiBaseUrl: "http://localhost:8000",
+        fetchImpl,
+      }),
+    ).resolves.toBeUndefined();
+  });
 });
