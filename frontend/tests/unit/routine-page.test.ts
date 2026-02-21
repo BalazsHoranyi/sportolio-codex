@@ -10,5 +10,6 @@ describe("RoutinePage", () => {
     expect(html).toContain("Routine creation flow");
     expect(html).toContain("Visual");
     expect(html).toContain("DSL");
+    expect(html).toContain('href="/planner"');
   });
 });

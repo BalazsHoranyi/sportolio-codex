@@ -24,6 +24,7 @@ describe("CalendarPage", () => {
     expect(html).toContain("7-day fatigue trade-off review");
     expect(html).toContain("Red zone ≥ 7.0");
     expect(html).toContain("Authenticated session active");
+    expect(html).toContain('href="/planner"');
   });
 
   it("shows session focus details when a today contributor sessionId is provided", async () => {

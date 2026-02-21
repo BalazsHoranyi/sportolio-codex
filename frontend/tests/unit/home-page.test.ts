@@ -26,7 +26,9 @@ describe("HomePage", () => {
     const html = await renderHomePage();
 
     expect(html).toContain("Start here");
+    expect(html).toContain("Open Planner");
     expect(html).toContain("See integration checklist");
+    expect(html).toContain('href="/planner"');
     expect(html).toContain('href="#start-here"');
     expect(html).toContain('href="#integration"');
   });

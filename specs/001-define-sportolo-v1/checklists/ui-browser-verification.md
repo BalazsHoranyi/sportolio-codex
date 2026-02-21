@@ -1,7 +1,7 @@
 # UI Browser Verification
 
 - Date: February 21, 2026
-- Routes: `/login?next=/routine` and `/routine`
+- Routes: `/login?next=/planner`, `/planner`, and `/`
 - Browser tooling: `agent-browser` + `chrome-devtools-mcp`
 - Devices: Desktop (1440px), Mobile (390px / iPhone 14)
 
@@ -26,16 +26,16 @@
 
 ## Persona Coverage
 
-- Diego (competitive triathlete): completed login -> `/routine`, added strength exercise, switched `Visual` <-> `DSL`, switched to `Endurance`, and added interval block.
-- Evan (powerlifter with minimal cardio): validated fast strength-path flow, DSL visibility, and no-break mode switching on desktop/mobile.
-- Hybrid athlete (600lb DL + 4 W/kg target): validated dual-path behavior (strength plus endurance), DSL payload visibility, and interval-add interaction.
-- Lena (busy hybrid generalist): validated mobile tap targets for mode/path tabs and interval add action.
-- Nora (masters endurance + longevity strength): validated readability of dual-mode controls and routine payload section on both breakpoints.
-- Priya (marathoner adding strength): validated auth-to-routine flow plus `Endurance` interval creation behavior without layout breakage.
+- Diego (competitive triathlete): completed login -> `/planner`, entered macro goal metadata, advanced to mesocycle step, and verified desktop/mobile responsiveness.
+- Evan (powerlifter with minimal cardio): validated explicit goal priority selection and macro-to-mesocycle transition on desktop/mobile.
+- Hybrid athlete (600lb DL + 4 W/kg target): validated dual-objective macro setup copy and mesocycle strategy transition behavior.
+- Lena (busy hybrid generalist): validated mobile tap targets and dense form readability in macro and mesocycle steps.
+- Nora (masters endurance + longevity strength): validated clarity of advisory-first planner framing and stable step progression.
+- Priya (marathoner adding strength): validated auth-to-planner flow, date/goal inputs, and mesocycle step accessibility labels.
 
 ## Result
 
-- `/routine` now provides a production-ready routine creation flow with dual entry paths (`Strength`, `Endurance`) and dual editing modes (`Visual`, `DSL`).
-- Visual and DSL workflows are synchronized for supported fields, and DSL validation feedback appears inline.
+- `/planner` now provides a production-ready macro/meso/micro cycle creation flow with explicit goal priority controls, draft persistence actions, and advisory review scaffolding.
+- Macro goal/event setup, mesocycle strategy configuration, and microcycle details are accessible through a deterministic step flow.
 - Browser checks using `agent-browser` and `chrome-devtools-mcp` passed for all personas in `user_profiles` across desktop and mobile.
 - Required screenshot artifact set remains complete and referenced.

@@ -96,6 +96,9 @@ export default async function HomePage({ sessionFocus }: HomePageProps = {}) {
           <a className="button button-primary" href="#start-here">
             Start here
           </a>
+          <a className="button button-secondary" href="/planner">
+            Open Planner
+          </a>
           <a className="button button-secondary" href="/routine">
             Open Routine Flow
           </a>
