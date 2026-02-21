@@ -2,6 +2,30 @@
 
 Backend service modules for Sportolo.
 
+## Fatigue persistence schema
+
+`SPRT-26` introduces persistent storage for the 4-axis fatigue data model and system capacity.
+
+Persistence components:
+
+- SQLAlchemy model: `backend/src/sportolo/models/fatigue_snapshot.py`
+- Repository: `backend/src/sportolo/repositories/fatigue_snapshot_repository.py`
+- Alembic migration: `backend/migrations/versions/0001_sprt26_fatigue_snapshots.py`
+
+`fatigue_snapshots` stores:
+
+- Global axes: `global_neural`, `global_metabolic`
+- Regional axes (JSON payloads): `regional_recruitment`, `regional_metabolic`, `regional_mechanical`
+- System capacity fields: `system_capacity_sleep` (nullable), `system_capacity_fuel`, `system_capacity_stress`
+- Optional `derived_recruitment`
+
+Legacy `LIHC/HILC` fields are intentionally absent from the active persistence schema.
+
+Migration usage examples from `backend/`:
+
+- `uv run alembic upgrade head`
+- `uv run alembic downgrade base`
+
 ## Today accumulation API
 
 `SPRT-36` introduces a deterministic boundary-compute endpoint:
