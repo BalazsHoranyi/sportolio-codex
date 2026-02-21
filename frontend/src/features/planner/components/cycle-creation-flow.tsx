@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Body from "react-muscle-highlighter";
 
 import { evaluatePlannerAdvisories } from "../advisory";
 import {
@@ -9,6 +10,7 @@ import {
   type MesocycleStrategyResult,
   type MicrocycleReflowProjection,
 } from "../mesocycle-strategy";
+import { buildPlannerReviewMuscleSummary } from "../review-muscle-summary";
 import {
   clearPlannerDraft,
   loadPlannerDraft,
@@ -45,6 +47,13 @@ const stepSequence: StepMeta[] = [
   { key: "microcycle", title: "Microcycle details" },
   { key: "review", title: "Review and publish" },
 ];
+
+const plannerReviewMapColors = [
+  "#f4d8a6",
+  "#e8aa69",
+  "#d96c2a",
+  "#8f3608",
+] as const;
 
 function formatToken(value: string): string {
   return value
@@ -278,6 +287,10 @@ export function CycleCreationFlow() {
   );
   const reflowProjection = useMemo<MicrocycleReflowProjection>(
     () => buildMicrocycleReflowProjection(draft),
+    [draft],
+  );
+  const reviewMuscleSummary = useMemo(
+    () => buildPlannerReviewMuscleSummary(draft),
     [draft],
   );
 
@@ -1522,6 +1535,95 @@ export function CycleCreationFlow() {
           </p>
 
           <div className="planner-review-grid">
+            <section className="planner-review-card planner-review-muscle-card">
+              <h3>Microcycle muscle map summary</h3>
+              <p className="planner-review-muscle-total">
+                Microcycle total usage:{" "}
+                {reviewMuscleSummary.microcycleTotalUsage.toFixed(1)}
+              </p>
+
+              {reviewMuscleSummary.microcycleMap.length === 0 ? (
+                <p className="planner-flow-empty">
+                  No mapped muscles available for this microcycle yet.
+                </p>
+              ) : (
+                <div
+                  className="planner-review-muscle-map"
+                  aria-label="Microcycle muscle map"
+                >
+                  <Body
+                    data={reviewMuscleSummary.microcycleMap}
+                    side="front"
+                    colors={plannerReviewMapColors}
+                    defaultFill="#f2ebe0"
+                    defaultStroke="#d6c7af"
+                    defaultStrokeWidth={0.6}
+                    border="#d6c7af"
+                    scale={1.02}
+                  />
+                  <Body
+                    data={reviewMuscleSummary.microcycleMap}
+                    side="back"
+                    colors={plannerReviewMapColors}
+                    defaultFill="#f2ebe0"
+                    defaultStroke="#d6c7af"
+                    defaultStrokeWidth={0.6}
+                    border="#d6c7af"
+                    scale={1.02}
+                  />
+                </div>
+              )}
+
+              {reviewMuscleSummary.microcycleLegend.length === 0 ? (
+                <p className="planner-flow-empty">
+                  Add workouts to generate top muscle emphasis.
+                </p>
+              ) : (
+                <ul
+                  className="planner-review-muscle-legend"
+                  aria-label="Microcycle top muscles"
+                >
+                  {reviewMuscleSummary.microcycleLegend.map((entry) => (
+                    <li key={`${entry.key}-${entry.value}`}>
+                      <span>{entry.label}</span>
+                      <strong>{entry.value.toFixed(1)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {reviewMuscleSummary.overlapWarnings.length > 0 ? (
+                <section className="planner-review-overlap">
+                  <p className="planner-review-overlap-title">
+                    High-overlap days
+                  </p>
+                  <ul
+                    className="planner-review-list"
+                    aria-label="High-overlap day warnings"
+                  >
+                    {reviewMuscleSummary.overlapWarnings.map((warning) => (
+                      <li key={warning.id}>
+                        <p>{warning.title}</p>
+                        <small>{warning.detail}</small>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : (
+                <p className="planner-flow-empty">
+                  No high-overlap days detected.
+                </p>
+              )}
+
+              <nav
+                className="planner-review-drilldown-links"
+                aria-label="Microcycle drill-down links"
+              >
+                <a href="#planner-review-routines">Jump to routines</a>
+                <a href="#planner-review-exercises">Jump to exercises</a>
+              </nav>
+            </section>
+
             <section className="planner-review-card">
               <h3>Advisory warnings</h3>
               {advisories.warnings.length === 0 ? (
@@ -1635,6 +1737,78 @@ export function CycleCreationFlow() {
                         {formatToken(row.primaryFocus)} focus ·{" "}
                         {row.targetLoadPercent}% load ·{" "}
                         {formatToken(row.intensityWave)} wave
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section
+              className="planner-review-card"
+              id="planner-review-routines"
+            >
+              <h3>Routine contributions</h3>
+              {reviewMuscleSummary.routineContributions.length === 0 ? (
+                <p className="planner-flow-empty">
+                  No routine contributions available.
+                </p>
+              ) : (
+                <ul
+                  className="planner-review-list"
+                  aria-label="Routine contribution details"
+                >
+                  {reviewMuscleSummary.routineContributions.map((routine) => (
+                    <li key={routine.routineId} id={routine.drilldownId}>
+                      <p>{routine.routineName}</p>
+                      <small>
+                        {routine.dayLabel} · Total usage{" "}
+                        {routine.totalUsage.toFixed(1)}
+                      </small>
+                      <small>
+                        Top muscles:{" "}
+                        {Object.entries(routine.muscleUsage)
+                          .filter(([, value]) => value > 0)
+                          .sort(
+                            (left, right) =>
+                              right[1] - left[1] ||
+                              left[0].localeCompare(right[0]),
+                          )
+                          .slice(0, 2)
+                          .map(([key]) => formatToken(key))
+                          .join(", ")}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section
+              className="planner-review-card"
+              id="planner-review-exercises"
+            >
+              <h3>Exercise contributions</h3>
+              {reviewMuscleSummary.exerciseContributions.length === 0 ? (
+                <p className="planner-flow-empty">
+                  No exercise contributions available.
+                </p>
+              ) : (
+                <ul
+                  className="planner-review-list"
+                  aria-label="Exercise contribution details"
+                >
+                  {reviewMuscleSummary.exerciseContributions.map((exercise) => (
+                    <li key={exercise.exerciseId} id={exercise.drilldownId}>
+                      <p>{exercise.exerciseName}</p>
+                      <small>
+                        {exercise.dayLabel} · {exercise.routineName} · Total
+                        usage {exercise.totalUsage.toFixed(1)}
+                      </small>
+                      <small>
+                        <a href={exercise.routineDrilldownHref}>
+                          Open routine context
+                        </a>
                       </small>
                     </li>
                   ))}

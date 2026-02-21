@@ -2280,6 +2280,89 @@ h1 {
   padding: 0.75rem 0.8rem;
 }
 
+.planner-review-muscle-card {
+  gap: 0.7rem;
+  grid-column: span 2;
+}
+
+.planner-review-muscle-total {
+  color: var(--ink-strong);
+  font-weight: 700;
+  margin: 0;
+}
+
+.planner-review-muscle-map {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.planner-review-muscle-map svg {
+  height: auto;
+  max-width: 100%;
+}
+
+.planner-review-muscle-legend {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.planner-review-muscle-legend li {
+  align-items: center;
+  color: var(--ink-body);
+  display: flex;
+  font-size: 0.84rem;
+  justify-content: space-between;
+}
+
+.planner-review-muscle-legend li strong {
+  color: var(--ink-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.planner-review-overlap {
+  background: oklch(0.95 0.06 34 / 0.32);
+  border: 1px solid oklch(0.77 0.12 30 / 0.6);
+  border-radius: 0.62rem;
+  padding: 0.55rem 0.62rem;
+}
+
+.planner-review-overlap-title {
+  color: oklch(0.39 0.14 28);
+  font-size: 0.79rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+}
+
+.planner-review-drilldown-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.planner-review-drilldown-links a {
+  color: var(--accent-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.planner-review-drilldown-links a:hover {
+  text-decoration: underline;
+}
+
+#planner-review-routines,
+#planner-review-exercises,
+[id^="planner-review-routine-"],
+[id^="planner-review-exercise-"] {
+  scroll-margin-top: 5rem;
+}
+
 .planner-review-list {
   display: grid;
   gap: 0.5rem;
@@ -2296,6 +2379,7 @@ h1 {
 
 .planner-review-list li small {
   color: var(--ink-body);
+  display: block;
 }
 
 .planner-flow-empty {
@@ -2873,6 +2957,15 @@ h1 {
 
   .planner-review-grid {
     grid-template-columns: 1fr;
+  }
+
+  .planner-review-muscle-card {
+    grid-column: auto;
+  }
+
+  .planner-review-muscle-map {
+    grid-template-columns: repeat(2, minmax(0, 8.1rem));
+    justify-content: center;
   }
 
   .planner-review-summary dl {

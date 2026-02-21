@@ -1,7 +1,7 @@
 # UI Browser Verification
 
 - Date: February 21, 2026
-- Routes: `/login?next=/calendar`, `/calendar`
+- Routes: `/login?next=/planner`, `/planner`
 - Browser tooling: `agent-browser` + `chrome-devtools-mcp`
 - Devices: Desktop (1440px), Mobile (390px / iPhone 14)
 
@@ -22,16 +22,16 @@
 
 ## Persona Coverage
 
-- Diego (competitive triathlete): moved a session to an occupied day, observed overlap block, used `Proceed anyway`, and reordered same-day sessions via keyboard controls on desktop/mobile.
-- Evan (powerlifter with minimal cardio): verified deterministic slot ordering after overlap override and confirmed mutation log captures `workout_moved` override metadata on desktop/mobile.
-- Hybrid athlete (600lb DL + 4 W/kg target): validated same-day reorder changes slot labels (`1`, `2`) without losing workout identity/history on desktop/mobile.
-- Lena (busy hybrid generalist): confirmed validation banner actions (`Proceed anyway` / `Dismiss`) are readable and operable on mobile and desktop layouts.
-- Nora (masters endurance + longevity strength): validated history counts increment after move + reorder and controls stay keyboard operable on desktop/mobile.
-- Priya (marathoner adding strength): validated calendar recompute log includes reorder metadata and weekly audit visuals stay stable after reorder on desktop/mobile.
+- Diego (competitive triathlete): completed planner flow to review and validated microcycle muscle-map summary, drill-down links, and deterministic total usage visibility on desktop/mobile.
+- Evan (powerlifter with minimal cardio): validated review summary emphasizes strength-oriented workout contribution and preserves non-blocking advisory messaging on desktop/mobile.
+- Hybrid athlete (600lb DL + 4 W/kg target): confirmed review includes muscle-map + routine/exercise contribution drill-down for high-signal hybrid session wording on desktop/mobile.
+- Lena (busy hybrid generalist): validated review summary remains readable and actionable with minimal setup and simple workout labels on desktop/mobile.
+- Nora (masters endurance + longevity strength): verified review step surfaces clear contribution context and no-block overlap messaging for recovery-aware planning on desktop/mobile.
+- Priya (marathoner adding strength): validated planner review provides explicit routine/exercise drill-down context for runner-strength durability session planning on desktop/mobile.
 
 ## Result
 
-- `/calendar` now supports deterministic microcycle scheduler semantics for move, overlap validation, explicit override, and in-day reorder.
-- Default overlap behavior blocks conflicting placement; explicit override applies the move and records `overrideApplied` metadata.
-- Reorder actions update `sessionOrder`, mutation log entries (`workout_reordered`), and per-workout history counts without regressing weekly audit recompute behavior.
+- `/planner` review now exposes deterministic microcycle muscle-map summary and total usage.
+- Drill-down links from the summary jump directly to routine and exercise contribution sections.
+- High-overlap handling remains visual/advisory only and does not block progression or publish actions.
 - Browser checks using `agent-browser` and `chrome-devtools-mcp` passed for all personas in `user_profiles` across desktop and mobile.
