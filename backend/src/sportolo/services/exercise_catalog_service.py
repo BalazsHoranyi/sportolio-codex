@@ -2,9 +2,21 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from math import ceil
 from typing import Literal
 
 Scope = Literal["global", "user"]
+MatchStrategy = Literal[
+    "canonical_exact",
+    "canonical_prefix",
+    "canonical_substring",
+    "alias_exact",
+    "alias_prefix",
+    "alias_substring",
+    "fuzzy_canonical",
+    "fuzzy_alias",
+]
+HighlightField = Literal["canonical", "alias"]
 
 EQUIPMENT_LABELS: dict[str, str] = {
     "barbell": "Barbell",
@@ -75,6 +87,36 @@ class ExerciseCatalogEntry:
     region_tags: tuple[str, ...]
     owner_user_id: str | None
     equipment_options: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ExerciseMatchHighlight:
+    field: HighlightField
+    value: str
+    start: int
+    end: int
+
+
+@dataclass(frozen=True)
+class ExerciseMatchMetadata:
+    strategy: MatchStrategy
+    score: int
+    highlight: ExerciseMatchHighlight | None
+
+
+@dataclass(frozen=True)
+class RankedExercise:
+    entry: ExerciseCatalogEntry
+    match_metadata: ExerciseMatchMetadata | None
+
+
+@dataclass(frozen=True)
+class PaginatedExerciseSearch:
+    items: tuple[RankedExercise, ...]
+    page: int
+    page_size: int
+    total_items: int
+    total_pages: int
 
 
 _BLUEPRINTS: tuple[ExerciseBlueprint, ...] = (
@@ -205,12 +247,61 @@ class ExerciseCatalogService:
         equipment: str | None = None,
         muscle: str | None = None,
     ) -> list[ExerciseCatalogEntry]:
+        page = self.search_exercises(
+            scope=scope,
+            search=search,
+            equipment=equipment,
+            muscle=muscle,
+            page=1,
+            page_size=max(len(self._catalog), 1),
+        )
+        return [item.entry for item in page.items]
+
+    def search_exercises(
+        self,
+        *,
+        scope: Literal["global", "user", "all"] = "all",
+        search: str | None = None,
+        equipment: str | None = None,
+        muscle: str | None = None,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> PaginatedExerciseSearch:
+        filtered = self._filtered_entries(scope=scope, equipment=equipment, muscle=muscle)
+        ranked = _rank_entries(filtered=filtered, query=search)
+
+        if page < 1:
+            raise ValueError("page must be greater than or equal to 1")
+        if page_size < 1:
+            raise ValueError("page_size must be greater than or equal to 1")
+
+        total_items = len(ranked)
+        total_pages = ceil(total_items / page_size) if total_items else 0
+        start_index = (page - 1) * page_size
+        end_index = start_index + page_size
+        paged_items = tuple(ranked[start_index:end_index])
+
+        return PaginatedExerciseSearch(
+            items=paged_items,
+            page=page,
+            page_size=page_size,
+            total_items=total_items,
+            total_pages=total_pages,
+        )
+
+    def _filtered_entries(
+        self,
+        *,
+        scope: Literal["global", "user", "all"],
+        equipment: str | None,
+        muscle: str | None,
+    ) -> list[ExerciseCatalogEntry]:
         if scope == "user":
             return []
 
         normalized_equipment = _normalize_token(equipment) if equipment else None
         normalized_muscle = _normalize_token(muscle) if muscle else None
-        filtered = [
+        return [
             entry
             for entry in self._catalog
             if (
@@ -223,24 +314,6 @@ class ExerciseCatalogService:
                 or normalized_muscle in {_normalize_token(item) for item in entry.region_tags}
             )
         ]
-
-        normalized_query = _normalize_phrase(search) if search else None
-        if not normalized_query:
-            return sorted(
-                filtered, key=lambda entry: (_normalize_phrase(entry.canonical_name), entry.id)
-            )
-
-        ranked: list[tuple[int, ExerciseCatalogEntry]] = []
-        for entry in filtered:
-            rank = _search_rank(entry, normalized_query)
-            if rank is None:
-                continue
-            ranked.append((rank, entry))
-
-        ranked.sort(
-            key=lambda item: (item[0], _normalize_phrase(item[1].canonical_name), item[1].id)
-        )
-        return [entry for _, entry in ranked]
 
     def _build_catalog(self) -> tuple[ExerciseCatalogEntry, ...]:
         catalog: list[ExerciseCatalogEntry] = []
@@ -313,42 +386,149 @@ class ExerciseCatalogService:
         return tuple(unique_aliases[key] for key in sorted(unique_aliases))
 
 
-def _search_rank(entry: ExerciseCatalogEntry, query: str) -> int | None:
+def _rank_entries(
+    *,
+    filtered: list[ExerciseCatalogEntry],
+    query: str | None,
+) -> list[RankedExercise]:
+    normalized_query = _normalize_phrase(query) if query else ""
+    if not normalized_query:
+        sorted_entries = sorted(
+            filtered, key=lambda entry: (_normalize_phrase(entry.canonical_name), entry.id)
+        )
+        return [RankedExercise(entry=entry, match_metadata=None) for entry in sorted_entries]
+
+    matches: list[tuple[int, RankedExercise]] = []
+    for entry in filtered:
+        metadata = _search_match(entry=entry, query=normalized_query)
+        if metadata is None:
+            continue
+        matches.append((metadata.score, RankedExercise(entry=entry, match_metadata=metadata)))
+
+    matches.sort(
+        key=lambda item: (
+            item[0],
+            _normalize_phrase(item[1].entry.canonical_name),
+            item[1].entry.id,
+        )
+    )
+    return [item[1] for item in matches]
+
+
+def _search_match(entry: ExerciseCatalogEntry, query: str) -> ExerciseMatchMetadata | None:
     canonical = _normalize_phrase(entry.canonical_name)
     aliases = [_normalize_phrase(alias) for alias in entry.aliases]
 
     if canonical == query:
-        return 0
+        return ExerciseMatchMetadata(
+            strategy="canonical_exact",
+            score=0,
+            highlight=_substring_highlight(
+                field="canonical", value=entry.canonical_name, query=query
+            ),
+        )
     if canonical.startswith(query):
-        return 1
+        return ExerciseMatchMetadata(
+            strategy="canonical_prefix",
+            score=1,
+            highlight=_substring_highlight(
+                field="canonical", value=entry.canonical_name, query=query
+            ),
+        )
     if query in canonical:
-        return 2
-    if any(alias == query for alias in aliases):
-        return 3
-    if any(alias.startswith(query) for alias in aliases):
-        return 4
-    if any(query in alias for alias in aliases):
-        return 5
-    fuzzy_rank = _fuzzy_rank(query=query, canonical=canonical, aliases=aliases)
-    if fuzzy_rank is not None:
-        return fuzzy_rank
-    return None
+        return ExerciseMatchMetadata(
+            strategy="canonical_substring",
+            score=2,
+            highlight=_substring_highlight(
+                field="canonical", value=entry.canonical_name, query=query
+            ),
+        )
+
+    for alias in entry.aliases:
+        normalized_alias = _normalize_phrase(alias)
+        if normalized_alias == query:
+            return ExerciseMatchMetadata(
+                strategy="alias_exact",
+                score=3,
+                highlight=_substring_highlight(field="alias", value=alias, query=query),
+            )
+        if normalized_alias.startswith(query):
+            return ExerciseMatchMetadata(
+                strategy="alias_prefix",
+                score=4,
+                highlight=_substring_highlight(field="alias", value=alias, query=query),
+            )
+        if query in normalized_alias:
+            return ExerciseMatchMetadata(
+                strategy="alias_substring",
+                score=5,
+                highlight=_substring_highlight(field="alias", value=alias, query=query),
+            )
+
+    return _fuzzy_match(entry=entry, query=query, canonical=canonical, aliases=aliases)
 
 
-def _fuzzy_rank(*, query: str, canonical: str, aliases: list[str]) -> int | None:
+def _fuzzy_match(
+    *,
+    entry: ExerciseCatalogEntry,
+    query: str,
+    canonical: str,
+    aliases: list[str],
+) -> ExerciseMatchMetadata | None:
     if len(query) < 4:
         return None
 
     max_distance = _max_allowed_distance(query)
     canonical_distance = _levenshtein_distance(query, canonical)
-    alias_distances = [_levenshtein_distance(query, alias) for alias in aliases]
-    best_alias_distance = min(alias_distances, default=max_distance + 1)
-
     if canonical_distance <= max_distance:
-        return 6 + canonical_distance
-    if best_alias_distance <= max_distance:
-        return 10 + best_alias_distance
+        return ExerciseMatchMetadata(
+            strategy="fuzzy_canonical",
+            score=6 + canonical_distance,
+            highlight=_full_highlight(field="canonical", value=entry.canonical_name),
+        )
+
+    best_alias_distance = max_distance + 1
+    best_alias_value: str | None = None
+    for alias in entry.aliases:
+        normalized_alias = _normalize_phrase(alias)
+        distance = _levenshtein_distance(query, normalized_alias)
+        if distance < best_alias_distance:
+            best_alias_distance = distance
+            best_alias_value = alias
+
+    if best_alias_value is not None and best_alias_distance <= max_distance:
+        return ExerciseMatchMetadata(
+            strategy="fuzzy_alias",
+            score=10 + best_alias_distance,
+            highlight=_full_highlight(field="alias", value=best_alias_value),
+        )
+
     return None
+
+
+def _substring_highlight(
+    *, field: HighlightField, value: str, query: str
+) -> ExerciseMatchHighlight:
+    normalized_value = _normalize_phrase(value)
+    start = normalized_value.find(query)
+    if start < 0:
+        return _full_highlight(field=field, value=value)
+    return ExerciseMatchHighlight(
+        field=field,
+        value=value,
+        start=start,
+        end=start + len(query),
+    )
+
+
+def _full_highlight(*, field: HighlightField, value: str) -> ExerciseMatchHighlight:
+    normalized_value = _normalize_phrase(value)
+    return ExerciseMatchHighlight(
+        field=field,
+        value=value,
+        start=0,
+        end=len(normalized_value),
+    )
 
 
 def _max_allowed_distance(query: str) -> int:
