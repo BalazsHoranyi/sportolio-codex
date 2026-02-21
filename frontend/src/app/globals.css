@@ -390,6 +390,208 @@ h1 {
   padding: 0.45rem 0.55rem;
 }
 
+.routine-builder-section {
+  background:
+    radial-gradient(
+      circle at 8% 18%,
+      oklch(0.96 0.06 78 / 0.45),
+      transparent 42%
+    ),
+    linear-gradient(180deg, oklch(0.986 0.013 75), oklch(0.95 0.02 66));
+}
+
+.routine-builder-header p {
+  margin: 0.5rem 0 0;
+  max-width: 64ch;
+}
+
+.routine-builder-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  margin-top: 1rem;
+}
+
+.routine-builder-picker-card,
+.routine-builder-draft-card {
+  background: oklch(0.992 0.01 77 / 0.9);
+  border: 1px solid oklch(0.87 0.02 59);
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.95rem;
+}
+
+.routine-builder-picker-card h3,
+.routine-builder-draft-card h3 {
+  font-size: 1.2rem;
+}
+
+.routine-builder-helper {
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.routine-builder-controls {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.routine-builder-controls label,
+.routine-builder-selected-actions label {
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.routine-builder-input,
+.routine-builder-select {
+  appearance: none;
+  background:
+    linear-gradient(180deg, oklch(0.99 0.01 76), oklch(0.965 0.02 69))
+      padding-box,
+    linear-gradient(180deg, oklch(0.91 0.02 60), oklch(0.85 0.04 55)) border-box;
+  border: 1px solid transparent;
+  border-radius: 0.62rem;
+  color: var(--ink-strong);
+  font: inherit;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.68rem;
+}
+
+.routine-builder-input:focus-visible,
+.routine-builder-select:focus-visible {
+  outline: 2px solid oklch(0.42 0.17 40);
+  outline-offset: 2px;
+}
+
+.routine-builder-status {
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.routine-builder-results {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0;
+  max-height: 20rem;
+  overflow: auto;
+  padding: 0;
+}
+
+.routine-builder-result {
+  background: oklch(0.975 0.018 70);
+  border: 1px solid oklch(0.89 0.025 58);
+  border-radius: 0.7rem;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.62rem 0.7rem;
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+  width: 100%;
+}
+
+.routine-builder-result:hover,
+.routine-builder-result.is-active {
+  border-color: oklch(0.73 0.07 52);
+  box-shadow: 0 8px 16px oklch(0.35 0.03 38 / 0.14);
+  transform: translateY(-1px);
+}
+
+.routine-builder-result:focus-visible,
+.routine-builder-remove:focus-visible {
+  outline: 2px solid oklch(0.42 0.17 40);
+  outline-offset: 2px;
+}
+
+.routine-builder-result-title {
+  color: var(--ink-strong);
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.routine-builder-result-meta,
+.routine-builder-selected-meta {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.routine-builder-selected-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.routine-builder-selected-list li {
+  border-bottom: 1px solid oklch(0.89 0.02 60);
+  padding-bottom: 0.6rem;
+}
+
+.routine-builder-selected-name {
+  color: var(--ink-strong);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.routine-builder-selected-actions {
+  align-items: end;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 0.35rem;
+}
+
+.routine-builder-selected-actions label {
+  grid-column: 1 / -1;
+}
+
+.routine-builder-remove {
+  align-items: center;
+  background: oklch(0.95 0.02 63);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-strong);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0 0.9rem;
+}
+
+.routine-builder-dsl {
+  background: oklch(0.955 0.015 70);
+  border: 1px solid oklch(0.88 0.02 60);
+  border-radius: 0.8rem;
+  color: var(--ink-strong);
+  font-size: 0.79rem;
+  margin: 0;
+  max-height: 22rem;
+  overflow: auto;
+  padding: 0.75rem;
+}
+
+.routine-builder-empty {
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
 .muscle-map-section {
   background: linear-gradient(
     180deg,
@@ -1031,6 +1233,14 @@ h1 {
   }
 
   .muscle-map-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .routine-builder-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .routine-builder-selected-actions {
     grid-template-columns: 1fr;
   }
 

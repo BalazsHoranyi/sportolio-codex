@@ -83,6 +83,9 @@ describe("HomePage", () => {
   it("renders exercise, routine, and microcycle muscle map visualization areas", async () => {
     const html = await renderHomePage();
 
+    expect(html).toContain("Strength routine builder");
+    expect(html).toContain("Exercise picker");
+    expect(html).toContain("Workout DSL preview");
     expect(html).toContain("Muscle Map Explorer");
     expect(html).toContain("Exercise map");
     expect(html).toContain("Routine map");

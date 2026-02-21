@@ -20,6 +20,7 @@ class ExerciseCatalogItem(CamelModel):
     canonical_name: str
     aliases: list[str] = Field(default_factory=list)
     region_tags: list[str] = Field(default_factory=list)
+    equipment_options: list[str] = Field(default_factory=list)
     owner_user_id: str | None = None
 
 

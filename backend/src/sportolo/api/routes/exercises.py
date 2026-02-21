@@ -38,6 +38,7 @@ async def list_exercises(
                 canonical_name=entry.canonical_name,
                 aliases=list(entry.aliases),
                 region_tags=list(entry.region_tags),
+                equipment_options=list(entry.equipment_options),
                 owner_user_id=entry.owner_user_id,
             )
             for entry in entries

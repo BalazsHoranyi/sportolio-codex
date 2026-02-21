@@ -1,5 +1,6 @@
 import React from "react";
 
+import { StrengthExercisePicker } from "../features/exercise-picker/strength-exercise-picker";
 import { loadMuscleUsageResponse } from "../features/muscle-map/api";
 import { MuscleMapExplorer } from "../features/muscle-map/muscle-map-explorer";
 import {
@@ -166,6 +167,8 @@ export default async function HomePage() {
           </ul>
         </article>
       </section>
+
+      <StrengthExercisePicker />
 
       <MuscleMapExplorer response={muscleUsageResponse} />
 
