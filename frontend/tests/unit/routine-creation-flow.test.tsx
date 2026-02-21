@@ -284,4 +284,94 @@ describe("RoutineCreationFlow", () => {
     expect(dslEditor.value).toContain('"progression"');
     expect(dslEditor.value).toContain('"strategy": "linear_add_load"');
   });
+
+  it("supports keyboard tab navigation for editor mode and routine path", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    const visualTab = screen.getByRole("tab", { name: /^visual$/i });
+    const dslTab = screen.getByRole("tab", { name: /^dsl$/i });
+
+    visualTab.focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(dslTab.getAttribute("aria-selected")).toBe("true");
+    expect(
+      screen.getByRole("textbox", {
+        name: /routine dsl editor/i,
+      }),
+    ).toBeTruthy();
+
+    dslTab.focus();
+    await user.keyboard("{ArrowLeft}");
+    expect(visualTab.getAttribute("aria-selected")).toBe("true");
+
+    const strengthTab = screen.getByRole("tab", { name: /^strength$/i });
+    const enduranceTab = screen.getByRole("tab", { name: /^endurance$/i });
+
+    strengthTab.focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(enduranceTab.getAttribute("aria-selected")).toBe("true");
+    expect(
+      screen.getByRole("button", {
+        name: /add interval/i,
+      }),
+    ).toBeTruthy();
+
+    await user.keyboard("{Home}");
+    expect(strengthTab.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("requires confirmation before destructive remove actions", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm");
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /add variable/i,
+      }),
+    );
+    expect(
+      screen.getByRole("textbox", {
+        name: /variable name/i,
+      }),
+    ).toBeTruthy();
+
+    confirmSpy.mockReturnValueOnce(false);
+    await user.click(
+      screen.getByRole("button", {
+        name: /remove variable/i,
+      }),
+    );
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("textbox", {
+        name: /variable name/i,
+      }),
+    ).toBeTruthy();
+
+    confirmSpy.mockReturnValueOnce(true);
+    await user.click(
+      screen.getByRole("button", {
+        name: /remove variable/i,
+      }),
+    );
+
+    expect(
+      screen.queryByRole("textbox", {
+        name: /variable name/i,
+      }),
+    ).toBeNull();
+
+    confirmSpy.mockRestore();
+  });
 });

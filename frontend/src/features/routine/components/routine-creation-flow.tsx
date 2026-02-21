@@ -22,6 +22,9 @@ import {
 
 type EditorMode = "visual" | "dsl";
 
+const editorModeOrder: EditorMode[] = ["visual", "dsl"];
+const routinePathOrder: RoutinePath[] = ["strength", "endurance"];
+
 function nextIntervalId(intervals: EnduranceIntervalDraft[]): string {
   const nextNumericId =
     intervals
@@ -114,6 +117,52 @@ function createExerciseDraft(
     condition: null,
     sets: [createDefaultStrengthSet(setId)],
   };
+}
+
+function resolveNextTabIndex(
+  currentIndex: number,
+  key: string,
+  totalItems: number,
+): number | null {
+  if (totalItems === 0) {
+    return null;
+  }
+
+  if (key === "ArrowRight") {
+    return (currentIndex + 1) % totalItems;
+  }
+
+  if (key === "ArrowLeft") {
+    return (currentIndex - 1 + totalItems) % totalItems;
+  }
+
+  if (key === "Home") {
+    return 0;
+  }
+
+  if (key === "End") {
+    return totalItems - 1;
+  }
+
+  return null;
+}
+
+function focusById(id: string) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const element = document.getElementById(id);
+  if (element instanceof HTMLElement) {
+    element.focus();
+  }
+}
+
+function confirmDestructiveAction(message: string): boolean {
+  if (typeof window === "undefined" || typeof window.confirm !== "function") {
+    return true;
+  }
+  return window.confirm(message);
 }
 
 export function RoutineCreationFlow() {
@@ -221,6 +270,70 @@ export function RoutineCreationFlow() {
       setDslText(serializeRoutineDsl(routine));
       setDslErrors([]);
     }
+  }
+
+  function modeTabId(modeValue: EditorMode): string {
+    return `routine-mode-tab-${modeValue}`;
+  }
+
+  function modePanelId(modeValue: EditorMode): string {
+    return `routine-mode-panel-${modeValue}`;
+  }
+
+  function pathTabId(pathValue: RoutinePath): string {
+    return `routine-path-tab-${pathValue}`;
+  }
+
+  function pathPanelId(pathValue: RoutinePath): string {
+    return `routine-path-panel-${pathValue}`;
+  }
+
+  function onModeTabKeyDown(
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    currentMode: EditorMode,
+  ) {
+    const currentIndex = editorModeOrder.indexOf(currentMode);
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const nextIndex = resolveNextTabIndex(
+      currentIndex,
+      event.key,
+      editorModeOrder.length,
+    );
+    if (nextIndex === null) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextMode = editorModeOrder[nextIndex] ?? currentMode;
+    switchMode(nextMode);
+    focusById(modeTabId(nextMode));
+  }
+
+  function onPathTabKeyDown(
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    currentPath: RoutinePath,
+  ) {
+    const currentIndex = routinePathOrder.indexOf(currentPath);
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const nextIndex = resolveNextTabIndex(
+      currentIndex,
+      event.key,
+      routinePathOrder.length,
+    );
+    if (nextIndex === null) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextPath = routinePathOrder[nextIndex] ?? currentPath;
+    setPath(nextPath);
+    focusById(pathTabId(nextPath));
   }
 
   function addVariable() {
@@ -708,28 +821,36 @@ export function RoutineCreationFlow() {
         aria-label="Editor mode"
       >
         <button
+          id={modeTabId("visual")}
           type="button"
           role="tab"
+          tabIndex={mode === "visual" ? 0 : -1}
           aria-selected={mode === "visual"}
+          aria-controls={modePanelId("visual")}
           className={
             mode === "visual"
               ? "routine-flow-tab routine-flow-tab-active"
               : "routine-flow-tab"
           }
           onClick={() => switchMode("visual")}
+          onKeyDown={(event) => onModeTabKeyDown(event, "visual")}
         >
           Visual
         </button>
         <button
+          id={modeTabId("dsl")}
           type="button"
           role="tab"
+          tabIndex={mode === "dsl" ? 0 : -1}
           aria-selected={mode === "dsl"}
+          aria-controls={modePanelId("dsl")}
           className={
             mode === "dsl"
               ? "routine-flow-tab routine-flow-tab-active"
               : "routine-flow-tab"
           }
           onClick={() => switchMode("dsl")}
+          onKeyDown={(event) => onModeTabKeyDown(event, "dsl")}
         >
           DSL
         </button>
@@ -741,37 +862,55 @@ export function RoutineCreationFlow() {
         aria-label="Routine path"
       >
         <button
+          id={pathTabId("strength")}
           type="button"
           role="tab"
+          tabIndex={routine.path === "strength" ? 0 : -1}
           aria-selected={routine.path === "strength"}
+          aria-controls={pathPanelId("strength")}
           className={
             routine.path === "strength"
               ? "routine-flow-pill routine-flow-pill-active"
               : "routine-flow-pill"
           }
           onClick={() => setPath("strength")}
+          onKeyDown={(event) => onPathTabKeyDown(event, "strength")}
         >
           Strength
         </button>
         <button
+          id={pathTabId("endurance")}
           type="button"
           role="tab"
+          tabIndex={routine.path === "endurance" ? 0 : -1}
           aria-selected={routine.path === "endurance"}
+          aria-controls={pathPanelId("endurance")}
           className={
             routine.path === "endurance"
               ? "routine-flow-pill routine-flow-pill-active"
               : "routine-flow-pill"
           }
           onClick={() => setPath("endurance")}
+          onKeyDown={(event) => onPathTabKeyDown(event, "endurance")}
         >
           Endurance
         </button>
       </div>
 
       {mode === "visual" ? (
-        <div className="routine-flow-visual-grid">
+        <div
+          className="routine-flow-visual-grid"
+          id={modePanelId("visual")}
+          role="tabpanel"
+          aria-labelledby={modeTabId("visual")}
+        >
           {routine.path === "strength" ? (
-            <article className="routine-flow-panel">
+            <article
+              className="routine-flow-panel"
+              id={pathPanelId("strength")}
+              role="tabpanel"
+              aria-labelledby={pathTabId("strength")}
+            >
               <h2>Strength visual builder</h2>
               <p className="routine-flow-helper">
                 Search and add exercises, then configure loops, conditions, and
@@ -828,7 +967,16 @@ export function RoutineCreationFlow() {
                       <button
                         type="button"
                         className="routine-flow-link"
-                        onClick={() => removeVariable(variable.variableId)}
+                        onClick={() => {
+                          if (
+                            !confirmDestructiveAction(
+                              "Remove this custom variable?",
+                            )
+                          ) {
+                            return;
+                          }
+                          removeVariable(variable.variableId);
+                        }}
                       >
                         Remove variable
                       </button>
@@ -968,7 +1116,16 @@ export function RoutineCreationFlow() {
                     <button
                       type="button"
                       className="routine-flow-link"
-                      onClick={() => removeBlock(block.blockId)}
+                      onClick={() => {
+                        if (
+                          !confirmDestructiveAction(
+                            "Remove this block and all nested exercises?",
+                          )
+                        ) {
+                          return;
+                        }
+                        removeBlock(block.blockId);
+                      }}
                     >
                       Remove block
                     </button>
@@ -1048,12 +1205,19 @@ export function RoutineCreationFlow() {
                                   <button
                                     type="button"
                                     className="routine-flow-link"
-                                    onClick={() =>
+                                    onClick={() => {
+                                      if (
+                                        !confirmDestructiveAction(
+                                          `Remove ${exercise.canonicalName} from this block?`,
+                                        )
+                                      ) {
+                                        return;
+                                      }
                                       removeStrengthExercise(
                                         block.blockId,
                                         exercise.exerciseId,
-                                      )
-                                    }
+                                      );
+                                    }}
                                   >
                                     Remove
                                   </button>
@@ -1267,13 +1431,20 @@ export function RoutineCreationFlow() {
                                     <button
                                       type="button"
                                       className="routine-flow-link"
-                                      onClick={() =>
+                                      onClick={() => {
+                                        if (
+                                          !confirmDestructiveAction(
+                                            "Remove this set?",
+                                          )
+                                        ) {
+                                          return;
+                                        }
                                         removeStrengthSet(
                                           block.blockId,
                                           exercise.exerciseId,
                                           setDraft.setId,
-                                        )
-                                      }
+                                        );
+                                      }}
                                     >
                                       Remove set
                                     </button>
@@ -1307,7 +1478,12 @@ export function RoutineCreationFlow() {
               </div>
             </article>
           ) : (
-            <article className="routine-flow-panel">
+            <article
+              className="routine-flow-panel"
+              id={pathPanelId("endurance")}
+              role="tabpanel"
+              aria-labelledby={pathTabId("endurance")}
+            >
               <h2>Endurance visual builder</h2>
               <p className="routine-flow-helper">
                 Add deterministic interval blocks and refine in DSL if needed.
@@ -1411,9 +1587,16 @@ export function RoutineCreationFlow() {
                       <button
                         type="button"
                         className="routine-flow-link"
-                        onClick={() =>
-                          removeEnduranceInterval(interval.intervalId)
-                        }
+                        onClick={() => {
+                          if (
+                            !confirmDestructiveAction(
+                              "Remove this endurance interval?",
+                            )
+                          ) {
+                            return;
+                          }
+                          removeEnduranceInterval(interval.intervalId);
+                        }}
                       >
                         Remove
                       </button>
@@ -1438,7 +1621,12 @@ export function RoutineCreationFlow() {
           </article>
         </div>
       ) : (
-        <article className="routine-flow-panel">
+        <article
+          className="routine-flow-panel"
+          id={modePanelId("dsl")}
+          role="tabpanel"
+          aria-labelledby={modeTabId("dsl")}
+        >
           <h2>DSL editor</h2>
           <p className="routine-flow-helper">
             Advanced mode uses deterministic JSON DSL. Invalid edits keep the
