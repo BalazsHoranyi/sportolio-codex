@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from sportolo.api.routes.exercise_zone_mapping import router as exercise_zone_mapping_router
 from sportolo.api.routes.exercises import router as exercises_router
 from sportolo.api.routes.fatigue_today import router as fatigue_today_router
 from sportolo.api.routes.goals import router as goals_router
@@ -9,6 +10,7 @@ from sportolo.api.routes.muscle_usage import router as muscle_usage_router
 
 app = FastAPI(title="Sportolo API", version="0.1.0")
 app.include_router(exercises_router)
+app.include_router(exercise_zone_mapping_router)
 app.include_router(muscle_usage_router)
 app.include_router(fatigue_today_router)
 app.include_router(goals_router)
