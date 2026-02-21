@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, inspect, select
+from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -38,6 +40,45 @@ def _schema_signature(database_url: str) -> dict[str, tuple[str, ...]]:
         engine.dispose()
 
 
+def _head_revisions(config: Config) -> set[str]:
+    return set(ScriptDirectory.from_config(config).get_heads())
+
+
+def _flatten_revision_link(revision_link: str | Sequence[str] | None) -> set[str]:
+    if revision_link is None:
+        return set()
+    if isinstance(revision_link, str):
+        return {revision_link}
+    return set(revision_link)
+
+
+def _parent_revisions_of_heads(config: Config) -> set[str]:
+    script_directory = ScriptDirectory.from_config(config)
+    parent_revisions: set[str] = set()
+
+    for head_revision in script_directory.get_heads():
+        head_script = script_directory.get_revision(head_revision)
+        parent_revisions.update(_flatten_revision_link(head_script.down_revision))
+
+    return parent_revisions
+
+
+def _current_revisions(database_url: str) -> set[str]:
+    engine = create_engine(database_url, future=True)
+    try:
+        inspector = inspect(engine)
+        if "alembic_version" not in inspector.get_table_names():
+            return set()
+
+        with engine.connect() as connection:
+            return {
+                row[0]
+                for row in connection.execute(text("SELECT version_num FROM alembic_version"))
+            }
+    finally:
+        engine.dispose()
+
+
 def _snapshot_rows(engine: Engine) -> list[dict[str, object]]:
     with Session(engine) as session:
         snapshots = session.scalars(select(FatigueSnapshot).order_by(FatigueSnapshot.id)).all()
@@ -65,18 +106,20 @@ def test_latest_migration_upgrade_rollback_upgrade_cycle_is_deterministic(tmp_pa
     database_path = tmp_path / "migration-pipeline.db"
     database_url = f"sqlite+pysqlite:///{database_path}"
     config = _build_config(database_url)
+    head_revisions = _head_revisions(config)
+    downgraded_revisions = _parent_revisions_of_heads(config)
 
     command.upgrade(config, "head")
+    assert _current_revisions(database_url) == head_revisions
     first_signature = _schema_signature(database_url)
 
     command.downgrade(config, "-1")
-    downgraded_signature = _schema_signature(database_url)
+    assert _current_revisions(database_url) == downgraded_revisions
 
     command.upgrade(config, "head")
+    assert _current_revisions(database_url) == head_revisions
     second_signature = _schema_signature(database_url)
 
-    assert "fatigue_snapshots" in first_signature
-    assert "fatigue_snapshots" not in downgraded_signature
     assert second_signature == first_signature
 
 
