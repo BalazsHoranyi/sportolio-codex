@@ -1,17 +1,19 @@
 import type {
+  ExplainabilityContributor,
+  ScoreExplainability,
   TodayAccumulationResponse,
   TodayContributorSession,
 } from "./types";
 
 export type ThresholdState = "low" | "moderate" | "high";
+export type GaugeId = "neural" | "metabolic" | "mechanical";
 
 export interface AxisGaugeViewModel {
-  id: string;
+  id: GaugeId;
   label: string;
   value: number;
   percent: number;
   thresholdState: ThresholdState;
-  tooltip: string;
 }
 
 export interface WhyThisLink {
@@ -21,11 +23,24 @@ export interface WhyThisLink {
   shareLabel?: string;
 }
 
+export interface ScoreExplainabilityViewModel {
+  axisMeaning: string;
+  decisionHint: string;
+  contributors: WhyThisLink[];
+}
+
 export interface TodayDashboardViewModel {
   asOf: string;
   boundarySourceLabel: string;
   boundaryWindow: string;
   gauges: AxisGaugeViewModel[];
+  scoreExplainability: {
+    neural: ScoreExplainabilityViewModel;
+    metabolic: ScoreExplainabilityViewModel;
+    mechanical: ScoreExplainabilityViewModel;
+    recruitment: ScoreExplainabilityViewModel;
+    combined: ScoreExplainabilityViewModel;
+  };
   recruitmentValue: number;
   recruitmentState: ThresholdState;
   combinedScoreValue: number;
@@ -91,30 +106,21 @@ function toShareLabel(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
-function buildGaugeTooltip(axisMeaning: string, decisionHint: string): string {
-  return `${axisMeaning} ${decisionHint}`.trim();
+function byMagnitudeDesc(
+  a: ExplainabilityContributor,
+  b: ExplainabilityContributor,
+): number {
+  if (a.contributionMagnitude === b.contributionMagnitude) {
+    return a.sessionId.localeCompare(b.sessionId);
+  }
+  return b.contributionMagnitude - a.contributionMagnitude;
 }
 
-function buildWhyThisLinks(
-  snapshot: TodayAccumulationResponse,
+function buildFallbackContributorLinks(
   includedSessionIds: string[],
   contributors?: TodayContributorSession[],
 ): WhyThisLink[] {
-  const explainabilityContributors =
-    snapshot.explainability.combined.contributors;
-  if (explainabilityContributors.length > 0) {
-    const includedSet = new Set(includedSessionIds);
-    return explainabilityContributors
-      .filter((contributor) => includedSet.has(contributor.sessionId))
-      .map((contributor) => ({
-        sessionId: contributor.sessionId,
-        label: contributor.label,
-        href: contributor.href ?? defaultSessionHref(contributor.sessionId),
-        shareLabel: toShareLabel(contributor.contributionShare),
-      }));
-  }
-
-  if (!contributors || contributors.length === 0) {
+  if (!contributors || contributors.length < 1) {
     return includedSessionIds.map((sessionId) => ({
       sessionId,
       label: sessionId,
@@ -130,6 +136,63 @@ function buildWhyThisLinks(
       label: contributor.label,
       href: contributor.href ?? defaultSessionHref(contributor.sessionId),
     }));
+}
+
+function buildExplainabilityContributorLinks(
+  explainabilityContributors: ExplainabilityContributor[],
+  includedSessionIds: string[],
+): WhyThisLink[] {
+  if (explainabilityContributors.length < 1) {
+    return [];
+  }
+
+  const includedSet = new Set(includedSessionIds);
+  return explainabilityContributors
+    .filter((contributor) => includedSet.has(contributor.sessionId))
+    .sort(byMagnitudeDesc)
+    .slice(0, 3)
+    .map((contributor) => ({
+      sessionId: contributor.sessionId,
+      label: contributor.label,
+      href: contributor.href ?? defaultSessionHref(contributor.sessionId),
+      shareLabel: toShareLabel(contributor.contributionShare),
+    }));
+}
+
+function resolveContributorLinks(
+  explainabilityContributors: ExplainabilityContributor[],
+  includedSessionIds: string[],
+  contributors?: TodayContributorSession[],
+): WhyThisLink[] {
+  const explainabilityLinks = buildExplainabilityContributorLinks(
+    explainabilityContributors,
+    includedSessionIds,
+  );
+
+  if (explainabilityLinks.length > 0) {
+    return explainabilityLinks;
+  }
+
+  return buildFallbackContributorLinks(includedSessionIds, contributors).slice(
+    0,
+    3,
+  );
+}
+
+function buildScoreExplainabilityViewModel(
+  explainability: ScoreExplainability,
+  includedSessionIds: string[],
+  contributors?: TodayContributorSession[],
+): ScoreExplainabilityViewModel {
+  return {
+    axisMeaning: explainability.axisMeaning,
+    decisionHint: explainability.decisionHint,
+    contributors: resolveContributorLinks(
+      explainability.contributors,
+      includedSessionIds,
+      contributors,
+    ),
+  };
 }
 
 export function buildTodayDashboardViewModel(
@@ -157,10 +220,6 @@ export function buildTodayDashboardViewModel(
         value: neural,
         percent: (neural / 10) * 100,
         thresholdState: toThresholdState(neural),
-        tooltip: buildGaugeTooltip(
-          snapshot.explainability.neural.axisMeaning,
-          snapshot.explainability.neural.decisionHint,
-        ),
       },
       {
         id: "metabolic",
@@ -168,10 +227,6 @@ export function buildTodayDashboardViewModel(
         value: metabolic,
         percent: (metabolic / 10) * 100,
         thresholdState: toThresholdState(metabolic),
-        tooltip: buildGaugeTooltip(
-          snapshot.explainability.metabolic.axisMeaning,
-          snapshot.explainability.metabolic.decisionHint,
-        ),
       },
       {
         id: "mechanical",
@@ -179,12 +234,35 @@ export function buildTodayDashboardViewModel(
         value: mechanical,
         percent: (mechanical / 10) * 100,
         thresholdState: toThresholdState(mechanical),
-        tooltip: buildGaugeTooltip(
-          snapshot.explainability.mechanical.axisMeaning,
-          snapshot.explainability.mechanical.decisionHint,
-        ),
       },
     ],
+    scoreExplainability: {
+      neural: buildScoreExplainabilityViewModel(
+        snapshot.explainability.neural,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+      metabolic: buildScoreExplainabilityViewModel(
+        snapshot.explainability.metabolic,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+      mechanical: buildScoreExplainabilityViewModel(
+        snapshot.explainability.mechanical,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+      recruitment: buildScoreExplainabilityViewModel(
+        snapshot.explainability.recruitment,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+      combined: buildScoreExplainabilityViewModel(
+        snapshot.explainability.combined,
+        snapshot.includedSessionIds,
+        contributors,
+      ),
+    },
     recruitmentValue: recruitment,
     recruitmentState: toThresholdState(recruitment),
     combinedScoreValue: combinedScore,
@@ -193,8 +271,8 @@ export function buildTodayDashboardViewModel(
     capacityFactor,
     capacityState,
     capacityLabel: toCapacityLabel(capacityState),
-    whyThisLinks: buildWhyThisLinks(
-      snapshot,
+    whyThisLinks: resolveContributorLinks(
+      snapshot.explainability.combined.contributors,
       snapshot.includedSessionIds,
       contributors,
     ),

@@ -5,11 +5,79 @@ import type {
   TodayAccumulationResponse,
   TodayContributorSession,
 } from "./types";
-import { buildTodayDashboardViewModel } from "./view-model";
+import {
+  buildTodayDashboardViewModel,
+  type ScoreExplainabilityViewModel,
+  type WhyThisLink,
+} from "./view-model";
 
 interface TodayDashboardProps {
   snapshot: TodayAccumulationResponse;
   contributors?: TodayContributorSession[];
+}
+
+interface ScoreExplainabilityDetailsProps {
+  scoreKey: string;
+  scoreLabel: string;
+  explainability: ScoreExplainabilityViewModel;
+}
+
+function ContributorChips({ contributors }: { contributors: WhyThisLink[] }) {
+  if (contributors.length < 1) {
+    return (
+      <p className="today-empty">
+        No completed contributors inside today's boundary.
+      </p>
+    );
+  }
+
+  return (
+    <div className="today-chip-row today-chip-row-compact">
+      {contributors.map((contributor) => (
+        <a
+          className="today-chip"
+          href={contributor.href}
+          key={contributor.sessionId}
+        >
+          <span>{contributor.label}</span>
+          {contributor.shareLabel ? (
+            <span aria-label={`${contributor.label} contribution share`}>
+              {contributor.shareLabel}
+            </span>
+          ) : null}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function ScoreExplainabilityDetails({
+  scoreKey,
+  scoreLabel,
+  explainability,
+}: ScoreExplainabilityDetailsProps) {
+  return (
+    <details
+      className="today-score-explain"
+      data-testid={`${scoreKey}-explain`}
+    >
+      <summary role="button" aria-label="Why this score">
+        Why this score
+      </summary>
+      <div
+        className="today-score-explain-content"
+        role="region"
+        aria-label={`${scoreLabel} score explanation`}
+      >
+        <p className="today-score-explain-axis">{explainability.axisMeaning}</p>
+        <p className="today-score-explain-decision">
+          {explainability.decisionHint}
+        </p>
+        <p className="today-score-explain-label">Top contributors</p>
+        <ContributorChips contributors={explainability.contributors} />
+      </div>
+    </details>
+  );
 }
 
 export function TodayDashboard({
@@ -71,10 +139,14 @@ export function TodayDashboard({
                   aria-label={`${gauge.label} gauge`}
                   className="today-gauge-track"
                   role="img"
-                  title={gauge.tooltip}
                 >
                   <span style={{ width: `${gauge.percent}%` }} />
                 </div>
+                <ScoreExplainabilityDetails
+                  scoreKey={gauge.id}
+                  scoreLabel={gauge.label}
+                  explainability={viewModel.scoreExplainability[gauge.id]}
+                />
               </article>
             ))}
 
@@ -89,6 +161,11 @@ export function TodayDashboard({
               <p className="today-recruitment-copy">
                 Derived from neural and mechanical carryover.
               </p>
+              <ScoreExplainabilityDetails
+                scoreKey="recruitment"
+                scoreLabel="Recruitment"
+                explainability={viewModel.scoreExplainability.recruitment}
+              />
             </article>
           </div>
         </BentoGridItem>
@@ -115,6 +192,11 @@ export function TodayDashboard({
               ) : (
                 <p className="today-safe">Below red threshold</p>
               )}
+              <ScoreExplainabilityDetails
+                scoreKey="combined"
+                scoreLabel="Combined"
+                explainability={viewModel.scoreExplainability.combined}
+              />
             </article>
 
             <article
@@ -144,24 +226,7 @@ export function TodayDashboard({
             Contributors are limited to sessions included by the accumulation
             boundary.
           </p>
-          <div className="today-chip-row">
-            {viewModel.whyThisLinks.length > 0 ? (
-              viewModel.whyThisLinks.map((link) => (
-                <a className="today-chip" href={link.href} key={link.sessionId}>
-                  <span>{link.label}</span>
-                  {link.shareLabel ? (
-                    <span aria-label={`${link.label} contribution share`}>
-                      {link.shareLabel}
-                    </span>
-                  ) : null}
-                </a>
-              ))
-            ) : (
-              <p className="today-empty">
-                No completed contributors inside today's boundary.
-              </p>
-            )}
-          </div>
+          <ContributorChips contributors={viewModel.whyThisLinks} />
         </BentoGridItem>
       </BentoGrid>
     </section>

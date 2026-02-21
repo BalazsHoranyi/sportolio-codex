@@ -124,6 +124,50 @@ describe("today view-model", () => {
     expect(viewModel.whyThisLinks).toHaveLength(1);
     expect(viewModel.whyThisLinks[0]?.label).toBe("Heavy lower session");
     expect(viewModel.whyThisLinks[0]?.shareLabel).toBe("100%");
-    expect(viewModel.gauges[0]?.tooltip).toContain("Neural readiness");
+    expect(viewModel.scoreExplainability.neural.axisMeaning).toContain(
+      "Neural readiness",
+    );
+  });
+
+  it("limits per-score contributor links to top three sessions by magnitude", () => {
+    const snapshot = structuredClone(todayAccumulationResponseSample);
+    snapshot.includedSessionIds = ["s1", "s2", "s3", "s4"];
+    snapshot.explainability.neural.contributors = [
+      {
+        sessionId: "s1",
+        label: "Session 1",
+        href: "/calendar?sessionId=s1",
+        contributionMagnitude: 1.1,
+        contributionShare: 0.1,
+      },
+      {
+        sessionId: "s2",
+        label: "Session 2",
+        href: "/calendar?sessionId=s2",
+        contributionMagnitude: 9.1,
+        contributionShare: 0.5,
+      },
+      {
+        sessionId: "s3",
+        label: "Session 3",
+        href: "/calendar?sessionId=s3",
+        contributionMagnitude: 5.2,
+        contributionShare: 0.25,
+      },
+      {
+        sessionId: "s4",
+        label: "Session 4",
+        href: "/calendar?sessionId=s4",
+        contributionMagnitude: 4.4,
+        contributionShare: 0.15,
+      },
+    ];
+
+    const viewModel = buildTodayDashboardViewModel(snapshot);
+    const links = viewModel.scoreExplainability.neural.contributors;
+
+    expect(links).toHaveLength(3);
+    expect(links.map((link) => link.sessionId)).toEqual(["s2", "s3", "s4"]);
+    expect(links[0]?.shareLabel).toBe("50%");
   });
 });

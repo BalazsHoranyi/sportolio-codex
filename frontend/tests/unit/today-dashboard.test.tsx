@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import type {
   TodayAccumulationResponse,
@@ -150,7 +150,7 @@ describe("TodayDashboard", () => {
     expect(screen.getByText("Neural")).toBeTruthy();
     expect(screen.getByText("Metabolic")).toBeTruthy();
     expect(screen.getByText("Mechanical")).toBeTruthy();
-    expect(screen.getByText(/Recruitment/i)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /Recruitment/i })).toBeTruthy();
 
     expect(screen.getByTestId("combined-score-card")).toBeTruthy();
     expect(screen.getByTestId("capacity-card")).toBeTruthy();
@@ -193,7 +193,10 @@ describe("TodayDashboard", () => {
       <TodayDashboard snapshot={buildSnapshot()} contributors={contributors} />,
     );
 
-    const includedLink = screen.getByRole("link", {
+    const contributorsRegion = screen.getByRole("region", {
+      name: /why this today contributors/i,
+    });
+    const includedLink = within(contributorsRegion).getByRole("link", {
       name: /heavy lower session/i,
     });
 
@@ -214,11 +217,12 @@ describe("TodayDashboard", () => {
     );
 
     expect(
-      screen.getByText(/no completed contributors inside today's boundary/i),
-    ).toBeTruthy();
+      screen.getAllByText(/no completed contributors inside today's boundary/i)
+        .length,
+    ).toBeGreaterThan(0);
   });
 
-  it("renders explainability share labels and axis tooltip hints from backend payload", () => {
+  it("renders per-score explainability disclosures with contributor links", () => {
     render(
       <TodayDashboard
         snapshot={buildSnapshot({
@@ -279,9 +283,19 @@ describe("TodayDashboard", () => {
       />,
     );
 
-    expect(screen.getByText("100%")).toBeTruthy();
-    expect(
-      screen.getByLabelText("Neural gauge").getAttribute("title"),
-    ).toContain("Neural readiness");
+    const explainabilityButtons = screen.getAllByRole("button", {
+      name: /why this score/i,
+    });
+    expect(explainabilityButtons).toHaveLength(5);
+
+    fireEvent.click(explainabilityButtons[0]!);
+    fireEvent.click(explainabilityButtons[4]!);
+
+    expect(screen.getByText("Neural readiness.")).toBeTruthy();
+    expect(screen.getByText("Combined risk.")).toBeTruthy();
+    expect(screen.getAllByText("100%").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Neural gauge").getAttribute("title")).toBe(
+      null,
+    );
   });
 });

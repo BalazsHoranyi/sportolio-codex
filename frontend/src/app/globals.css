@@ -2085,6 +2085,74 @@ h1 {
   background: var(--midnight-bloom-component-color-081);
 }
 
+.today-chip-row-compact {
+  margin-top: 0.45rem;
+}
+
+.today-chip-row-compact .today-chip {
+  font-size: 0.74rem;
+  padding: 0.35rem 0.58rem;
+}
+
+.today-score-explain {
+  border-top: 1px solid var(--line);
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+}
+
+.today-score-explain > summary {
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  list-style: none;
+}
+
+.today-score-explain > summary::-webkit-details-marker {
+  display: none;
+}
+
+.today-score-explain > summary::after {
+  content: "+";
+  float: right;
+}
+
+.today-score-explain[open] > summary::after {
+  content: "-";
+}
+
+.today-score-explain > summary:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 2px;
+}
+
+.today-score-explain-content {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.today-score-explain-axis,
+.today-score-explain-decision,
+.today-score-explain-label {
+  margin: 0;
+}
+
+.today-score-explain-axis,
+.today-score-explain-decision {
+  color: var(--ink-strong);
+  font-size: 0.82rem;
+}
+
+.today-score-explain-label {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .today-empty {
   color: var(--ink-muted);
   margin: 0;
