@@ -32,6 +32,9 @@ export default async function TodayPage() {
           <a className="button button-secondary" href="/">
             Home
           </a>
+          <a className="button button-secondary" href="/routine">
+            Routine
+          </a>
           <a className="button button-secondary" href="/calendar">
             Calendar
           </a>
