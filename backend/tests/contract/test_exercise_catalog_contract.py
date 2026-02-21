@@ -53,10 +53,22 @@ def test_list_exercises_supports_filter_intersection() -> None:
                     "CBL Pallof Press",
                 ],
                 "regionTags": ["core", "obliques"],
+                "equipmentOptions": ["cable", "band"],
                 "ownerUserId": None,
             }
         ]
     }
+
+
+def test_list_exercises_supports_typo_tolerant_search() -> None:
+    client = TestClient(app)
+
+    response = client.get("/v1/exercises", params={"search": "splt sqaut"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["items"]
+    assert body["items"][0]["canonicalName"] == "Split Squat"
 
 
 def test_list_exercises_openapi_metadata_matches_contract() -> None:

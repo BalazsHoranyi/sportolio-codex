@@ -88,3 +88,12 @@ def test_search_and_filters_are_deterministic() -> None:
 
     assert [entry.id for entry in first] == [entry.id for entry in second]
     assert [entry.canonical_name for entry in first] == ["Pallof Press"]
+
+
+def test_typo_tolerant_search_resolves_strength_exercise_names() -> None:
+    service = ExerciseCatalogService()
+
+    matches = service.list_exercises(search="splt sqaut")
+
+    assert matches
+    assert matches[0].canonical_name == "Split Squat"

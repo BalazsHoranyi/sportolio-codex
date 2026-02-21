@@ -329,7 +329,61 @@ def _search_rank(entry: ExerciseCatalogEntry, query: str) -> int | None:
         return 4
     if any(query in alias for alias in aliases):
         return 5
+    fuzzy_rank = _fuzzy_rank(query=query, canonical=canonical, aliases=aliases)
+    if fuzzy_rank is not None:
+        return fuzzy_rank
     return None
+
+
+def _fuzzy_rank(*, query: str, canonical: str, aliases: list[str]) -> int | None:
+    if len(query) < 4:
+        return None
+
+    max_distance = _max_allowed_distance(query)
+    canonical_distance = _levenshtein_distance(query, canonical)
+    alias_distances = [_levenshtein_distance(query, alias) for alias in aliases]
+    best_alias_distance = min(alias_distances, default=max_distance + 1)
+
+    if canonical_distance <= max_distance:
+        return 6 + canonical_distance
+    if best_alias_distance <= max_distance:
+        return 10 + best_alias_distance
+    return None
+
+
+def _max_allowed_distance(query: str) -> int:
+    if " " in query and len(query) >= 8:
+        return 3
+    if len(query) >= 13:
+        return 3
+    if len(query) >= 8:
+        return 2
+    return 1
+
+
+def _levenshtein_distance(source: str, target: str) -> int:
+    if source == target:
+        return 0
+    if not source:
+        return len(target)
+    if not target:
+        return len(source)
+
+    previous_row = list(range(len(target) + 1))
+    for source_index, source_char in enumerate(source, start=1):
+        current_row = [source_index]
+        for target_index, target_char in enumerate(target, start=1):
+            substitution_cost = 0 if source_char == target_char else 1
+            current_row.append(
+                min(
+                    previous_row[target_index] + 1,
+                    current_row[target_index - 1] + 1,
+                    previous_row[target_index - 1] + substitution_cost,
+                )
+            )
+        previous_row = current_row
+
+    return previous_row[-1]
 
 
 def _normalize_phrase(value: str | None) -> str:
