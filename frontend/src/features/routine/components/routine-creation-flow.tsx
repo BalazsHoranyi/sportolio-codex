@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { loadExerciseCatalog } from "../../exercise-picker/api";
 import { exercisePickerSampleCatalog } from "../../exercise-picker/sample-data";
@@ -10,11 +10,14 @@ import {
 } from "../../exercise-picker/state";
 import { parseRoutineDsl, serializeRoutineDsl } from "../routine-dsl";
 import {
+  createDefaultStrengthSet,
   createInitialRoutineDraft,
   type EnduranceIntervalDraft,
   type EnduranceTargetType,
   type RoutineDraft,
   type RoutinePath,
+  type StrengthBlockDraft,
+  type StrengthProgressionStrategy,
 } from "../types";
 
 type EditorMode = "visual" | "dsl";
@@ -29,6 +32,18 @@ function nextIntervalId(intervals: EnduranceIntervalDraft[]): string {
       .reduce((max, value) => Math.max(max, value), 0) + 1;
 
   return `interval-${nextNumericId}`;
+}
+
+function nextSequentialId(values: string[], prefix: string): string {
+  const nextNumericId =
+    values
+      .map((value) => {
+        const match = value.match(new RegExp(`^${prefix}-(\\d+)$`));
+        return match ? Number.parseInt(match[1] ?? "0", 10) : 0;
+      })
+      .reduce((max, value) => Math.max(max, value), 0) + 1;
+
+  return `${prefix}-${nextNumericId}`;
 }
 
 function formatToken(value: string): string {
@@ -48,6 +63,59 @@ function toPositiveNumber(rawValue: string): number {
   return parsed;
 }
 
+function toNonNegativeNumber(rawValue: string): number {
+  const parsed = Number.parseFloat(rawValue);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0;
+  }
+  return parsed;
+}
+
+function reorderItems<T>(
+  items: T[],
+  sourceIndex: number,
+  targetIndex: number,
+): T[] {
+  if (
+    sourceIndex < 0 ||
+    targetIndex < 0 ||
+    sourceIndex >= items.length ||
+    targetIndex >= items.length ||
+    sourceIndex === targetIndex
+  ) {
+    return items;
+  }
+
+  const nextItems = [...items];
+  const [moved] = nextItems.splice(sourceIndex, 1);
+  if (!moved) {
+    return items;
+  }
+  nextItems.splice(targetIndex, 0, moved);
+  return nextItems;
+}
+
+function findExerciseEquipmentOptions(
+  catalog: SearchableExerciseCatalogItem[],
+  exerciseId: string,
+): string[] {
+  return catalog.find((item) => item.id === exerciseId)?.equipmentOptions ?? [];
+}
+
+function createExerciseDraft(
+  exercise: SearchableExerciseCatalogItem,
+  setId = "set-1",
+) {
+  return {
+    exerciseId: exercise.id,
+    canonicalName: exercise.canonicalName,
+    selectedEquipment: exercise.equipmentOptions[0] ?? null,
+    regionTags: [...exercise.regionTags],
+    condition: null,
+    sets: [createDefaultStrengthSet(setId)],
+  };
+}
+
 export function RoutineCreationFlow() {
   const [mode, setMode] = useState<EditorMode>("visual");
   const [routine, setRoutine] = useState<RoutineDraft>(
@@ -65,6 +133,12 @@ export function RoutineCreationFlow() {
   const [isLoadingCatalog, setIsLoadingCatalog] = useState<boolean>(true);
   const [usingFallbackCatalog, setUsingFallbackCatalog] =
     useState<boolean>(false);
+
+  const [activeBlockId, setActiveBlockId] = useState<string>("block-1");
+  const draggingExerciseRef = useRef<{
+    blockId: string;
+    exerciseId: string;
+  } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -105,6 +179,20 @@ export function RoutineCreationFlow() {
     setDslText(serializeRoutineDsl(routine));
   }, [routine]);
 
+  useEffect(() => {
+    if (routine.strength.blocks.length === 0) {
+      return;
+    }
+
+    const blockExists = routine.strength.blocks.some(
+      (block) => block.blockId === activeBlockId,
+    );
+
+    if (!blockExists) {
+      setActiveBlockId(routine.strength.blocks[0]?.blockId ?? "block-1");
+    }
+  }, [activeBlockId, routine.strength.blocks]);
+
   const visibleExercises = useMemo(
     () =>
       filterAndRankExercises({
@@ -115,6 +203,10 @@ export function RoutineCreationFlow() {
       }).slice(0, 10),
     [catalog, searchText],
   );
+
+  const activeBlock =
+    routine.strength.blocks.find((block) => block.blockId === activeBlockId) ??
+    routine.strength.blocks[0];
 
   function setPath(path: RoutinePath) {
     setRoutine((previous) => ({
@@ -131,39 +223,406 @@ export function RoutineCreationFlow() {
     }
   }
 
+  function addVariable() {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        variables: [
+          ...previous.strength.variables,
+          {
+            variableId: nextSequentialId(
+              previous.strength.variables.map(
+                (variable) => variable.variableId,
+              ),
+              "variable",
+            ),
+            name: `Variable ${previous.strength.variables.length + 1}`,
+            expression: "1",
+          },
+        ],
+      },
+    }));
+  }
+
+  function updateVariable(
+    variableId: string,
+    update: Partial<{ name: string; expression: string }>,
+  ) {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        variables: previous.strength.variables.map((variable) =>
+          variable.variableId === variableId
+            ? {
+                ...variable,
+                ...update,
+              }
+            : variable,
+        ),
+      },
+    }));
+  }
+
+  function removeVariable(variableId: string) {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        variables: previous.strength.variables.filter(
+          (variable) => variable.variableId !== variableId,
+        ),
+      },
+    }));
+  }
+
+  function addBlock() {
+    const nextBlockId = nextSequentialId(
+      routine.strength.blocks.map((block) => block.blockId),
+      "block",
+    );
+
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        blocks: [
+          ...previous.strength.blocks,
+          {
+            blockId: nextBlockId,
+            label: `Block ${previous.strength.blocks.length + 1}`,
+            repeatCount: 1,
+            condition: null,
+            exercises: [],
+          },
+        ],
+      },
+    }));
+
+    setActiveBlockId(nextBlockId);
+  }
+
+  function updateBlock(
+    blockId: string,
+    update: Partial<
+      Pick<StrengthBlockDraft, "label" | "repeatCount" | "condition">
+    >,
+  ) {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        blocks: previous.strength.blocks.map((block) =>
+          block.blockId === blockId
+            ? {
+                ...block,
+                ...update,
+              }
+            : block,
+        ),
+      },
+    }));
+  }
+
+  function removeBlock(blockId: string) {
+    setRoutine((previous) => {
+      const remainingBlocks = previous.strength.blocks.filter(
+        (block) => block.blockId !== blockId,
+      );
+
+      const normalizedBlocks =
+        remainingBlocks.length > 0
+          ? remainingBlocks
+          : [
+              {
+                blockId: "block-1",
+                label: "Main block",
+                repeatCount: 1,
+                condition: null,
+                exercises: [],
+              },
+            ];
+
+      return {
+        ...previous,
+        strength: {
+          ...previous.strength,
+          blocks: normalizedBlocks,
+        },
+      };
+    });
+  }
+
   function addStrengthExercise(exercise: SearchableExerciseCatalogItem) {
     setRoutine((previous) => {
-      const alreadyIncluded = previous.strength.exercises.some(
-        (entry) => entry.exerciseId === exercise.id,
-      );
-      if (alreadyIncluded) {
+      const targetBlockId =
+        activeBlock?.blockId ?? previous.strength.blocks[0]?.blockId;
+      if (!targetBlockId) {
         return previous;
       }
 
       return {
         ...previous,
         strength: {
-          exercises: [
-            ...previous.strength.exercises,
-            {
-              exerciseId: exercise.id,
-              canonicalName: exercise.canonicalName,
-              selectedEquipment: exercise.equipmentOptions[0] ?? null,
-              regionTags: [...exercise.regionTags],
-            },
-          ],
+          ...previous.strength,
+          blocks: previous.strength.blocks.map((block) => {
+            if (block.blockId !== targetBlockId) {
+              return block;
+            }
+
+            const alreadyIncluded = block.exercises.some(
+              (entry) => entry.exerciseId === exercise.id,
+            );
+            if (alreadyIncluded) {
+              return block;
+            }
+
+            const firstSetId = "set-1";
+
+            return {
+              ...block,
+              exercises: [
+                ...block.exercises,
+                createExerciseDraft(exercise, firstSetId),
+              ],
+            };
+          }),
         },
       };
     });
   }
 
-  function removeStrengthExercise(exerciseId: string) {
+  function updateExercise(
+    blockId: string,
+    exerciseId: string,
+    update: Partial<
+      Pick<
+        RoutineDraft["strength"]["blocks"][number]["exercises"][number],
+        "condition" | "selectedEquipment"
+      >
+    >,
+  ) {
     setRoutine((previous) => ({
       ...previous,
       strength: {
-        exercises: previous.strength.exercises.filter(
-          (exercise) => exercise.exerciseId !== exerciseId,
+        ...previous.strength,
+        blocks: previous.strength.blocks.map((block) =>
+          block.blockId === blockId
+            ? {
+                ...block,
+                exercises: block.exercises.map((exercise) =>
+                  exercise.exerciseId === exerciseId
+                    ? {
+                        ...exercise,
+                        ...update,
+                      }
+                    : exercise,
+                ),
+              }
+            : block,
         ),
+      },
+    }));
+  }
+
+  function removeStrengthExercise(blockId: string, exerciseId: string) {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        blocks: previous.strength.blocks.map((block) =>
+          block.blockId === blockId
+            ? {
+                ...block,
+                exercises: block.exercises.filter(
+                  (exercise) => exercise.exerciseId !== exerciseId,
+                ),
+              }
+            : block,
+        ),
+      },
+    }));
+  }
+
+  function addStrengthSet(blockId: string, exerciseId: string) {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        blocks: previous.strength.blocks.map((block) =>
+          block.blockId === blockId
+            ? {
+                ...block,
+                exercises: block.exercises.map((exercise) => {
+                  if (exercise.exerciseId !== exerciseId) {
+                    return exercise;
+                  }
+
+                  const nextSetId = nextSequentialId(
+                    exercise.sets.map((setDraft) => setDraft.setId),
+                    "set",
+                  );
+
+                  return {
+                    ...exercise,
+                    sets: [
+                      ...exercise.sets,
+                      createDefaultStrengthSet(nextSetId),
+                    ],
+                  };
+                }),
+              }
+            : block,
+        ),
+      },
+    }));
+  }
+
+  function updateStrengthSet(
+    blockId: string,
+    exerciseId: string,
+    setId: string,
+    update: Partial<
+      RoutineDraft["strength"]["blocks"][number]["exercises"][number]["sets"][number]
+    >,
+  ) {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        blocks: previous.strength.blocks.map((block) =>
+          block.blockId === blockId
+            ? {
+                ...block,
+                exercises: block.exercises.map((exercise) =>
+                  exercise.exerciseId === exerciseId
+                    ? {
+                        ...exercise,
+                        sets: exercise.sets.map((setDraft) =>
+                          setDraft.setId === setId
+                            ? {
+                                ...setDraft,
+                                ...update,
+                              }
+                            : setDraft,
+                        ),
+                      }
+                    : exercise,
+                ),
+              }
+            : block,
+        ),
+      },
+    }));
+  }
+
+  function removeStrengthSet(
+    blockId: string,
+    exerciseId: string,
+    setId: string,
+  ) {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        blocks: previous.strength.blocks.map((block) =>
+          block.blockId === blockId
+            ? {
+                ...block,
+                exercises: block.exercises.map((exercise) => {
+                  if (exercise.exerciseId !== exerciseId) {
+                    return exercise;
+                  }
+
+                  const remainingSets = exercise.sets.filter(
+                    (setDraft) => setDraft.setId !== setId,
+                  );
+
+                  return {
+                    ...exercise,
+                    sets:
+                      remainingSets.length > 0
+                        ? remainingSets
+                        : [createDefaultStrengthSet("set-1")],
+                  };
+                }),
+              }
+            : block,
+        ),
+      },
+    }));
+  }
+
+  function moveExerciseByStep(
+    blockId: string,
+    exerciseId: string,
+    direction: -1 | 1,
+  ) {
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        blocks: previous.strength.blocks.map((block) => {
+          if (block.blockId !== blockId) {
+            return block;
+          }
+
+          const sourceIndex = block.exercises.findIndex(
+            (exercise) => exercise.exerciseId === exerciseId,
+          );
+          const targetIndex = sourceIndex + direction;
+
+          if (
+            sourceIndex < 0 ||
+            targetIndex < 0 ||
+            targetIndex >= block.exercises.length
+          ) {
+            return block;
+          }
+
+          return {
+            ...block,
+            exercises: reorderItems(block.exercises, sourceIndex, targetIndex),
+          };
+        }),
+      },
+    }));
+  }
+
+  function onExerciseDragStart(blockId: string, exerciseId: string) {
+    draggingExerciseRef.current = { blockId, exerciseId };
+  }
+
+  function onExerciseDrop(blockId: string, targetExerciseId: string) {
+    const draggingExercise = draggingExerciseRef.current;
+    draggingExerciseRef.current = null;
+
+    if (!draggingExercise || draggingExercise.blockId !== blockId) {
+      return;
+    }
+
+    setRoutine((previous) => ({
+      ...previous,
+      strength: {
+        ...previous.strength,
+        blocks: previous.strength.blocks.map((block) => {
+          if (block.blockId !== blockId) {
+            return block;
+          }
+
+          const sourceIndex = block.exercises.findIndex(
+            (exercise) => exercise.exerciseId === draggingExercise.exerciseId,
+          );
+          const targetIndex = block.exercises.findIndex(
+            (exercise) => exercise.exerciseId === targetExerciseId,
+          );
+
+          return {
+            ...block,
+            exercises: reorderItems(block.exercises, sourceIndex, targetIndex),
+          };
+        }),
       },
     }));
   }
@@ -315,8 +774,82 @@ export function RoutineCreationFlow() {
             <article className="routine-flow-panel">
               <h2>Strength visual builder</h2>
               <p className="routine-flow-helper">
-                Search and add exercises, then export to DSL when needed.
+                Search and add exercises, then configure loops, conditions, and
+                progression controls before exporting to DSL.
               </p>
+
+              <div className="routine-flow-subheader">
+                <h3>Custom variables</h3>
+                <button
+                  type="button"
+                  className="routine-flow-action"
+                  onClick={addVariable}
+                >
+                  Add variable
+                </button>
+              </div>
+
+              {routine.strength.variables.length === 0 ? (
+                <p className="routine-flow-empty">
+                  No custom variables yet. Add one for reusable progression
+                  logic.
+                </p>
+              ) : (
+                <ul
+                  className="routine-flow-variable-list"
+                  aria-label="Custom variables"
+                >
+                  {routine.strength.variables.map((variable) => (
+                    <li key={variable.variableId}>
+                      <label>
+                        Variable name
+                        <input
+                          className="routine-flow-input"
+                          value={variable.name}
+                          onChange={(event) =>
+                            updateVariable(variable.variableId, {
+                              name: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Variable expression
+                        <input
+                          className="routine-flow-input"
+                          value={variable.expression}
+                          onChange={(event) =>
+                            updateVariable(variable.variableId, {
+                              expression: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="routine-flow-link"
+                        onClick={() => removeVariable(variable.variableId)}
+                      >
+                        Remove variable
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <label htmlFor="target-strength-block">Target block</label>
+              <select
+                id="target-strength-block"
+                className="routine-flow-select"
+                value={activeBlock?.blockId ?? ""}
+                onChange={(event) => setActiveBlockId(event.target.value)}
+              >
+                {routine.strength.blocks.map((block) => (
+                  <option key={block.blockId} value={block.blockId}>
+                    {block.label}
+                  </option>
+                ))}
+              </select>
 
               <label htmlFor="strength-exercise-search">
                 Strength exercise search
@@ -371,37 +904,407 @@ export function RoutineCreationFlow() {
                 ))}
               </ul>
 
-              <h3>Selected strength exercises</h3>
-              {routine.strength.exercises.length === 0 ? (
-                <p className="routine-flow-empty">
-                  Add at least one strength exercise to start this routine.
-                </p>
-              ) : (
-                <ul
-                  className="routine-flow-selection-list"
-                  aria-label="Selected strength exercises"
+              <div className="routine-flow-subheader">
+                <h3>Strength blocks</h3>
+                <button
+                  type="button"
+                  className="routine-flow-action"
+                  onClick={addBlock}
                 >
-                  {routine.strength.exercises.map((exercise) => (
-                    <li key={exercise.exerciseId}>
-                      <div>
-                        <p>{exercise.canonicalName}</p>
-                        <small>
-                          {exercise.regionTags.map(formatToken).join(" • ")}
-                        </small>
-                      </div>
-                      <button
-                        type="button"
-                        className="routine-flow-link"
-                        onClick={() =>
-                          removeStrengthExercise(exercise.exerciseId)
-                        }
+                  Add block
+                </button>
+              </div>
+
+              <div className="routine-flow-block-list">
+                {routine.strength.blocks.map((block) => (
+                  <article className="routine-flow-block" key={block.blockId}>
+                    <div className="routine-flow-block-grid">
+                      <label>
+                        Block label
+                        <input
+                          className="routine-flow-input"
+                          value={block.label}
+                          onChange={(event) =>
+                            updateBlock(block.blockId, {
+                              label: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Repeat count
+                        <input
+                          className="routine-flow-input"
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={block.repeatCount}
+                          onChange={(event) =>
+                            updateBlock(block.blockId, {
+                              repeatCount: toPositiveNumber(event.target.value),
+                            })
+                          }
+                        />
+                      </label>
+
+                      <label>
+                        Block condition
+                        <input
+                          className="routine-flow-input"
+                          value={block.condition ?? ""}
+                          onChange={(event) =>
+                            updateBlock(block.blockId, {
+                              condition:
+                                event.target.value.trim().length > 0
+                                  ? event.target.value
+                                  : null,
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="routine-flow-link"
+                      onClick={() => removeBlock(block.blockId)}
+                    >
+                      Remove block
+                    </button>
+
+                    {block.exercises.length === 0 ? (
+                      <p className="routine-flow-empty">
+                        Add exercises from search to populate this block.
+                      </p>
+                    ) : (
+                      <ul
+                        className="routine-flow-selection-list"
+                        aria-label="Selected strength exercises"
                       >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                        {block.exercises.map((exercise, exerciseIndex) => {
+                          const availableEquipment =
+                            findExerciseEquipmentOptions(
+                              catalog,
+                              exercise.exerciseId,
+                            );
+
+                          return (
+                            <li
+                              key={exercise.exerciseId}
+                              draggable
+                              onDragStart={() =>
+                                onExerciseDragStart(
+                                  block.blockId,
+                                  exercise.exerciseId,
+                                )
+                              }
+                              onDragOver={(event) => event.preventDefault()}
+                              onDrop={() =>
+                                onExerciseDrop(
+                                  block.blockId,
+                                  exercise.exerciseId,
+                                )
+                              }
+                            >
+                              <div className="routine-flow-exercise-header">
+                                <div>
+                                  <p>{exercise.canonicalName}</p>
+                                  <small>
+                                    {exercise.regionTags
+                                      .map(formatToken)
+                                      .join(" • ")}
+                                  </small>
+                                </div>
+                                <div className="routine-flow-exercise-actions">
+                                  <button
+                                    type="button"
+                                    className="routine-flow-link"
+                                    aria-label={`Move ${exercise.canonicalName} up`}
+                                    onClick={() =>
+                                      moveExerciseByStep(
+                                        block.blockId,
+                                        exercise.exerciseId,
+                                        -1,
+                                      )
+                                    }
+                                  >
+                                    Move up
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="routine-flow-link"
+                                    aria-label={`Move ${exercise.canonicalName} down`}
+                                    onClick={() =>
+                                      moveExerciseByStep(
+                                        block.blockId,
+                                        exercise.exerciseId,
+                                        1,
+                                      )
+                                    }
+                                  >
+                                    Move down
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="routine-flow-link"
+                                    onClick={() =>
+                                      removeStrengthExercise(
+                                        block.blockId,
+                                        exercise.exerciseId,
+                                      )
+                                    }
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="routine-flow-advanced-grid">
+                                <label>
+                                  Selected equipment
+                                  <select
+                                    className="routine-flow-select"
+                                    value={exercise.selectedEquipment ?? ""}
+                                    onChange={(event) =>
+                                      updateExercise(
+                                        block.blockId,
+                                        exercise.exerciseId,
+                                        {
+                                          selectedEquipment:
+                                            event.target.value.length > 0
+                                              ? event.target.value
+                                              : null,
+                                        },
+                                      )
+                                    }
+                                  >
+                                    <option value="">None</option>
+                                    {availableEquipment.map((equipment) => (
+                                      <option key={equipment} value={equipment}>
+                                        {formatToken(equipment)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+
+                                <label>
+                                  Exercise condition
+                                  <input
+                                    className="routine-flow-input"
+                                    value={exercise.condition ?? ""}
+                                    onChange={(event) =>
+                                      updateExercise(
+                                        block.blockId,
+                                        exercise.exerciseId,
+                                        {
+                                          condition:
+                                            event.target.value.trim().length > 0
+                                              ? event.target.value
+                                              : null,
+                                        },
+                                      )
+                                    }
+                                  />
+                                </label>
+                              </div>
+
+                              <ul
+                                className="routine-flow-set-list"
+                                aria-label={`${exercise.canonicalName} sets`}
+                              >
+                                {exercise.sets.map((setDraft) => (
+                                  <li key={setDraft.setId}>
+                                    <div className="routine-flow-set-grid">
+                                      <label>
+                                        Reps
+                                        <input
+                                          className="routine-flow-input"
+                                          type="number"
+                                          min={1}
+                                          step={1}
+                                          value={setDraft.reps}
+                                          onChange={(event) =>
+                                            updateStrengthSet(
+                                              block.blockId,
+                                              exercise.exerciseId,
+                                              setDraft.setId,
+                                              {
+                                                reps: toPositiveNumber(
+                                                  event.target.value,
+                                                ),
+                                              },
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label>
+                                        Rest seconds
+                                        <input
+                                          className="routine-flow-input"
+                                          type="number"
+                                          min={0}
+                                          step={1}
+                                          value={setDraft.restSeconds}
+                                          onChange={(event) =>
+                                            updateStrengthSet(
+                                              block.blockId,
+                                              exercise.exerciseId,
+                                              setDraft.setId,
+                                              {
+                                                restSeconds:
+                                                  toNonNegativeNumber(
+                                                    event.target.value,
+                                                  ),
+                                              },
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label>
+                                        Timer seconds
+                                        <input
+                                          className="routine-flow-input"
+                                          type="number"
+                                          min={1}
+                                          step={1}
+                                          value={setDraft.timerSeconds ?? ""}
+                                          onChange={(event) =>
+                                            updateStrengthSet(
+                                              block.blockId,
+                                              exercise.exerciseId,
+                                              setDraft.setId,
+                                              {
+                                                timerSeconds:
+                                                  event.target.value.trim()
+                                                    .length > 0
+                                                    ? toPositiveNumber(
+                                                        event.target.value,
+                                                      )
+                                                    : null,
+                                              },
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label>
+                                        Progression strategy
+                                        <select
+                                          className="routine-flow-select"
+                                          value={
+                                            setDraft.progression?.strategy ?? ""
+                                          }
+                                          onChange={(event) => {
+                                            const strategy = event.target
+                                              .value as StrengthProgressionStrategy;
+                                            updateStrengthSet(
+                                              block.blockId,
+                                              exercise.exerciseId,
+                                              setDraft.setId,
+                                              {
+                                                progression:
+                                                  strategy.length > 0
+                                                    ? {
+                                                        strategy,
+                                                        value:
+                                                          setDraft.progression
+                                                            ?.value ?? 1,
+                                                      }
+                                                    : null,
+                                              },
+                                            );
+                                          }}
+                                        >
+                                          <option value="">None</option>
+                                          <option value="linear_add_load">
+                                            Linear add load
+                                          </option>
+                                          <option value="linear_add_reps">
+                                            Linear add reps
+                                          </option>
+                                          <option value="percentage_wave">
+                                            Percentage wave
+                                          </option>
+                                        </select>
+                                      </label>
+
+                                      <label>
+                                        Progression value
+                                        <input
+                                          className="routine-flow-input"
+                                          type="number"
+                                          min={1}
+                                          step={0.5}
+                                          value={
+                                            setDraft.progression?.value ?? 1
+                                          }
+                                          disabled={!setDraft.progression}
+                                          onChange={(event) => {
+                                            if (!setDraft.progression) {
+                                              return;
+                                            }
+                                            updateStrengthSet(
+                                              block.blockId,
+                                              exercise.exerciseId,
+                                              setDraft.setId,
+                                              {
+                                                progression: {
+                                                  ...setDraft.progression,
+                                                  value: toPositiveNumber(
+                                                    event.target.value,
+                                                  ),
+                                                },
+                                              },
+                                            );
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      className="routine-flow-link"
+                                      onClick={() =>
+                                        removeStrengthSet(
+                                          block.blockId,
+                                          exercise.exerciseId,
+                                          setDraft.setId,
+                                        )
+                                      }
+                                    >
+                                      Remove set
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+
+                              <button
+                                type="button"
+                                className="routine-flow-action"
+                                onClick={() =>
+                                  addStrengthSet(
+                                    block.blockId,
+                                    exercise.exerciseId,
+                                  )
+                                }
+                              >
+                                Add set
+                              </button>
+
+                              {exerciseIndex < block.exercises.length - 1 ? (
+                                <hr className="routine-flow-divider" />
+                              ) : null}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </article>
+                ))}
+              </div>
             </article>
           ) : (
             <article className="routine-flow-panel">

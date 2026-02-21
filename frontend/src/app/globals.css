@@ -2418,6 +2418,9 @@ h1 {
 .routine-flow-results,
 .routine-flow-selection-list,
 .routine-flow-interval-list,
+.routine-flow-variable-list,
+.routine-flow-block-list,
+.routine-flow-set-list,
 .routine-flow-error ul {
   display: grid;
   gap: 0.52rem;
@@ -2427,7 +2430,10 @@ h1 {
 
 .routine-flow-results,
 .routine-flow-selection-list,
-.routine-flow-interval-list {
+.routine-flow-interval-list,
+.routine-flow-variable-list,
+.routine-flow-block-list,
+.routine-flow-set-list {
   list-style: none;
 }
 
@@ -2458,14 +2464,14 @@ h1 {
 }
 
 .routine-flow-selection-list li,
-.routine-flow-interval-list li {
-  align-items: start;
+.routine-flow-interval-list li,
+.routine-flow-variable-list li,
+.routine-flow-set-list li {
   background: oklch(0.96 0.02 68);
   border: 1px solid var(--line);
   border-radius: 0.65rem;
-  display: flex;
+  display: grid;
   gap: 0.7rem;
-  justify-content: space-between;
   padding: 0.65rem 0.7rem;
 }
 
@@ -2501,6 +2507,75 @@ h1 {
   justify-self: start;
   min-height: 2.1rem;
   padding: 0.3rem 0.9rem;
+}
+
+.routine-flow-subheader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.routine-flow-subheader h3 {
+  margin: 0;
+}
+
+.routine-flow-block-list {
+  gap: 0.72rem;
+}
+
+.routine-flow-block {
+  background: oklch(0.97 0.02 69);
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  display: grid;
+  gap: 0.72rem;
+  padding: 0.75rem;
+}
+
+.routine-flow-block-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.routine-flow-selection-list li {
+  gap: 0.75rem;
+}
+
+.routine-flow-exercise-header {
+  align-items: start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.routine-flow-exercise-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.routine-flow-advanced-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.routine-flow-set-list {
+  gap: 0.45rem;
+}
+
+.routine-flow-set-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.routine-flow-divider {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 0;
 }
 
 .routine-flow-interval-grid {
@@ -2747,6 +2822,22 @@ h1 {
 
   .routine-flow-interval-grid {
     grid-template-columns: 1fr;
+  }
+
+  .routine-flow-subheader {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .routine-flow-block-grid,
+  .routine-flow-advanced-grid,
+  .routine-flow-set-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .routine-flow-exercise-header {
+    flex-direction: column;
   }
 }
 

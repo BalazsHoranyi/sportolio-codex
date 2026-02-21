@@ -168,4 +168,120 @@ describe("RoutineCreationFlow", () => {
     });
     expect(within(selectedStrengthList).getByText("Split Squat")).toBeTruthy();
   });
+
+  it("supports advanced strength controls and keyboard reorder for Liftosaur-like parity", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /add variable/i,
+      }),
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", {
+        name: /variable name/i,
+      }),
+      { target: { value: "Training Max" } },
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", {
+        name: /variable expression/i,
+      }),
+      { target: { value: "0.9 * 1rm" } },
+    );
+
+    const searchInput = screen.getByRole("combobox", {
+      name: /strength exercise search/i,
+    });
+
+    await user.type(searchInput, "split squat");
+    const resultsList = screen.getByRole("listbox", {
+      name: /strength search results/i,
+    });
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /split squat/i,
+      }),
+    );
+
+    await user.clear(searchInput);
+    await user.type(searchInput, "bench");
+    await user.click(
+      within(resultsList).getByRole("button", {
+        name: /bench press/i,
+      }),
+    );
+
+    fireEvent.change(
+      screen.getByRole("spinbutton", {
+        name: /repeat count/i,
+      }),
+      { target: { value: "3" } },
+    );
+    await user.type(
+      screen.getByRole("textbox", {
+        name: /block condition/i,
+      }),
+      "readiness >= 6",
+    );
+
+    const exerciseConditionInputs = screen.getAllByRole("textbox", {
+      name: /exercise condition/i,
+    });
+    await user.type(exerciseConditionInputs[0] as HTMLElement, "day != deload");
+
+    const restInputs = screen.getAllByRole("spinbutton", {
+      name: /rest seconds/i,
+    });
+    fireEvent.change(restInputs[0] as HTMLElement, {
+      target: { value: "180" },
+    });
+
+    const timerInputs = screen.getAllByRole("spinbutton", {
+      name: /timer seconds/i,
+    });
+    fireEvent.change(timerInputs[0] as HTMLElement, {
+      target: { value: "45" },
+    });
+
+    const progressionStrategySelects = screen.getAllByRole("combobox", {
+      name: /progression strategy/i,
+    });
+    await user.selectOptions(
+      progressionStrategySelects[0] as HTMLElement,
+      "linear_add_load",
+    );
+
+    const progressionValueInputs = screen.getAllByRole("spinbutton", {
+      name: /progression value/i,
+    });
+    fireEvent.change(progressionValueInputs[0] as HTMLElement, {
+      target: { value: "2.5" },
+    });
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /move split squat down/i,
+      }),
+    );
+
+    await user.click(screen.getByRole("tab", { name: /^dsl$/i }));
+    const dslEditor = screen.getByRole("textbox", {
+      name: /routine dsl editor/i,
+    }) as HTMLTextAreaElement;
+
+    expect(
+      dslEditor.value.indexOf('"canonicalName": "Bench Press"'),
+    ).toBeLessThan(dslEditor.value.indexOf('"canonicalName": "Split Squat"'));
+    expect(dslEditor.value).toContain('"variables"');
+    expect(dslEditor.value).toContain('"blocks"');
+    expect(dslEditor.value).toContain('"repeatCount": 3');
+    expect(dslEditor.value).toContain('"condition": "readiness >= 6"');
+    expect(dslEditor.value).toContain('"progression"');
+    expect(dslEditor.value).toContain('"strategy": "linear_add_load"');
+  });
 });
