@@ -123,7 +123,7 @@ describe("planning calendar surface integration", () => {
     const rowWithin = within(addedRow as HTMLElement);
     await user.selectOptions(
       rowWithin.getByRole("combobox", { name: /move target day/i }),
-      "2026-02-22",
+      "2026-02-23",
     );
     await user.click(
       rowWithin.getByRole("button", {
@@ -134,7 +134,7 @@ describe("planning calendar surface integration", () => {
     await waitFor(() => {
       expect(
         rowWithin.getByText("Recovery ride").closest("li")?.textContent ?? "",
-      ).toContain("Sunday, Feb 22");
+      ).toContain("Monday, Feb 23");
     });
 
     await user.click(
@@ -267,6 +267,59 @@ describe("planning calendar surface integration", () => {
     expect(within(recomputeRegion).getByText(/workout_removed/i)).toBeTruthy();
     expect(
       within(recomputeRegion).getByText(/Source: drag_drop/i),
+    ).toBeTruthy();
+  });
+
+  it("requires override for overlap moves and supports in-day reorder after override", async () => {
+    const user = userEvent.setup();
+
+    render(<PlanningCalendarSurface />);
+
+    const scheduledRegion = screen.getByRole("region", {
+      name: /scheduled workouts/i,
+    });
+    const tempoRunRow = within(scheduledRegion)
+      .getByText("Tempo run", { selector: "strong" })
+      .closest("li");
+    expect(tempoRunRow).toBeTruthy();
+
+    const tempoRunWithin = within(tempoRunRow as HTMLElement);
+    await user.selectOptions(
+      tempoRunWithin.getByRole("combobox", { name: /move target day/i }),
+      "2026-02-17",
+    );
+    await user.click(
+      tempoRunWithin.getByRole("button", {
+        name: /move tempo run to selected day/i,
+      }),
+    );
+
+    expect(screen.getByText(/would overlap an existing workout/i)).toBeTruthy();
+
+    const recomputeRegion = screen.getByRole("region", {
+      name: /calendar recompute events/i,
+    });
+    expect(
+      within(recomputeRegion).queryByText(/from 2026-02-19 to 2026-02-17/i),
+    ).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /proceed anyway/i }));
+
+    expect(
+      within(recomputeRegion).getByText(/from 2026-02-19 to 2026-02-17/i),
+    ).toBeTruthy();
+    expect(
+      within(recomputeRegion).getByText(/override applied: yes/i),
+    ).toBeTruthy();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /move tempo run earlier in day/i,
+      }),
+    );
+
+    expect(
+      within(recomputeRegion).getByText(/workout_reordered/i),
     ).toBeTruthy();
   });
 });

@@ -1,14 +1,12 @@
 # UI Browser Verification
 
 - Date: February 21, 2026
-- Routes: `/login?next=/planner`, `/planner`, and `/`
+- Routes: `/login?next=/calendar`, `/calendar`
 - Browser tooling: `agent-browser` + `chrome-devtools-mcp`
 - Devices: Desktop (1440px), Mobile (390px / iPhone 14)
 
 ## Evidence Artifacts
 
-- home-desktop-after.png
-- home-mobile-after.png
 - persona-diego-desktop.png
 - persona-diego-mobile.png
 - persona-evan-desktop.png
@@ -21,22 +19,19 @@
 - persona-nora-mobile.png
 - persona-priya-desktop.png
 - persona-priya-mobile.png
-- review-desktop-current.png
-- review-mobile-current.png
-- review-mobile-calendar-current.png
 
 ## Persona Coverage
 
-- Diego (competitive triathlete): completed login -> planner mesocycle step, selected `DUP`, adjusted endurance session density, verified emphasis + reflow output update on desktop/mobile.
-- Evan (powerlifter with minimal cardio): kept `Block` strategy, switched focus toward strength, increased strength bias, and verified non-destructive strategy outputs on desktop/mobile.
-- Hybrid athlete (600lb DL + 4 W/kg target): switched to `Linear`, tuned weekly progression + peak week, and confirmed deterministic reflow preview updates on desktop/mobile.
-- Lena (busy hybrid generalist): used default `Block` strategy with simplified accumulation settings and verified compact/mobile usability and control labeling.
-- Nora (masters endurance + longevity strength): switched to recovery-aware `Linear` start intensity and confirmed low-friction strategy inputs and output readability on desktop/mobile.
-- Priya (marathoner adding strength): kept runner-oriented `Block` settings with endurance focus and verified strategy emphasis display and reflow summary on desktop/mobile.
+- Diego (competitive triathlete): moved a session to an occupied day, observed overlap block, used `Proceed anyway`, and reordered same-day sessions via keyboard controls on desktop/mobile.
+- Evan (powerlifter with minimal cardio): verified deterministic slot ordering after overlap override and confirmed mutation log captures `workout_moved` override metadata on desktop/mobile.
+- Hybrid athlete (600lb DL + 4 W/kg target): validated same-day reorder changes slot labels (`1`, `2`) without losing workout identity/history on desktop/mobile.
+- Lena (busy hybrid generalist): confirmed validation banner actions (`Proceed anyway` / `Dismiss`) are readable and operable on mobile and desktop layouts.
+- Nora (masters endurance + longevity strength): validated history counts increment after move + reorder and controls stay keyboard operable on desktop/mobile.
+- Priya (marathoner adding strength): validated calendar recompute log includes reorder metadata and weekly audit visuals stay stable after reorder on desktop/mobile.
 
 ## Result
 
-- `/planner` now supports strategy-specific mesocycle configuration (`Block`, `DUP`, `Linear`) with per-strategy parameter capture, deterministic emphasis outputs, and deterministic microcycle reflow previews.
-- Strategy switching preserves previously entered values for inactive strategies and restores them when switched back.
+- `/calendar` now supports deterministic microcycle scheduler semantics for move, overlap validation, explicit override, and in-day reorder.
+- Default overlap behavior blocks conflicting placement; explicit override applies the move and records `overrideApplied` metadata.
+- Reorder actions update `sessionOrder`, mutation log entries (`workout_reordered`), and per-workout history counts without regressing weekly audit recompute behavior.
 - Browser checks using `agent-browser` and `chrome-devtools-mcp` passed for all personas in `user_profiles` across desktop and mobile.
-- Required screenshot artifact set remains complete and referenced.

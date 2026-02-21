@@ -5,8 +5,19 @@ import type {
   PlanningMutationEvent,
   PlanningWorkoutIntensity,
   PlanningWorkoutType,
+  WorkoutScheduleHistoryEntry,
   WorkoutTemplate,
 } from "./types";
+
+export interface PlanningMutationOutcome {
+  state: PlanningCalendarState;
+  applied: boolean;
+  recomputeRequired: boolean;
+  requiresOverride: boolean;
+  rejectionReason?: string;
+  pendingMutation?: PlanningMutationEvent;
+  appliedMutation?: PlanningMutationEvent;
+}
 
 function normalizeIsoDate(value: string | undefined): string | undefined {
   if (!value) {
@@ -25,20 +36,176 @@ function normalizeIsoDate(value: string | undefined): string | undefined {
   return asDate.toISOString().slice(0, 10);
 }
 
+function normalizeOrder(value: number | undefined): number | undefined {
+  if (!Number.isFinite(value)) {
+    return undefined;
+  }
+
+  const normalized = Math.floor(value as number);
+  if (normalized <= 0) {
+    return undefined;
+  }
+
+  return normalized;
+}
+
 function sortWorkouts(workouts: PlannedWorkout[]): PlannedWorkout[] {
   return [...workouts].sort((left, right) => {
     if (left.date !== right.date) {
       return left.date.localeCompare(right.date);
     }
 
+    if (left.sessionOrder !== right.sessionOrder) {
+      return left.sessionOrder - right.sessionOrder;
+    }
+
     return left.title.localeCompare(right.title);
   });
 }
 
-export function createInitialPlanningCalendarState(): PlanningCalendarState {
+function cloneHistory(
+  history: PlanningCalendarState["workoutHistory"],
+): PlanningCalendarState["workoutHistory"] {
+  return Object.fromEntries(
+    Object.entries(history).map(([workoutId, entries]) => [
+      workoutId,
+      entries.map((entry) => ({ ...entry })),
+    ]),
+  );
+}
+
+function ensureWorkoutHistoryKey(
+  history: PlanningCalendarState["workoutHistory"],
+  workoutId: string,
+) {
+  if (!history[workoutId]) {
+    history[workoutId] = [];
+  }
+}
+
+function appendWorkoutHistory(
+  history: PlanningCalendarState["workoutHistory"],
+  mutation: PlanningMutationEvent,
+) {
+  ensureWorkoutHistoryKey(history, mutation.workoutId);
+  const entry: WorkoutScheduleHistoryEntry = {
+    mutationId: mutation.mutationId,
+    type: mutation.type,
+    source: mutation.source,
+    occurredAt: mutation.occurredAt,
+    fromDate: mutation.fromDate,
+    toDate: mutation.toDate,
+    fromOrder: mutation.fromOrder,
+    toOrder: mutation.toOrder,
+    overrideApplied: mutation.overrideApplied,
+  };
+  history[mutation.workoutId] = [...history[mutation.workoutId], entry];
+}
+
+function normalizeDayOrdering(workouts: PlannedWorkout[], date: string) {
+  const target = sortWorkouts(
+    workouts.filter((workout) => workout.date === date),
+  );
+  target.forEach((workout, index) => {
+    const targetIndex = workouts.findIndex(
+      (candidate) => candidate.workoutId === workout.workoutId,
+    );
+    if (targetIndex >= 0) {
+      workouts[targetIndex] = {
+        ...workouts[targetIndex],
+        sessionOrder: index + 1,
+      };
+    }
+  });
+}
+
+function resolveTargetOrder(
+  workouts: PlannedWorkout[],
+  date: string,
+  requestedOrder: number | undefined,
+): number {
+  const dayCount = workouts.filter((workout) => workout.date === date).length;
+  if (!requestedOrder) {
+    return dayCount + 1;
+  }
+
+  return Math.max(1, Math.min(dayCount + 1, requestedOrder));
+}
+
+function hasOverlap(
+  workouts: PlannedWorkout[],
+  workoutId: string,
+  toDate: string | undefined,
+): boolean {
+  if (!toDate) {
+    return false;
+  }
+
+  return workouts.some(
+    (workout) => workout.workoutId !== workoutId && workout.date === toDate,
+  );
+}
+
+function normalizeMutation(
+  mutation: PlanningMutationEvent,
+): PlanningMutationEvent {
   return {
-    workouts: sortWorkouts(initialPlannedWorkouts),
+    ...mutation,
+    fromDate: normalizeIsoDate(mutation.fromDate),
+    toDate: normalizeIsoDate(mutation.toDate),
+    fromOrder: normalizeOrder(mutation.fromOrder),
+    toOrder: normalizeOrder(mutation.toOrder),
+  };
+}
+
+function createRejectedOutcome(
+  state: PlanningCalendarState,
+  mutation: PlanningMutationEvent,
+  reason: string,
+  requiresOverride = false,
+): PlanningMutationOutcome {
+  return {
+    state,
+    applied: false,
+    recomputeRequired: false,
+    requiresOverride,
+    rejectionReason: reason,
+    pendingMutation: requiresOverride ? mutation : undefined,
+  };
+}
+
+function applyMutationAndHistory(
+  previous: PlanningCalendarState,
+  workouts: PlannedWorkout[],
+  history: PlanningCalendarState["workoutHistory"],
+  mutation: PlanningMutationEvent,
+): PlanningMutationOutcome {
+  appendWorkoutHistory(history, mutation);
+
+  return {
+    state: {
+      workouts: sortWorkouts(workouts),
+      mutationLog: [...previous.mutationLog, mutation],
+      workoutHistory: history,
+    },
+    applied: true,
+    recomputeRequired: true,
+    requiresOverride: false,
+    appliedMutation: mutation,
+  };
+}
+
+export function createInitialPlanningCalendarState(): PlanningCalendarState {
+  const sorted = sortWorkouts(initialPlannedWorkouts);
+  const workoutHistory: PlanningCalendarState["workoutHistory"] = {};
+  for (const workout of sorted) {
+    workoutHistory[workout.workoutId] = [];
+  }
+
+  return {
+    workouts: sorted,
     mutationLog: [],
+    workoutHistory,
   };
 }
 
@@ -102,66 +269,309 @@ export function createMutationFromTemplate(params: {
   };
 }
 
-export function applyPlanningMutation(
+export function applyPlanningMutationWithOutcome(
   previous: PlanningCalendarState,
   mutation: PlanningMutationEvent,
-): PlanningCalendarState {
+): PlanningMutationOutcome {
+  const normalizedMutation = normalizeMutation(mutation);
   const workouts = [...previous.workouts];
-  const normalizedToDate = normalizeIsoDate(mutation.toDate);
-  const normalizedFromDate = normalizeIsoDate(mutation.fromDate);
+  const history = cloneHistory(previous.workoutHistory);
 
-  if (mutation.type === "workout_added" && normalizedToDate) {
+  if (normalizedMutation.type === "workout_added") {
+    const normalizedToDate = normalizedMutation.toDate;
+    if (!normalizedToDate) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        "Target date is required for workout additions.",
+      );
+    }
+
+    if (
+      hasOverlap(workouts, normalizedMutation.workoutId, normalizedToDate) &&
+      !normalizedMutation.allowOverlap
+    ) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        `Workout would overlap an existing workout on ${normalizedToDate}.`,
+        true,
+      );
+    }
+
     const existingIndex = workouts.findIndex(
-      (workout) => workout.workoutId === mutation.workoutId,
+      (workout) => workout.workoutId === normalizedMutation.workoutId,
     );
+    const existingWorkout =
+      existingIndex >= 0 ? workouts[existingIndex] : undefined;
     const workoutType =
-      mutation.workoutType ?? fallbackWorkoutType(mutation.title);
-    const intensity = mutation.intensity ?? fallbackIntensity(workoutType);
+      normalizedMutation.workoutType ??
+      fallbackWorkoutType(normalizedMutation.title);
+    const intensity =
+      normalizedMutation.intensity ?? fallbackIntensity(workoutType);
+    const targetOrder = resolveTargetOrder(
+      workouts.filter(
+        (workout) => workout.workoutId !== normalizedMutation.workoutId,
+      ),
+      normalizedToDate,
+      normalizedMutation.toOrder,
+    );
 
-    const workout: PlannedWorkout = {
-      workoutId: mutation.workoutId,
-      title: mutation.title,
+    const nextWorkout: PlannedWorkout = {
+      workoutId: normalizedMutation.workoutId,
+      title: normalizedMutation.title,
       date: normalizedToDate,
+      sessionOrder: targetOrder,
       workoutType,
       intensity,
     };
 
     if (existingIndex >= 0) {
-      workouts.splice(existingIndex, 1, workout);
+      workouts.splice(existingIndex, 1, nextWorkout);
     } else {
-      workouts.push(workout);
+      workouts.push(nextWorkout);
     }
+
+    if (existingWorkout && existingWorkout.date !== normalizedToDate) {
+      normalizeDayOrdering(workouts, existingWorkout.date);
+    }
+    normalizeDayOrdering(workouts, normalizedToDate);
+
+    const resolvedWorkout = workouts.find(
+      (workout) => workout.workoutId === normalizedMutation.workoutId,
+    );
+    const appliedMutation: PlanningMutationEvent = {
+      ...normalizedMutation,
+      fromDate: existingWorkout?.date,
+      fromOrder: existingWorkout?.sessionOrder,
+      toDate: resolvedWorkout?.date ?? normalizedToDate,
+      toOrder: resolvedWorkout?.sessionOrder ?? targetOrder,
+      overrideApplied: Boolean(normalizedMutation.allowOverlap),
+    };
+
+    return applyMutationAndHistory(
+      previous,
+      workouts,
+      history,
+      appliedMutation,
+    );
   }
 
-  if (mutation.type === "workout_moved" && normalizedToDate) {
+  if (normalizedMutation.type === "workout_moved") {
+    const normalizedToDate = normalizedMutation.toDate;
+    if (!normalizedToDate) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        "Target date is required for workout moves.",
+      );
+    }
+
     const targetIndex = workouts.findIndex(
-      (workout) => workout.workoutId === mutation.workoutId,
+      (workout) => workout.workoutId === normalizedMutation.workoutId,
     );
-    if (targetIndex >= 0) {
-      workouts[targetIndex] = {
-        ...workouts[targetIndex],
-        date: normalizedToDate,
+    if (targetIndex < 0) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        "Cannot move unknown workout.",
+      );
+    }
+
+    const currentWorkout = workouts[targetIndex];
+    const fromDate = currentWorkout.date;
+    const fromOrder = currentWorkout.sessionOrder;
+
+    if (
+      hasOverlap(workouts, normalizedMutation.workoutId, normalizedToDate) &&
+      !normalizedMutation.allowOverlap
+    ) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        `Workout would overlap an existing workout on ${normalizedToDate}.`,
+        true,
+      );
+    }
+
+    const targetOrder = resolveTargetOrder(
+      workouts.filter(
+        (workout) => workout.workoutId !== normalizedMutation.workoutId,
+      ),
+      normalizedToDate,
+      normalizedMutation.toOrder,
+    );
+    workouts[targetIndex] = {
+      ...currentWorkout,
+      date: normalizedToDate,
+      sessionOrder: targetOrder,
+    };
+
+    if (fromDate !== normalizedToDate) {
+      normalizeDayOrdering(workouts, fromDate);
+    }
+    normalizeDayOrdering(workouts, normalizedToDate);
+
+    const resolvedWorkout = workouts.find(
+      (workout) => workout.workoutId === normalizedMutation.workoutId,
+    );
+    const appliedMutation: PlanningMutationEvent = {
+      ...normalizedMutation,
+      fromDate,
+      fromOrder,
+      toDate: resolvedWorkout?.date ?? normalizedToDate,
+      toOrder: resolvedWorkout?.sessionOrder ?? targetOrder,
+      overrideApplied: Boolean(normalizedMutation.allowOverlap),
+    };
+
+    return applyMutationAndHistory(
+      previous,
+      workouts,
+      history,
+      appliedMutation,
+    );
+  }
+
+  if (normalizedMutation.type === "workout_reordered") {
+    const targetIndex = workouts.findIndex(
+      (workout) => workout.workoutId === normalizedMutation.workoutId,
+    );
+    if (targetIndex < 0) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        "Cannot reorder unknown workout.",
+      );
+    }
+
+    const targetWorkout = workouts[targetIndex];
+    const targetDate = normalizedMutation.toDate ?? targetWorkout.date;
+    if (targetDate !== targetWorkout.date) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        "Reorder operations must stay on the same date.",
+      );
+    }
+
+    const dayWorkouts = sortWorkouts(
+      workouts.filter((workout) => workout.date === targetDate),
+    );
+    if (dayWorkouts.length <= 1) {
+      return {
+        state: previous,
+        applied: false,
+        recomputeRequired: false,
+        requiresOverride: false,
+        rejectionReason: "Cannot reorder a single workout day.",
       };
     }
-  }
 
-  if (mutation.type === "workout_removed") {
-    const targetIndex = workouts.findIndex(
-      (workout) => workout.workoutId === mutation.workoutId,
+    const currentIndex = dayWorkouts.findIndex(
+      (workout) => workout.workoutId === normalizedMutation.workoutId,
     );
-    if (targetIndex >= 0) {
-      workouts.splice(targetIndex, 1);
+    if (currentIndex < 0) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        "Cannot reorder workout outside target day.",
+      );
     }
+
+    const desiredOrder = Math.max(
+      1,
+      Math.min(
+        dayWorkouts.length,
+        normalizedMutation.toOrder ?? targetWorkout.sessionOrder,
+      ),
+    );
+    if (desiredOrder === targetWorkout.sessionOrder) {
+      return {
+        state: previous,
+        applied: false,
+        recomputeRequired: false,
+        requiresOverride: false,
+      };
+    }
+
+    const [movedWorkout] = dayWorkouts.splice(currentIndex, 1);
+    dayWorkouts.splice(desiredOrder - 1, 0, movedWorkout);
+
+    for (let index = 0; index < dayWorkouts.length; index += 1) {
+      const workout = dayWorkouts[index];
+      const workoutIndex = workouts.findIndex(
+        (candidate) => candidate.workoutId === workout.workoutId,
+      );
+      if (workoutIndex >= 0) {
+        workouts[workoutIndex] = {
+          ...workouts[workoutIndex],
+          sessionOrder: index + 1,
+        };
+      }
+    }
+
+    const resolvedWorkout = workouts.find(
+      (workout) => workout.workoutId === normalizedMutation.workoutId,
+    );
+    const appliedMutation: PlanningMutationEvent = {
+      ...normalizedMutation,
+      fromDate: targetDate,
+      toDate: targetDate,
+      fromOrder: targetWorkout.sessionOrder,
+      toOrder: resolvedWorkout?.sessionOrder ?? desiredOrder,
+    };
+
+    return applyMutationAndHistory(
+      previous,
+      workouts,
+      history,
+      appliedMutation,
+    );
   }
 
-  const normalizedMutation: PlanningMutationEvent = {
-    ...mutation,
-    fromDate: normalizedFromDate,
-    toDate: normalizedToDate,
-  };
+  if (normalizedMutation.type === "workout_removed") {
+    const targetIndex = workouts.findIndex(
+      (workout) => workout.workoutId === normalizedMutation.workoutId,
+    );
+    if (targetIndex < 0) {
+      return createRejectedOutcome(
+        previous,
+        normalizedMutation,
+        "Cannot remove unknown workout.",
+      );
+    }
+
+    const currentWorkout = workouts[targetIndex];
+    workouts.splice(targetIndex, 1);
+    normalizeDayOrdering(workouts, currentWorkout.date);
+
+    const appliedMutation: PlanningMutationEvent = {
+      ...normalizedMutation,
+      fromDate: currentWorkout.date,
+      fromOrder: currentWorkout.sessionOrder,
+      toDate: undefined,
+      toOrder: undefined,
+    };
+
+    return applyMutationAndHistory(
+      previous,
+      workouts,
+      history,
+      appliedMutation,
+    );
+  }
 
   return {
-    workouts: sortWorkouts(workouts),
-    mutationLog: [...previous.mutationLog, normalizedMutation],
+    state: previous,
+    applied: false,
+    recomputeRequired: false,
+    requiresOverride: false,
   };
+}
+
+export function applyPlanningMutation(
+  previous: PlanningCalendarState,
+  mutation: PlanningMutationEvent,
+): PlanningCalendarState {
+  return applyPlanningMutationWithOutcome(previous, mutation).state;
 }

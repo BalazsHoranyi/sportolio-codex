@@ -1638,6 +1638,30 @@ h1 {
   padding: 0.8rem;
 }
 
+.planning-validation-banner {
+  align-items: center;
+  background: oklch(0.97 0.03 52 / 0.85);
+  border: 1px solid oklch(0.81 0.08 54);
+  border-radius: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: space-between;
+  padding: 0.8rem;
+}
+
+.planning-validation-banner p {
+  color: oklch(0.34 0.08 32);
+  font-weight: 600;
+  margin: 0;
+}
+
+.planning-validation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
 .planning-keyboard-schedule h3 {
   margin: 0;
 }
@@ -1661,6 +1685,11 @@ h1 {
 
 .planning-scheduled-list p {
   margin: 0;
+}
+
+.planning-history-meta {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
 }
 
 .planning-scheduled-list label {
@@ -1690,6 +1719,11 @@ h1 {
 .planning-keyboard-row-actions .button {
   flex: 1 1 12rem;
   justify-content: center;
+}
+
+.planning-keyboard-row-actions .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .planning-mutation-log {
@@ -2913,6 +2947,19 @@ h1 {
   }
 
   .planning-keyboard-row-actions .button {
+    width: 100%;
+  }
+
+  .planning-validation-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .planning-validation-actions {
+    width: 100%;
+  }
+
+  .planning-validation-actions .button {
     width: 100%;
   }
 
