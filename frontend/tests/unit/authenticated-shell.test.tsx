@@ -4,29 +4,28 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 
 import { AuthenticatedAppShell } from "../../src/components/navigation/authenticated-app-shell";
+import { APP_NAV_ITEMS } from "../../src/components/navigation/nav-config";
 
 describe("AuthenticatedAppShell", () => {
-  it("marks only the active route link with aria-current", () => {
-    render(
-      <AuthenticatedAppShell
-        activeItem="planner"
-        title="Planner"
-        description="Cycle planning and block design context."
-      >
-        <div>Planner content</div>
-      </AuthenticatedAppShell>,
-    );
+  it.each(APP_NAV_ITEMS)(
+    "marks only the active route link with aria-current for %s",
+    ({ id, label }) => {
+      render(
+        <AuthenticatedAppShell
+          activeItem={id}
+          title={label}
+          description="Route purpose copy."
+        >
+          <div>{label} content</div>
+        </AuthenticatedAppShell>,
+      );
 
-    for (const link of screen.getAllByRole("link", { name: "Planner" })) {
-      expect(link.getAttribute("aria-current")).toBe("page");
-    }
-
-    for (const link of screen.getAllByRole("link", { name: "Today" })) {
-      expect(link.getAttribute("aria-current")).toBeNull();
-    }
-
-    for (const link of screen.getAllByRole("link", { name: "Calendar" })) {
-      expect(link.getAttribute("aria-current")).toBeNull();
-    }
-  });
+      for (const item of APP_NAV_ITEMS) {
+        const expectedCurrent = item.id === id ? "page" : null;
+        for (const link of screen.getAllByRole("link", { name: item.label })) {
+          expect(link.getAttribute("aria-current")).toBe(expectedCurrent);
+        }
+      }
+    },
+  );
 });

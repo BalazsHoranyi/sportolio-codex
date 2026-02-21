@@ -33,6 +33,19 @@ describe("auth middleware", () => {
     );
   });
 
+  it("protects settings route with the same login redirect contract", async () => {
+    const request = new NextRequest(
+      "http://localhost/settings?tab=notifications",
+    );
+
+    const response = await middleware(request);
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost/login?next=%2Fsettings%3Ftab%3Dnotifications",
+    );
+  });
+
   it("allows authenticated access to protected routes", async () => {
     const token = await createSessionToken({
       userId: "user-diego-tri",
