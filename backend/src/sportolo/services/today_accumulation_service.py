@@ -18,8 +18,6 @@ from sportolo.api.schemas.fatigue_today import (
     WorkoutType,
 )
 
-logger = logging.getLogger(__name__)
-
 
 class TodayAccumulationService:
     """Deterministic completed-only accumulation with sleep-first rollover boundaries."""
@@ -182,7 +180,7 @@ class TodayAccumulationService:
         )
         capacity_gated_score = round(neural_gated_score * capacity_gate_factor, 4)
 
-        logger.debug(
+        logging.getLogger().debug(
             "combined_score_debug base_weights=%s modifier_weights=%s effective_weights=%s",
             self._BASE_WEIGHTS,
             modifier_weights,
