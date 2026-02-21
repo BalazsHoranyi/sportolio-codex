@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const { fullCalendarPropsSpy } = vi.hoisted(() => ({
@@ -83,6 +83,20 @@ describe("PlanningCalendarSurface", () => {
     fullCalendarPropsSpy.mockClear();
   });
 
+  function mockInsideRemoveZoneRect(element: HTMLElement) {
+    return vi.spyOn(element, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 80,
+      top: 0,
+      right: 100,
+      bottom: 80,
+      left: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+  }
+
   it("renders calendar shell and emits add/move mutations from FullCalendar callbacks", async () => {
     const user = userEvent.setup();
     const onMutation = vi.fn();
@@ -130,6 +144,43 @@ describe("PlanningCalendarSurface", () => {
       expect.objectContaining({
         type: "workout_removed",
         source: "keyboard",
+      }),
+    );
+  });
+
+  it("emits drag-drop removal when drag stops inside the remove zone", () => {
+    const onMutation = vi.fn();
+
+    render(<PlanningCalendarSurface onMutation={onMutation} />);
+
+    const removeZone = screen.getByLabelText(/workout remove zone/i);
+    mockInsideRemoveZoneRect(removeZone);
+
+    const fullCalendarProps = fullCalendarPropsSpy.mock.calls.at(-1)?.[0] as
+      | {
+          eventDragStart: (args: { event: { id: string } }) => void;
+          eventDragStop: (args: {
+            jsEvent: { clientX: number; clientY: number };
+          }) => void;
+        }
+      | undefined;
+
+    expect(fullCalendarProps).toBeTruthy();
+    act(() => {
+      fullCalendarProps?.eventDragStart({
+        event: { id: "workout-strength-a" },
+      });
+      fullCalendarProps?.eventDragStop({
+        jsEvent: { clientX: 50, clientY: 40 },
+      });
+    });
+
+    expect(onMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "workout_removed",
+        source: "drag_drop",
+        workoutId: "workout-strength-a",
+        fromDate: "2026-02-17",
       }),
     );
   });

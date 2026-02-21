@@ -23,6 +23,23 @@ vi.mock("@fullcalendar/react", () => ({
       >
         Trigger drag move
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          (props.eventDragStart as (args: { event: { id: string } }) => void)({
+            event: { id: "workout-strength-a" },
+          });
+          (
+            props.eventDragStop as (args: {
+              jsEvent: { clientX: number; clientY: number };
+            }) => void
+          )({
+            jsEvent: { clientX: 24, clientY: 24 },
+          });
+        }}
+      >
+        Trigger drag remove
+      </button>
     </section>
   ),
 }));
@@ -45,6 +62,20 @@ vi.mock("@fullcalendar/interaction", () => ({
 import { PlanningCalendarSurface } from "../../src/features/planning-calendar/planning-calendar-surface";
 
 describe("planning calendar surface integration", () => {
+  function mockInsideRemoveZoneRect(element: HTMLElement) {
+    return vi.spyOn(element, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 80,
+      top: 0,
+      right: 100,
+      bottom: 80,
+      left: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+  }
+
   it("supports add, move, and remove flows while emitting recompute entries", async () => {
     const user = userEvent.setup();
 
@@ -159,5 +190,39 @@ describe("planning calendar surface integration", () => {
     expect(
       within(recomputeRegion).queryByText(/from 2026-02-20 to 2026-02-17/i),
     ).toBeNull();
+  });
+
+  it("removes a workout from drag-stop callback and logs drag_drop recompute source", async () => {
+    const user = userEvent.setup();
+
+    render(<PlanningCalendarSurface />);
+
+    const removeZone = screen.getByLabelText(/workout remove zone/i);
+    mockInsideRemoveZoneRect(removeZone);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /trigger drag remove/i,
+      }),
+    );
+
+    const scheduledRegion = screen.getByRole("region", {
+      name: /scheduled workouts/i,
+    });
+    await waitFor(() => {
+      expect(
+        within(scheduledRegion).queryByText("Heavy lower", {
+          selector: "strong",
+        }),
+      ).toBeNull();
+    });
+
+    const recomputeRegion = screen.getByRole("region", {
+      name: /calendar recompute events/i,
+    });
+    expect(within(recomputeRegion).getByText(/workout_removed/i)).toBeTruthy();
+    expect(
+      within(recomputeRegion).getByText(/Source: drag_drop/i),
+    ).toBeTruthy();
   });
 });
