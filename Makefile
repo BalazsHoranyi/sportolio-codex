@@ -76,7 +76,7 @@ backend-format: ## Format backend code
 	$(call backend_run,format,uv run --project "$(BACKEND_DIR)" ruff format "$(BACKEND_DIR)" && uv run --project "$(BACKEND_DIR)" ruff check --fix --fix-only "$(BACKEND_DIR)")
 
 backend-lint: ## Lint backend code
-	$(call backend_run,lint,uv run --project "$(BACKEND_DIR)" ruff format --check "$(BACKEND_DIR)" && uv run --project "$(BACKEND_DIR)" ruff check "$(BACKEND_DIR)")
+	$(call backend_run,lint,uv run --project "$(BACKEND_DIR)" ruff format --check "$(BACKEND_DIR)" && uv run --project "$(BACKEND_DIR)" ruff check "$(BACKEND_DIR)" && uv run --project "$(BACKEND_DIR)" python "$(BACKEND_DIR)/scripts/migration_lint.py" --migrations-dir "$(BACKEND_DIR)/migrations/versions")
 
 backend-typecheck: ## Typecheck backend code
 	$(call backend_run,typecheck,uv run --project "$(BACKEND_DIR)" bash -lc 'if command -v pyright >/dev/null 2>&1; then pyright "$(BACKEND_DIR)"; elif command -v mypy >/dev/null 2>&1; then mypy "$(BACKEND_DIR)"; else echo "ERROR: install pyright or mypy in backend dependencies"; exit 1; fi')

@@ -26,6 +26,14 @@ Migration usage examples from `backend/`:
 - `uv run alembic upgrade head`
 - `uv run alembic downgrade base`
 
+Migration governance and rollout details:
+
+- `backend/docs/migrations.md`
+
+Migration lint command from repository root:
+
+- `uv run --project backend python backend/scripts/migration_lint.py --migrations-dir backend/migrations/versions`
+
 ## Today accumulation API
 
 `SPRT-36` introduces a deterministic boundary-compute endpoint:
