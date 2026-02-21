@@ -22,9 +22,21 @@ describe("CalendarPage", () => {
 
     expect(html).toContain("Weekly audit");
     expect(html).toContain("7-day fatigue trade-off review");
+    expect(html).toContain("Planning calendar");
     expect(html).toContain("Red zone ≥ 7.0");
     expect(html).toContain("Authenticated session active");
+    expect(html).toContain("Audit recompute events applied: 0");
     expect(html).toContain('href="/planner"');
+  });
+
+  it("renders skip link before auth navigation for keyboard-first access", async () => {
+    const html = renderToStaticMarkup(await CalendarPage({}));
+    const skipLinkPosition = html.indexOf("Skip to Main Content");
+    const homeLinkPosition = html.indexOf(">Home</a>");
+
+    expect(skipLinkPosition).toBeGreaterThan(-1);
+    expect(homeLinkPosition).toBeGreaterThan(-1);
+    expect(skipLinkPosition).toBeLessThan(homeLinkPosition);
   });
 
   it("shows session focus details when a today contributor sessionId is provided", async () => {

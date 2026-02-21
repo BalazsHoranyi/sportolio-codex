@@ -1456,6 +1456,269 @@ h1 {
   max-width: 70ch;
 }
 
+.calendar-recompute-summary {
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+  margin: 0 0 0.8rem;
+}
+
+.planning-calendar-shell {
+  background:
+    radial-gradient(
+      circle at 86% 16%,
+      oklch(0.95 0.05 50 / 0.48),
+      transparent 42%
+    ),
+    linear-gradient(180deg, oklch(0.99 0.01 73), oklch(0.97 0.02 70));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: clamp(1rem, 2.3vw, 1.45rem);
+}
+
+.planning-calendar-head {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.planning-calendar-head h2 {
+  font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+  line-height: 1.1;
+}
+
+.planning-calendar-head p {
+  margin: 0;
+  max-width: 65ch;
+}
+
+.planning-calendar-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+}
+
+.planning-calendar-sidebar {
+  align-content: start;
+  align-items: start;
+  align-self: start;
+  background: oklch(0.98 0.01 72);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-auto-rows: min-content;
+  padding: 0.8rem;
+}
+
+.planning-calendar-sidebar h3,
+.planning-calendar-sidebar h4 {
+  margin: 0;
+}
+
+.planning-calendar-sidebar p {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.planning-template-list {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.planning-template-chip {
+  background: oklch(0.96 0.03 58);
+  border: 1px solid oklch(0.84 0.06 58);
+  border-radius: 0.65rem;
+  color: var(--ink-strong);
+  cursor: grab;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  width: 100%;
+}
+
+.planning-template-chip:focus-visible {
+  outline: 2px solid oklch(0.53 0.13 46);
+  outline-offset: 2px;
+}
+
+.planning-keyboard-actions {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.25rem;
+  padding-top: 0.65rem;
+}
+
+.planning-keyboard-actions .button {
+  justify-content: center;
+}
+
+.planning-calendar-main {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.planning-calendar-main .fc {
+  background: oklch(0.99 0.01 74);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  padding: 0.65rem;
+}
+
+.planning-calendar-main .fc .fc-toolbar-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.planning-calendar-main .fc .fc-button {
+  background: oklch(0.95 0.02 66);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  color: var(--ink-strong);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.planning-calendar-main .fc .fc-button-primary:not(:disabled):active,
+.planning-calendar-main .fc .fc-button-primary:not(:disabled).fc-button-active,
+.planning-calendar-main .fc .fc-button:hover {
+  background: oklch(0.91 0.04 58);
+  border-color: oklch(0.73 0.09 56);
+  color: var(--ink-strong);
+}
+
+.planning-event-strength {
+  background: color-mix(in oklab, var(--calendar-neural) 72%, white);
+  border-color: color-mix(in oklab, var(--calendar-neural) 52%, black);
+}
+
+.planning-event-endurance {
+  background: color-mix(in oklab, var(--calendar-metabolic) 74%, white);
+  border-color: color-mix(in oklab, var(--calendar-metabolic) 54%, black);
+}
+
+.planning-event-recovery {
+  background: color-mix(in oklab, var(--calendar-band) 62%, white);
+  border-color: color-mix(in oklab, var(--calendar-band) 54%, black);
+}
+
+.planning-remove-zone {
+  align-items: center;
+  background: oklch(0.96 0.04 24 / 0.65);
+  border: 1px dashed oklch(0.59 0.14 24);
+  border-radius: 0.7rem;
+  color: oklch(0.45 0.14 24);
+  display: flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 2.6rem;
+  padding: 0.3rem 0.55rem;
+  position: sticky;
+  top: 0.65rem;
+  z-index: 4;
+}
+
+.planning-keyboard-schedule {
+  background: oklch(0.98 0.01 72);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem;
+}
+
+.planning-keyboard-schedule h3 {
+  margin: 0;
+}
+
+.planning-scheduled-list {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.planning-scheduled-list li {
+  background: oklch(0.96 0.02 67);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.65rem;
+}
+
+.planning-scheduled-list p {
+  margin: 0;
+}
+
+.planning-scheduled-list label {
+  color: var(--ink-muted);
+  display: grid;
+  font-size: 0.76rem;
+  font-weight: 600;
+  gap: 0.35rem;
+}
+
+.planning-scheduled-list select {
+  background: oklch(0.99 0.01 74);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  color: var(--ink-strong);
+  font-family: var(--font-body);
+  font-size: 0.83rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.planning-keyboard-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.planning-keyboard-row-actions .button {
+  flex: 1 1 12rem;
+  justify-content: center;
+}
+
+.planning-mutation-log {
+  background: oklch(0.98 0.01 72);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.8rem;
+}
+
+.planning-mutation-log h3,
+.planning-mutation-log p {
+  margin: 0;
+}
+
+.planning-mutation-log ol {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.planning-mutation-log li {
+  color: var(--ink-body);
+  display: grid;
+  gap: 0.15rem;
+}
+
 .calendar-audit-chart {
   background:
     radial-gradient(
@@ -2437,6 +2700,37 @@ h1 {
 
   .today-decision-grid {
     grid-template-columns: 1fr;
+  }
+
+  .planning-calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planning-calendar-main .fc .fc-toolbar {
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .planning-calendar-main {
+    overflow-x: auto;
+  }
+
+  .planning-calendar-main .fc .fc-timeGridWeek-view {
+    min-width: 40rem;
+  }
+
+  .planning-calendar-main .fc .fc-toolbar-chunk {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .planning-keyboard-row-actions {
+    flex-direction: column;
+  }
+
+  .planning-keyboard-row-actions .button {
+    width: 100%;
   }
 
   .calendar-point-actions {
