@@ -153,10 +153,30 @@ Sync behavior:
 - Returns deterministic per-entry reconciliation metadata including `dedupStatus`, `sequenceNumber`, and import IDs.
 - Suppresses duplicates by `externalActivityId` and preserves ordering across retries.
 - Emits deterministic pipeline dispatch metadata for new imports:
-  - `fatigue`
-  - `analytics`
-- Enqueues each new dispatch through the integration dispatch sink so fatigue/analytics pipelines can process imports.
+  - `workout_sync`
+  - `fatigue_recompute`
+- Enqueues each new dispatch through the background-job queue sink so sync/recompute pipelines can be processed with retry + dead-letter behavior.
 - Sync retries with the same `idempotencyKey` replay the exact prior response and do not duplicate dispatch side effects.
+
+## Background job framework
+
+`SPRT-14` introduces deterministic in-process background job orchestration for sync/recompute workflows.
+
+Core behavior:
+
+- Queue supports idempotent enqueue replay keyed by `(athleteId, idempotencyKey)` with payload drift rejection.
+- Retry policy supports configurable max attempts + retry delay.
+- Terminal failures are captured as dead-letter jobs with actionable metadata (`lastErrorCode`, `lastErrorMessage`, attempt counts, failure timestamp).
+- Metrics are tracked for:
+  - queue depth,
+  - failure rate (failed attempts / processed attempts),
+  - average processing latency (ms),
+  - retry and dead-letter counts.
+
+System diagnostics endpoints:
+
+- `GET /v1/system/background-jobs/metrics`
+- `GET /v1/system/background-jobs/dead-letters`
 
 ## Wahoo trainer control API
 

@@ -274,6 +274,10 @@ def test_wahoo_sync_contract_reconciles_history_and_is_idempotent() -> None:
     ]
     assert [entry["sequenceNumber"] for entry in first_body["entries"]] == [1, 2]
     assert len(first_body["pipelineDispatches"]) == 4
+    assert {dispatch["pipeline"] for dispatch in first_body["pipelineDispatches"]} == {
+        "workout_sync",
+        "fatigue_recompute",
+    }
     assert replay.json() == first_body
 
     duplicate_body = duplicate_pass.json()
