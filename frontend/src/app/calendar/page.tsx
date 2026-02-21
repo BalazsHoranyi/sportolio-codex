@@ -3,6 +3,7 @@ import React from "react";
 import { loadWeeklyAuditResponse } from "../../features/calendar-audit/api";
 import { weeklyAuditResponseSample } from "../../features/calendar-audit/sample-data";
 import { WeeklyAuditChart } from "../../features/calendar-audit/weekly-audit-chart";
+import { PlanningCalendarSurface } from "../../features/planning-calendar/planning-calendar-surface";
 import {
   normalizeSessionId,
   resolveCalendarSessionFocus,
@@ -77,6 +78,8 @@ export default async function CalendarPage({
           load.
         </p>
       </section>
+
+      <PlanningCalendarSurface />
 
       <WeeklyAuditChart response={weeklyAudit} />
 
