@@ -115,28 +115,23 @@ export function PlanningCalendarSurface({
 
   useEffect(() => {
     setKeyboardMoveTargets((previous) => {
-      const next = { ...previous };
-      let changed = false;
+      const next = Object.fromEntries(
+        planningState.workouts.map((workout) => [
+          workout.workoutId,
+          workout.date,
+        ]),
+      );
 
-      for (const workout of planningState.workouts) {
-        if (!next[workout.workoutId]) {
-          next[workout.workoutId] = workout.date;
-          changed = true;
-        }
+      const hasDifferentSize =
+        Object.keys(previous).length !== planningState.workouts.length;
+      if (hasDifferentSize) {
+        return next;
       }
 
-      for (const workoutId of Object.keys(next)) {
-        if (
-          !planningState.workouts.some(
-            (workout) => workout.workoutId === workoutId,
-          )
-        ) {
-          delete next[workoutId];
-          changed = true;
-        }
-      }
-
-      return changed ? next : previous;
+      const hasAnyDiff = planningState.workouts.some(
+        (workout) => previous[workout.workoutId] !== workout.date,
+      );
+      return hasAnyDiff ? next : previous;
     });
   }, [planningState.workouts]);
 

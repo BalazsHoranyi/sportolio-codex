@@ -4,6 +4,44 @@ import React from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+vi.mock("@fullcalendar/react", () => ({
+  default: (props: Record<string, unknown>) => (
+    <section aria-label="FullCalendar mock">
+      <button
+        type="button"
+        onClick={() =>
+          (
+            props.eventDrop as (args: {
+              event: { id: string; startStr: string };
+              oldEvent: { startStr: string };
+            }) => void
+          )({
+            event: { id: "workout-strength-a", startStr: "2026-02-20" },
+            oldEvent: { startStr: "2026-02-17" },
+          })
+        }
+      >
+        Trigger drag move
+      </button>
+    </section>
+  ),
+}));
+
+vi.mock("@fullcalendar/daygrid", () => ({
+  default: {},
+}));
+
+vi.mock("@fullcalendar/timegrid", () => ({
+  default: {},
+}));
+
+vi.mock("@fullcalendar/interaction", () => ({
+  default: {},
+  Draggable: vi.fn(() => ({
+    destroy: vi.fn(),
+  })),
+}));
+
 import { PlanningCalendarSurface } from "../../src/features/planning-calendar/planning-calendar-surface";
 
 describe("planning calendar surface integration", () => {
@@ -64,5 +102,62 @@ describe("planning calendar surface integration", () => {
     expect(within(recomputeRegion).getByText(/workout_added/i)).toBeTruthy();
     expect(within(recomputeRegion).getByText(/workout_moved/i)).toBeTruthy();
     expect(within(recomputeRegion).getByText(/workout_removed/i)).toBeTruthy();
+  });
+
+  it("keeps keyboard move targets in sync after drag-move callbacks", async () => {
+    const user = userEvent.setup();
+
+    render(<PlanningCalendarSurface />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /trigger drag move/i,
+      }),
+    );
+
+    const scheduledRegion = screen.getByRole("region", {
+      name: /scheduled workouts/i,
+    });
+    const heavyLowerRow = within(scheduledRegion)
+      .getByText("Heavy lower", { selector: "strong" })
+      .closest("li");
+    expect(heavyLowerRow).toBeTruthy();
+
+    const heavyLowerWithin = within(heavyLowerRow as HTMLElement);
+    await waitFor(() => {
+      expect(
+        heavyLowerWithin.getByText("Friday, Feb 20", {
+          selector: "p",
+          exact: false,
+        }),
+      ).toBeTruthy();
+    });
+
+    const moveTargetSelect = heavyLowerWithin.getByRole("combobox", {
+      name: /move target day/i,
+    }) as HTMLSelectElement;
+    expect(moveTargetSelect.value).toBe("2026-02-20");
+
+    const recomputeRegion = screen.getByRole("region", {
+      name: /calendar recompute events/i,
+    });
+    expect(
+      within(recomputeRegion).getByText(/from 2026-02-17 to 2026-02-20/i),
+    ).toBeTruthy();
+
+    await user.click(
+      heavyLowerWithin.getByRole("button", {
+        name: /move heavy lower to selected day/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        within(recomputeRegion).getAllByText(/workout_moved/i),
+      ).toHaveLength(1);
+    });
+    expect(
+      within(recomputeRegion).queryByText(/from 2026-02-20 to 2026-02-17/i),
+    ).toBeNull();
   });
 });
