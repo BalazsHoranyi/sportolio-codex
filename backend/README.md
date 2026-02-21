@@ -2,6 +2,27 @@
 
 Backend service modules for Sportolo.
 
+## Backend bootstrap architecture
+
+`SPRT-12` introduces centralized backend bootstrap wiring with explicit dependency injection boundaries:
+
+- App factory: `backend/src/sportolo/app_factory.py`
+- Runtime config + feature flags: `backend/src/sportolo/config.py`
+- Router registry and exception handler registration:
+  - `backend/src/sportolo/api/router_registry.py`
+  - `backend/src/sportolo/api/error_handlers.py`
+- Route dependency providers: `backend/src/sportolo/api/dependencies.py`
+- Shared API primitives: `backend/src/sportolo/api/schemas/common.py`
+
+System smoke endpoint:
+
+- `GET /v1/system/smoke`
+- Returns API envelope payload with app metadata and active feature flags.
+
+Detailed architecture notes:
+
+- `backend/docs/bootstrap-architecture.md`
+
 ## Fatigue persistence schema
 
 `SPRT-26` introduces persistent storage for the 4-axis fatigue data model and system capacity.

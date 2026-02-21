@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Path
+from typing import Annotated
 
-from sportolo.api.schemas.muscle_usage import ValidationError
+from fastapi import APIRouter, Depends, Path
+
+from sportolo.api.dependencies import get_wahoo_control_service, get_wahoo_integration_service
+from sportolo.api.schemas.common import ValidationError
 from sportolo.api.schemas.wahoo_integration import (
     WahooExecutionHistorySyncRequest,
     WahooExecutionHistorySyncResponse,
@@ -13,8 +16,8 @@ from sportolo.services.wahoo_control_service import WahooControlService
 from sportolo.services.wahoo_integration_service import WahooIntegrationService
 
 router = APIRouter(tags=["Integrations"])
-service = WahooIntegrationService()
-control_service = WahooControlService()
+service = get_wahoo_integration_service()
+control_service = get_wahoo_control_service()
 
 
 @router.post(
@@ -25,6 +28,7 @@ control_service = WahooControlService()
 )
 async def push_wahoo_workout(
     request: WahooWorkoutPushRequest,
+    service: Annotated[WahooIntegrationService, Depends(get_wahoo_integration_service)],
     athlete_id: str = Path(alias="athleteId"),
 ) -> WahooWorkoutPushResponse:
     return service.push_workout(athlete_id=athlete_id, request=request)
@@ -38,6 +42,7 @@ async def push_wahoo_workout(
 )
 async def sync_wahoo_execution_history(
     request: WahooExecutionHistorySyncRequest,
+    service: Annotated[WahooIntegrationService, Depends(get_wahoo_integration_service)],
     athlete_id: str = Path(alias="athleteId"),
 ) -> WahooExecutionHistorySyncResponse:
     return service.sync_execution_history(athlete_id=athlete_id, request=request)
@@ -51,6 +56,7 @@ async def sync_wahoo_execution_history(
 )
 async def control_wahoo_trainer(
     request: WahooTrainerControlRequest,
+    control_service: Annotated[WahooControlService, Depends(get_wahoo_control_service)],
     athlete_id: str = Path(alias="athleteId"),
 ) -> WahooTrainerControlResponse:
     return control_service.send_control_command(athlete_id=athlete_id, request=request)
