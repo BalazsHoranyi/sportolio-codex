@@ -97,3 +97,34 @@ def test_typo_tolerant_search_resolves_strength_exercise_names() -> None:
 
     assert matches
     assert matches[0].canonical_name == "Split Squat"
+
+
+def test_search_exercises_supports_deterministic_pagination() -> None:
+    service = ExerciseCatalogService()
+
+    first_page = service.search_exercises(search="press", page=1, page_size=1)
+    second_page = service.search_exercises(search="press", page=2, page_size=1)
+
+    assert first_page.total_items >= 2
+    assert first_page.page == 1
+    assert first_page.page_size == 1
+    assert first_page.total_pages >= 2
+    assert len(first_page.items) == 1
+    assert second_page.page == 2
+    assert len(second_page.items) == 1
+    assert first_page.items[0].entry.id != second_page.items[0].entry.id
+
+
+def test_search_exercises_includes_match_metadata_for_alias_queries() -> None:
+    service = ExerciseCatalogService()
+
+    result = service.search_exercises(search="cable pallof press", page=1, page_size=5)
+
+    assert result.items
+    top_match = result.items[0]
+    assert top_match.entry.canonical_name == "Pallof Press"
+    assert top_match.match_metadata is not None
+    assert top_match.match_metadata.strategy == "alias_exact"
+    assert top_match.match_metadata.highlight is not None
+    assert top_match.match_metadata.highlight.field == "alias"
+    assert top_match.match_metadata.highlight.value == "Cable Pallof Press"
