@@ -33,6 +33,26 @@ function createDraft(overrides: Partial<PlannerDraft> = {}): PlannerDraft {
         periodization: "block",
         focus: "strength",
         durationWeeks: 4,
+        strategy: {
+          block: {
+            accumulationWeeks: 2,
+            intensificationWeeks: 1,
+            includeDeloadWeek: true,
+            strengthBias: 60,
+            enduranceBias: 30,
+          },
+          dup: {
+            strengthSessionsPerWeek: 3,
+            enduranceSessionsPerWeek: 2,
+            recoverySessionsPerWeek: 1,
+            intensityRotation: "alternating",
+          },
+          linear: {
+            startIntensity: "moderate",
+            weeklyProgressionPercent: 5,
+            peakWeek: 4,
+          },
+        },
       },
     ],
     microcycle: {

@@ -38,6 +38,26 @@ function createDraft(): PlannerDraft {
         periodization: "block",
         focus: "strength",
         durationWeeks: 4,
+        strategy: {
+          block: {
+            accumulationWeeks: 2,
+            intensificationWeeks: 1,
+            includeDeloadWeek: true,
+            strengthBias: 60,
+            enduranceBias: 30,
+          },
+          dup: {
+            strengthSessionsPerWeek: 3,
+            enduranceSessionsPerWeek: 2,
+            recoverySessionsPerWeek: 1,
+            intensityRotation: "alternating",
+          },
+          linear: {
+            startIntensity: "moderate",
+            weeklyProgressionPercent: 5,
+            peakWeek: 4,
+          },
+        },
       },
     ],
     microcycle: {
@@ -87,6 +107,29 @@ describe("planner draft storage", () => {
       ...legacyDraft,
       events: [],
     });
+  });
+
+  it("loads legacy persisted payloads that predate mesocycle strategy support", () => {
+    const legacyDraft = createDraft();
+    localStorage.setItem(
+      "sportolo.planner.draft.v1",
+      JSON.stringify({
+        ...legacyDraft,
+        mesocycles: legacyDraft.mesocycles.map((mesocycle) => ({
+          mesocycleId: mesocycle.mesocycleId,
+          name: mesocycle.name,
+          periodization: mesocycle.periodization,
+          focus: mesocycle.focus,
+          durationWeeks: mesocycle.durationWeeks,
+        })),
+      }),
+    );
+
+    const loaded = loadPlannerDraft();
+
+    expect(loaded).toBeTruthy();
+    expect(loaded?.mesocycles[0]?.strategy.block.accumulationWeeks).toBe(2);
+    expect(loaded?.mesocycles[0]?.strategy.linear.peakWeek).toBe(4);
   });
 
   it("clears persisted planner draft", () => {

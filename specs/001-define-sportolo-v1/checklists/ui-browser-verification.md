@@ -1,7 +1,7 @@
 # UI Browser Verification
 
 - Date: February 21, 2026
-- Routes: `/login?next=/planner`, `/planner`, `/login?next=/calendar`, `/calendar`, and `/`
+- Routes: `/login?next=/planner`, `/planner`, and `/`
 - Browser tooling: `agent-browser` + `chrome-devtools-mcp`
 - Devices: Desktop (1440px), Mobile (390px / iPhone 14)
 
@@ -27,16 +27,16 @@
 
 ## Persona Coverage
 
-- Diego (competitive triathlete): completed login -> `/calendar`, triggered add/move/remove planner actions, and confirmed recompute event visibility on desktop/mobile.
-- Evan (powerlifter with minimal cardio): validated keyboard-first schedule controls and remove behavior for strength sessions.
-- Hybrid athlete (600lb DL + 4 W/kg target): validated week/month planner navigation and workout palette drag-add affordances.
-- Lena (busy hybrid generalist): validated mobile readability, button tap targets, and deterministic mutation feedback list.
-- Nora (masters endurance + longevity strength): validated accessibility labels for move-target combobox controls and non-blocking planner actions.
-- Priya (marathoner adding strength): validated auth-to-calendar flow and that planner operations remain visible alongside weekly audit context.
+- Diego (competitive triathlete): completed login -> planner mesocycle step, selected `DUP`, adjusted endurance session density, verified emphasis + reflow output update on desktop/mobile.
+- Evan (powerlifter with minimal cardio): kept `Block` strategy, switched focus toward strength, increased strength bias, and verified non-destructive strategy outputs on desktop/mobile.
+- Hybrid athlete (600lb DL + 4 W/kg target): switched to `Linear`, tuned weekly progression + peak week, and confirmed deterministic reflow preview updates on desktop/mobile.
+- Lena (busy hybrid generalist): used default `Block` strategy with simplified accumulation settings and verified compact/mobile usability and control labeling.
+- Nora (masters endurance + longevity strength): switched to recovery-aware `Linear` start intensity and confirmed low-friction strategy inputs and output readability on desktop/mobile.
+- Priya (marathoner adding strength): kept runner-oriented `Block` settings with endurance focus and verified strategy emphasis display and reflow summary on desktop/mobile.
 
 ## Result
 
-- `/planner` provides the production-ready macro/meso/micro cycle creation flow with explicit goal priority controls, draft persistence actions, and advisory review scaffolding.
-- `/calendar` now includes a FullCalendar planning surface with drag/drop + keyboard add/move/remove operations and deterministic recompute-event emission context.
+- `/planner` now supports strategy-specific mesocycle configuration (`Block`, `DUP`, `Linear`) with per-strategy parameter capture, deterministic emphasis outputs, and deterministic microcycle reflow previews.
+- Strategy switching preserves previously entered values for inactive strategies and restores them when switched back.
 - Browser checks using `agent-browser` and `chrome-devtools-mcp` passed for all personas in `user_profiles` across desktop and mobile.
 - Required screenshot artifact set remains complete and referenced.

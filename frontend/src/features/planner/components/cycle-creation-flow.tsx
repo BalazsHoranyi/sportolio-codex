@@ -4,15 +4,23 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { evaluatePlannerAdvisories } from "../advisory";
 import {
+  buildMicrocycleReflowProjection,
+  deriveMesocycleStrategySet,
+  type MesocycleStrategyResult,
+  type MicrocycleReflowProjection,
+} from "../mesocycle-strategy";
+import {
   clearPlannerDraft,
   loadPlannerDraft,
   savePlannerDraft,
 } from "../draft-storage";
 import {
+  createDefaultMesocycleStrategy,
   createInitialPlannerDraft,
   type MesocycleFocus,
   type PlannerEventDraft,
   type PlannerEventType,
+  type PlannerMesocycleStrategyConfig,
   type PeriodizationType,
   type PlannerDraft,
   type PlannerGoalDraft,
@@ -66,6 +74,24 @@ function asPositiveInteger(value: string, fallback = 1): number {
   }
 
   return parsed;
+}
+
+function normalizeMesocycleStrategyForDuration(
+  strategy: PlannerMesocycleStrategyConfig,
+  durationWeeks: number,
+): PlannerMesocycleStrategyConfig {
+  const safeDurationWeeks = Math.max(1, durationWeeks);
+
+  return {
+    ...strategy,
+    linear: {
+      ...strategy.linear,
+      peakWeek: Math.min(
+        safeDurationWeeks,
+        Math.max(1, strategy.linear.peakWeek),
+      ),
+    },
+  };
 }
 
 function validateMacroStep(draft: PlannerDraft): string[] {
@@ -138,7 +164,10 @@ function validateMacroStep(draft: PlannerDraft): string[] {
   return errors;
 }
 
-function validateMesocycleStep(draft: PlannerDraft): string[] {
+function validateMesocycleStep(
+  draft: PlannerDraft,
+  strategyResults: MesocycleStrategyResult[],
+): string[] {
   const errors: string[] = [];
 
   if (draft.mesocycles.length === 0) {
@@ -157,6 +186,17 @@ function validateMesocycleStep(draft: PlannerDraft): string[] {
         `Mesocycle ${mesocyclePosition}: duration must be at least one week.`,
       );
     }
+
+    const strategyResult = strategyResults.find(
+      (candidate) => candidate.mesocycleId === mesocycle.mesocycleId,
+    );
+    if (!strategyResult) {
+      return;
+    }
+
+    strategyResult.validationErrors.forEach((error) => {
+      errors.push(`Mesocycle ${mesocyclePosition}: ${error}`);
+    });
   });
 
   return errors;
@@ -180,13 +220,17 @@ function validateMicrocycleStep(draft: PlannerDraft): string[] {
   return errors;
 }
 
-function validateStep(step: PlannerStep, draft: PlannerDraft): string[] {
+function validateStep(
+  step: PlannerStep,
+  draft: PlannerDraft,
+  strategyResults: MesocycleStrategyResult[],
+): string[] {
   if (step === "macro") {
     return validateMacroStep(draft);
   }
 
   if (step === "mesocycle") {
-    return validateMesocycleStep(draft);
+    return validateMesocycleStep(draft, strategyResults);
   }
 
   if (step === "microcycle") {
@@ -221,6 +265,21 @@ export function CycleCreationFlow() {
   const currentStep = stepSequence[currentStepIndex]?.key ?? "macro";
 
   const advisories = useMemo(() => evaluatePlannerAdvisories(draft), [draft]);
+  const strategyResults = useMemo(
+    () => deriveMesocycleStrategySet(draft.mesocycles),
+    [draft.mesocycles],
+  );
+  const strategyResultByMesocycleId = useMemo(
+    () =>
+      new Map(
+        strategyResults.map((result) => [result.mesocycleId, result] as const),
+      ),
+    [strategyResults],
+  );
+  const reflowProjection = useMemo<MicrocycleReflowProjection>(
+    () => buildMicrocycleReflowProjection(draft),
+    [draft],
+  );
 
   useEffect(() => {
     const restored = loadPlannerDraft();
@@ -255,7 +314,7 @@ export function CycleCreationFlow() {
   }
 
   function goNext() {
-    const errors = validateStep(currentStep, draft);
+    const errors = validateStep(currentStep, draft, strategyResults);
     if (errors.length > 0) {
       setValidationErrors(errors);
       setStatusMessage(null);
@@ -368,12 +427,52 @@ export function CycleCreationFlow() {
     updateDraft((previous) => ({
       ...previous,
       mesocycles: previous.mesocycles.map((mesocycle) =>
-        mesocycle.mesocycleId === mesocycleId
-          ? {
+        mesocycle.mesocycleId !== mesocycleId
+          ? mesocycle
+          : (() => {
+              const nextDurationWeeks =
+                typeof update.durationWeeks === "number"
+                  ? Math.max(1, update.durationWeeks)
+                  : mesocycle.durationWeeks;
+              const mergedStrategy = update.strategy ?? mesocycle.strategy;
+
+              return {
+                ...mesocycle,
+                ...update,
+                durationWeeks: nextDurationWeeks,
+                strategy: normalizeMesocycleStrategyForDuration(
+                  mergedStrategy,
+                  nextDurationWeeks,
+                ),
+              };
+            })(),
+      ),
+    }));
+  }
+
+  function updateMesocycleStrategy<K extends PeriodizationType>(
+    mesocycleId: string,
+    periodization: K,
+    update: Partial<PlannerMesocycleDraft["strategy"][K]>,
+  ) {
+    updateDraft((previous) => ({
+      ...previous,
+      mesocycles: previous.mesocycles.map((mesocycle) =>
+        mesocycle.mesocycleId !== mesocycleId
+          ? mesocycle
+          : {
               ...mesocycle,
-              ...update,
-            }
-          : mesocycle,
+              strategy: normalizeMesocycleStrategyForDuration(
+                {
+                  ...mesocycle.strategy,
+                  [periodization]: {
+                    ...mesocycle.strategy[periodization],
+                    ...update,
+                  },
+                },
+                mesocycle.durationWeeks,
+              ),
+            },
       ),
     }));
   }
@@ -392,6 +491,7 @@ export function CycleCreationFlow() {
           periodization: "block",
           focus: "hybrid",
           durationWeeks: 4,
+          strategy: createDefaultMesocycleStrategy(4),
         },
       ],
     }));
@@ -826,10 +926,25 @@ export function CycleCreationFlow() {
             aria-label="Configured mesocycles"
           >
             {draft.mesocycles.map((mesocycle) => {
+              const strategyResult = strategyResultByMesocycleId.get(
+                mesocycle.mesocycleId,
+              );
               const mesocycleNameId = `mesocycle-name-${mesocycle.mesocycleId}`;
               const mesocyclePeriodizationId = `mesocycle-periodization-${mesocycle.mesocycleId}`;
               const mesocycleFocusId = `mesocycle-focus-${mesocycle.mesocycleId}`;
               const mesocycleDurationId = `mesocycle-duration-${mesocycle.mesocycleId}`;
+              const blockAccumulationId = `mesocycle-block-accumulation-${mesocycle.mesocycleId}`;
+              const blockIntensificationId = `mesocycle-block-intensification-${mesocycle.mesocycleId}`;
+              const blockIncludeDeloadId = `mesocycle-block-deload-${mesocycle.mesocycleId}`;
+              const blockStrengthBiasId = `mesocycle-block-strength-bias-${mesocycle.mesocycleId}`;
+              const blockEnduranceBiasId = `mesocycle-block-endurance-bias-${mesocycle.mesocycleId}`;
+              const dupStrengthSessionsId = `mesocycle-dup-strength-${mesocycle.mesocycleId}`;
+              const dupEnduranceSessionsId = `mesocycle-dup-endurance-${mesocycle.mesocycleId}`;
+              const dupRecoverySessionsId = `mesocycle-dup-recovery-${mesocycle.mesocycleId}`;
+              const dupRotationId = `mesocycle-dup-rotation-${mesocycle.mesocycleId}`;
+              const linearStartIntensityId = `mesocycle-linear-start-${mesocycle.mesocycleId}`;
+              const linearProgressionId = `mesocycle-linear-progression-${mesocycle.mesocycleId}`;
+              const linearPeakWeekId = `mesocycle-linear-peak-${mesocycle.mesocycleId}`;
 
               return (
                 <li key={mesocycle.mesocycleId}>
@@ -909,6 +1024,359 @@ export function CycleCreationFlow() {
                       />
                     </label>
                   </div>
+
+                  {mesocycle.periodization === "block" ? (
+                    <div className="planner-flow-grid planner-flow-grid-two">
+                      <label htmlFor={blockAccumulationId}>
+                        Block accumulation weeks
+                        <input
+                          id={blockAccumulationId}
+                          className="planner-flow-input"
+                          name={blockAccumulationId}
+                          min={1}
+                          step={1}
+                          type="number"
+                          value={mesocycle.strategy.block.accumulationWeeks}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "block",
+                              {
+                                accumulationWeeks: asPositiveInteger(
+                                  event.target.value,
+                                  1,
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={blockIntensificationId}>
+                        Block intensification weeks
+                        <input
+                          id={blockIntensificationId}
+                          className="planner-flow-input"
+                          name={blockIntensificationId}
+                          min={1}
+                          step={1}
+                          type="number"
+                          value={mesocycle.strategy.block.intensificationWeeks}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "block",
+                              {
+                                intensificationWeeks: asPositiveInteger(
+                                  event.target.value,
+                                  1,
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={blockStrengthBiasId}>
+                        Block strength bias (%)
+                        <input
+                          id={blockStrengthBiasId}
+                          className="planner-flow-input"
+                          name={blockStrengthBiasId}
+                          max={100}
+                          min={0}
+                          step={1}
+                          type="number"
+                          value={mesocycle.strategy.block.strengthBias}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "block",
+                              {
+                                strengthBias: Math.max(
+                                  0,
+                                  asPositiveInteger(event.target.value, 0),
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={blockEnduranceBiasId}>
+                        Block endurance bias (%)
+                        <input
+                          id={blockEnduranceBiasId}
+                          className="planner-flow-input"
+                          name={blockEnduranceBiasId}
+                          max={100}
+                          min={0}
+                          step={1}
+                          type="number"
+                          value={mesocycle.strategy.block.enduranceBias}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "block",
+                              {
+                                enduranceBias: Math.max(
+                                  0,
+                                  asPositiveInteger(event.target.value, 0),
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label
+                        className="planner-flow-toggle"
+                        htmlFor={blockIncludeDeloadId}
+                      >
+                        <input
+                          checked={mesocycle.strategy.block.includeDeloadWeek}
+                          id={blockIncludeDeloadId}
+                          name={blockIncludeDeloadId}
+                          type="checkbox"
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "block",
+                              {
+                                includeDeloadWeek: event.target.checked,
+                              },
+                            )
+                          }
+                        />
+                        Include deload week
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {mesocycle.periodization === "dup" ? (
+                    <div className="planner-flow-grid planner-flow-grid-two">
+                      <label htmlFor={dupStrengthSessionsId}>
+                        DUP strength sessions per week
+                        <input
+                          id={dupStrengthSessionsId}
+                          className="planner-flow-input"
+                          name={dupStrengthSessionsId}
+                          min={0}
+                          step={1}
+                          type="number"
+                          value={mesocycle.strategy.dup.strengthSessionsPerWeek}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "dup",
+                              {
+                                strengthSessionsPerWeek: Math.max(
+                                  0,
+                                  asPositiveInteger(event.target.value, 0),
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={dupEnduranceSessionsId}>
+                        DUP endurance sessions per week
+                        <input
+                          id={dupEnduranceSessionsId}
+                          className="planner-flow-input"
+                          name={dupEnduranceSessionsId}
+                          min={0}
+                          step={1}
+                          type="number"
+                          value={
+                            mesocycle.strategy.dup.enduranceSessionsPerWeek
+                          }
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "dup",
+                              {
+                                enduranceSessionsPerWeek: Math.max(
+                                  0,
+                                  asPositiveInteger(event.target.value, 0),
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={dupRecoverySessionsId}>
+                        DUP recovery sessions per week
+                        <input
+                          id={dupRecoverySessionsId}
+                          className="planner-flow-input"
+                          name={dupRecoverySessionsId}
+                          min={0}
+                          step={1}
+                          type="number"
+                          value={mesocycle.strategy.dup.recoverySessionsPerWeek}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "dup",
+                              {
+                                recoverySessionsPerWeek: Math.max(
+                                  0,
+                                  asPositiveInteger(event.target.value, 0),
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={dupRotationId}>
+                        DUP intensity rotation
+                        <select
+                          id={dupRotationId}
+                          className="planner-flow-select"
+                          name={dupRotationId}
+                          value={mesocycle.strategy.dup.intensityRotation}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "dup",
+                              {
+                                intensityRotation: event.target
+                                  .value as PlannerMesocycleDraft["strategy"]["dup"]["intensityRotation"],
+                              },
+                            )
+                          }
+                        >
+                          <option value="alternating">Alternating</option>
+                          <option value="ascending">Ascending</option>
+                          <option value="descending">Descending</option>
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {mesocycle.periodization === "linear" ? (
+                    <div className="planner-flow-grid planner-flow-grid-two">
+                      <label htmlFor={linearStartIntensityId}>
+                        Linear start intensity
+                        <select
+                          id={linearStartIntensityId}
+                          className="planner-flow-select"
+                          name={linearStartIntensityId}
+                          value={mesocycle.strategy.linear.startIntensity}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "linear",
+                              {
+                                startIntensity: event.target
+                                  .value as PlannerMesocycleDraft["strategy"]["linear"]["startIntensity"],
+                              },
+                            )
+                          }
+                        >
+                          <option value="easy">Easy</option>
+                          <option value="moderate">Moderate</option>
+                          <option value="hard">Hard</option>
+                        </select>
+                      </label>
+
+                      <label htmlFor={linearProgressionId}>
+                        Weekly progression %
+                        <input
+                          id={linearProgressionId}
+                          className="planner-flow-input"
+                          name={linearProgressionId}
+                          min={1}
+                          step={1}
+                          type="number"
+                          value={
+                            mesocycle.strategy.linear.weeklyProgressionPercent
+                          }
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "linear",
+                              {
+                                weeklyProgressionPercent: asPositiveInteger(
+                                  event.target.value,
+                                  1,
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label htmlFor={linearPeakWeekId}>
+                        Linear peak week
+                        <input
+                          id={linearPeakWeekId}
+                          className="planner-flow-input"
+                          name={linearPeakWeekId}
+                          min={1}
+                          step={1}
+                          type="number"
+                          value={mesocycle.strategy.linear.peakWeek}
+                          onChange={(event) =>
+                            updateMesocycleStrategy(
+                              mesocycle.mesocycleId,
+                              "linear",
+                              {
+                                peakWeek: asPositiveInteger(
+                                  event.target.value,
+                                  1,
+                                ),
+                              },
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {strategyResult ? (
+                    <section className="planner-mesocycle-output">
+                      <p className="planner-mesocycle-output-title">
+                        Expected modality emphasis
+                      </p>
+                      <p className="planner-flow-empty">
+                        Strength {strategyResult.emphasis.strengthPercent}% ·
+                        Endurance {strategyResult.emphasis.endurancePercent}% ·
+                        Recovery {strategyResult.emphasis.recoveryPercent}%
+                      </p>
+                      <p className="planner-flow-empty">
+                        {strategyResult.emphasis.label}
+                      </p>
+
+                      <p className="planner-mesocycle-output-title">
+                        Upcoming microcycle reflow
+                      </p>
+                      <ol className="planner-mesocycle-preview">
+                        {strategyResult.projectedWeeks.map((week) => (
+                          <li key={`${mesocycle.mesocycleId}-${week.week}`}>
+                            Week {week.week}: {formatToken(week.phase)} ·{" "}
+                            {formatToken(week.primaryFocus)} focus ·{" "}
+                            {week.targetLoadPercent}% load ·{" "}
+                            {formatToken(week.intensityWave)} wave
+                          </li>
+                        ))}
+                      </ol>
+
+                      {strategyResult.validationErrors.length > 0 ? (
+                        <ul className="planner-flow-inline-error">
+                          {strategyResult.validationErrors.map((error) => (
+                            <li key={`${mesocycle.mesocycleId}-${error}`}>
+                              {error}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </section>
+                  ) : null}
 
                   <button
                     className="planner-flow-link"
@@ -1115,6 +1583,64 @@ export function CycleCreationFlow() {
                 </ul>
               )}
             </section>
+
+            <section className="planner-review-card">
+              <h3>Mesocycle emphasis</h3>
+              {strategyResults.length === 0 ? (
+                <p className="planner-flow-empty">No mesocycles configured.</p>
+              ) : (
+                <ul
+                  className="planner-review-list"
+                  aria-label="Mesocycle emphasis"
+                >
+                  {strategyResults.map((result) => {
+                    const mesocycle = draft.mesocycles.find(
+                      (candidate) =>
+                        candidate.mesocycleId === result.mesocycleId,
+                    );
+                    return (
+                      <li key={result.mesocycleId}>
+                        <p>{mesocycle?.name || "Unnamed mesocycle"}</p>
+                        <small>
+                          {result.emphasis.label} · Strength{" "}
+                          {result.emphasis.strengthPercent}% · Endurance{" "}
+                          {result.emphasis.endurancePercent}% · Recovery{" "}
+                          {result.emphasis.recoveryPercent}%
+                        </small>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+
+            <section className="planner-review-card">
+              <h3>Microcycle reflow preview</h3>
+              {reflowProjection.rows.length === 0 ? (
+                <p className="planner-flow-empty">
+                  No reflow projection generated.
+                </p>
+              ) : (
+                <ul
+                  className="planner-review-list"
+                  aria-label="Microcycle reflow preview"
+                >
+                  {reflowProjection.rows.slice(0, 12).map((row) => (
+                    <li key={`${row.mesocycleId}-${row.globalWeek}`}>
+                      <p>
+                        Week {row.globalWeek}: {row.mesocycleName}
+                      </p>
+                      <small>
+                        {formatToken(row.phase)} ·{" "}
+                        {formatToken(row.primaryFocus)} focus ·{" "}
+                        {row.targetLoadPercent}% load ·{" "}
+                        {formatToken(row.intensityWave)} wave
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
 
           <section className="planner-review-summary">
@@ -1139,6 +1665,10 @@ export function CycleCreationFlow() {
               <div>
                 <dt>Workouts</dt>
                 <dd>{draft.microcycle.workouts.length}</dd>
+              </div>
+              <div>
+                <dt>Reflow rows</dt>
+                <dd>{reflowProjection.rows.length}</dd>
               </div>
             </dl>
           </section>
