@@ -89,7 +89,7 @@ describe("RoutineCreationFlow", () => {
       name: /routine dsl editor/i,
     }) as HTMLTextAreaElement;
 
-    expect(dslEditor.value).toContain('"exerciseId": "global-split-squat"');
+    expect(dslEditor.value).toContain("Split Squat");
 
     const nextDsl = JSON.stringify(
       {
@@ -140,6 +140,48 @@ describe("RoutineCreationFlow", () => {
       name: /selected strength exercises/i,
     });
     expect(within(selectedStrengthList).getByText("Split Squat")).toBeTruthy();
+  });
+
+  it("uses human-readable DSL authoring text instead of JSON-centric text in DSL mode", async () => {
+    const user = userEvent.setup();
+
+    render(<RoutineCreationFlow />);
+
+    await screen.findByText(/Showing 2 matches\./i);
+    await user.click(screen.getByRole("tab", { name: /^dsl$/i }));
+
+    const dslEditor = screen.getByRole("textbox", {
+      name: /routine dsl editor/i,
+    }) as HTMLTextAreaElement;
+
+    expect(dslEditor.value).toContain('routine "Hybrid Builder"');
+    expect(dslEditor.value).not.toContain('"routineName":');
+
+    const nextDsl = `
+routine "Hybrid Builder" id:routine-hybrid-a path:endurance
+references macro:null meso:null micro:null
+
+Warmup
+- 10m 60% 90-100rpm
+
+Main set 2x
+- 4m 100% 40-50rpm, torque focus
+- 2m recovery at 40%
+
+Cooldown
+- 5m 55% 90-100rpm
+`.trim();
+
+    fireEvent.change(dslEditor, {
+      target: {
+        value: nextDsl,
+      },
+    });
+
+    await user.click(screen.getByRole("tab", { name: /^visual$/i }));
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Main set: Work")).toBeTruthy();
+    });
   });
 
   it("supports equipment/muscle filtering and shows exercise/routine/microcycle muscle-map visibility", async () => {
@@ -326,15 +368,12 @@ describe("RoutineCreationFlow", () => {
       name: /routine dsl editor/i,
     }) as HTMLTextAreaElement;
 
-    expect(
-      dslEditor.value.indexOf('"canonicalName": "Bench Press"'),
-    ).toBeLessThan(dslEditor.value.indexOf('"canonicalName": "Split Squat"'));
-    expect(dslEditor.value).toContain('"variables"');
-    expect(dslEditor.value).toContain('"blocks"');
-    expect(dslEditor.value).toContain('"repeatCount": 3');
-    expect(dslEditor.value).toContain('"condition": "readiness >= 6"');
-    expect(dslEditor.value).toContain('"progression"');
-    expect(dslEditor.value).toContain('"strategy": "linear_add_load"');
+    expect(dslEditor.value.indexOf("Bench Press")).toBeLessThan(
+      dslEditor.value.indexOf("Split Squat"),
+    );
+    expect(dslEditor.value).toContain("@var");
+    expect(dslEditor.value).toContain("3x if readiness >= 6");
+    expect(dslEditor.value).toContain("progress: linear_add_load(2.5)");
   });
 
   it("supports drag and drop reorder while preserving structure validity", async () => {
@@ -391,9 +430,9 @@ describe("RoutineCreationFlow", () => {
     const dslEditor = screen.getByRole("textbox", {
       name: /routine dsl editor/i,
     }) as HTMLTextAreaElement;
-    expect(
-      dslEditor.value.indexOf('"canonicalName": "Split Squat"'),
-    ).toBeLessThan(dslEditor.value.indexOf('"canonicalName": "Bench Press"'));
+    expect(dslEditor.value.indexOf("Split Squat")).toBeLessThan(
+      dslEditor.value.indexOf("Bench Press"),
+    );
   });
 
   it("supports keyboard tab navigation for editor mode and routine path", async () => {
@@ -624,13 +663,11 @@ describe("RoutineCreationFlow", () => {
     }) as HTMLTextAreaElement;
 
     const splitSquatOccurrences =
-      dslAfterEdit.value.match(/"exerciseId": "global-split-squat"/g) ?? [];
+      dslAfterEdit.value.match(/id:\s*global-split-squat/g) ?? [];
 
     expect(splitSquatOccurrences).toHaveLength(1);
-    expect(dslAfterEdit.value).toContain(
-      '"condition": "side == right && tempo == slow"',
-    );
-    expect(dslAfterEdit.value).not.toContain('"condition": "side == left"');
+    expect(dslAfterEdit.value).toContain("if: side == right && tempo == slow");
+    expect(dslAfterEdit.value).not.toContain("if: side == left");
 
     confirmSpy.mockRestore();
   });
@@ -705,20 +742,13 @@ describe("RoutineCreationFlow", () => {
     const dslEditor = screen.getByRole("textbox", {
       name: /routine dsl editor/i,
     }) as HTMLTextAreaElement;
-    const editedDsl = JSON.parse(dslEditor.value) as {
-      strength: {
-        blocks: Array<{
-          exercises: Array<{
-            condition: string | null;
-          }>;
-        }>;
-      };
-    };
-    editedDsl.strength.blocks[0]!.exercises[0]!.condition =
-      "tempo == controlled";
-
     fireEvent.change(dslEditor, {
-      target: { value: JSON.stringify(editedDsl, null, 2) },
+      target: {
+        value: dslEditor.value.replace(
+          /Split Squat[^\n]*/,
+          (line) => `${line} / if: tempo == controlled`,
+        ),
+      },
     });
 
     await user.click(screen.getByRole("tab", { name: /^visual$/i }));

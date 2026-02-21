@@ -3,9 +3,68 @@
 The routine builder supports two synchronized modes:
 
 - `Visual` mode for guided editing.
-- `DSL` mode for direct JSON edits.
+- `DSL` mode for human-readable text authoring.
 
-## DSL envelope (v2)
+The DSL parser accepts two formats:
+
+- Human-friendly text DSL (default in the editor).
+- JSON envelope (backward-compatible import path for internal/legacy payloads).
+
+## Human DSL syntax (v2)
+
+The editor uses a deterministic text grammar rooted by a required header:
+
+```txt
+routine "Routine Name" id:routine-id path:strength
+references macro:null meso:null micro:null
+```
+
+`path` controls which authoring section is parsed (`strength` or `endurance`).
+
+### Strength authoring
+
+Supported constructs:
+
+- Week/day headings: `# Week 1`, `## Day 1`
+- Inline notes/comments before an exercise: `// Pause at bottom`
+- Variable declarations: `@var training-max | Training Max = 0.9 * 1rm`
+- Liftosaur-like exercise lines:
+  - `Squat / 5x5 / progress: lp(5lb) / rest: 210s`
+  - optional tokens: `timer`, `load`, `rpe`, `rir`, `if`, `id`, `instance`, `equip`, `regions`
+- Explicit per-set declarations for non-uniform prescriptions:
+  - `sets: [id=set-1,reps=5,rest=180,progress=linear_add_load(2.5); id=set-2,reps=8,rest=150]`
+
+Progression directives support:
+
+- `lp(...)` / `linear_add_load(...)`
+- `reps(...)` / `linear_add_reps(...)`
+- `wave(...)` / `percentage_wave(...)`
+
+### Endurance authoring
+
+Supported constructs:
+
+- Intervals.icu-style block headings with optional repeat counts:
+  - `Warmup`
+  - `Main set 6x`
+  - `Cooldown`
+- Segment lines:
+  - `- 20m 60% 90-100rpm`
+  - `- 4m 100% 40-50rpm, power is less important than torque`
+  - `- 5m recovery at 40%`
+
+Targets support:
+
+- `%` intensity (`power_watts` path)
+- `pace:<value>`
+- `hr:<value>` / `bpm`
+
+Optional cadence and notes are preserved:
+
+- `cadenceRangeRpm { min, max }`
+- `note`
+
+## JSON envelope (v2)
 
 The routine DSL is versioned and uses a normalized root envelope:
 
@@ -14,7 +73,7 @@ The routine DSL is versioned and uses a normalized root envelope:
   - `macrocycleId`
   - `mesocycleId`
   - `microcycleId`
-- existing routine payload (`routineId`, `routineName`, `path`, `strength`, `endurance`)
+- routine payload (`routineId`, `routineName`, `path`, `strength`, `endurance`)
 
 ## Strength model
 
@@ -51,6 +110,8 @@ Each block contains:
 - `segments[]` with:
   - `segmentId`, `label`, `durationSeconds`
   - `target { type, value }` where type is `power_watts` | `pace` | `heart_rate`
+  - optional `cadenceRangeRpm { min, max }`
+  - optional `note`
 
 When only one representation is provided, parser normalization derives the other
 deterministically.
@@ -72,10 +133,14 @@ Legacy DSL payloads that only include `strength.exercises[]` are still accepted.
 They are deterministically hydrated into one imported block (`repeatCount: 1`) with
 an initial default set for each exercise.
 
+Legacy JSON-based authoring/integration flows remain supported via the JSON parser
+path even though editor-first authoring is now human text DSL.
+
 ## Validation behavior
 
 - Invalid DSL edits show inline validation errors.
-- Validation errors include a concrete field location and a `Hint:` fix suggestion.
+- Human DSL errors include `Line` + `column` and a `Hint:` fix suggestion.
+- JSON errors preserve actionable parse/schema messages.
 - The last valid visual state is preserved until DSL becomes valid again.
 
 ## Edit history behavior

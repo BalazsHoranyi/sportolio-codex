@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import {
   parseRoutineDsl,
   serializeRoutineDsl,
+  serializeRoutineDslText,
 } from "../../src/features/routine/routine-dsl";
 import type { RoutineDraft } from "../../src/features/routine/types";
 
@@ -461,6 +462,185 @@ describe("routine DSL helpers", () => {
     }
 
     expect(parsed.errors[0]).toContain("Invalid JSON");
+  });
+
+  it("parses Liftosaur-like human DSL with headings, comments, and progression directives", () => {
+    const parsed = parseRoutineDsl(
+      `
+routine "Strength Text DSL" id:routine-strength-text path:strength
+references macro:null meso:null micro:null
+
+# Week 1
+## Day 1
+// Pause 2 seconds at the bottom
+Squat / 5x5 / progress: lp(5lb) / rest: 210s / timer: 45s / id: global-back-squat / equip: barbell / regions: quads,glutes,spinal_erectors
+`.trim(),
+    );
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) {
+      return;
+    }
+
+    expect(parsed.value.path).toBe("strength");
+    expect(parsed.value.strength.blocks).toHaveLength(1);
+    expect(parsed.value.strength.blocks[0]?.label).toBe("Week 1 / Day 1");
+    expect(parsed.value.strength.blocks[0]?.exercises[0]?.canonicalName).toBe(
+      "Squat",
+    );
+    expect(parsed.value.strength.blocks[0]?.exercises[0]?.note).toBe(
+      "Pause 2 seconds at the bottom",
+    );
+    expect(
+      parsed.value.strength.blocks[0]?.exercises[0]?.sets[0]?.progression,
+    ).toStrictEqual({
+      strategy: "linear_add_load",
+      value: 5,
+    });
+  });
+
+  it("parses Intervals-style human DSL blocks with repeats, cadence ranges, and notes", () => {
+    const parsed = parseRoutineDsl(
+      `
+routine "Endurance Text DSL" id:routine-endurance-text path:endurance
+references macro:null meso:null micro:null
+
+Warmup
+- 20m 60% 90-100rpm
+
+Main set 6x
+- 4m 100% 40-50 rpm, power is less important than getting the torque
+- 5m recovery at 40%
+
+Cooldown
+- 20m 60% 90-100rpm
+`.trim(),
+    );
+
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) {
+      return;
+    }
+
+    expect(parsed.value.path).toBe("endurance");
+    expect(parsed.value.endurance.blocks).toHaveLength(3);
+    expect(parsed.value.endurance.blocks[1]?.repeatCount).toBe(6);
+    expect(
+      parsed.value.endurance.blocks[1]?.segments[0]?.cadenceRangeRpm,
+    ).toStrictEqual({
+      min: 40,
+      max: 50,
+    });
+    expect(parsed.value.endurance.blocks[1]?.segments[0]?.note).toContain(
+      "power is less important",
+    );
+    expect(parsed.value.endurance.intervals).toHaveLength(4);
+  });
+
+  it("round-trips human DSL rendering without semantic loss for supported constructs", () => {
+    const routine = {
+      dslVersion: "2.0",
+      references: {
+        macrocycleId: "macro-base",
+        mesocycleId: "meso-1",
+        microcycleId: null,
+      },
+      routineId: "routine-human-roundtrip",
+      routineName: "Human Roundtrip",
+      path: "endurance",
+      strength: {
+        variables: [],
+        blocks: [],
+      },
+      endurance: {
+        intervals: [
+          {
+            intervalId: "interval-1",
+            label: "Main set: Work",
+            durationSeconds: 240,
+            targetType: "power_watts",
+            targetValue: 100,
+            cadenceRangeRpm: {
+              min: 40,
+              max: 50,
+            },
+            note: "Power is less important than torque",
+          },
+        ],
+        blocks: [
+          {
+            blockId: "block-main",
+            label: "Main set",
+            repeatCount: 6,
+            segments: [
+              {
+                segmentId: "segment-1",
+                label: "Work",
+                durationSeconds: 240,
+                target: {
+                  type: "power_watts",
+                  value: 100,
+                },
+                cadenceRangeRpm: {
+                  min: 40,
+                  max: 50,
+                },
+                note: "Power is less important than torque",
+              },
+            ],
+          },
+        ],
+      },
+    } as unknown as RoutineDraft;
+
+    const rendered = serializeRoutineDslText(routine);
+    const reparsed = parseRoutineDsl(rendered);
+
+    expect(reparsed.ok).toBe(true);
+    if (!reparsed.ok) {
+      return;
+    }
+    expect(reparsed.value.routineId).toBe("routine-human-roundtrip");
+    expect(reparsed.value.path).toBe("endurance");
+    expect(reparsed.value.references).toStrictEqual({
+      macrocycleId: "macro-base",
+      mesocycleId: "meso-1",
+      microcycleId: null,
+    });
+    expect(reparsed.value.endurance.blocks[0]?.repeatCount).toBe(6);
+    expect(reparsed.value.endurance.blocks[0]?.segments[0]).toMatchObject({
+      target: {
+        type: "power_watts",
+        value: 100,
+      },
+      cadenceRangeRpm: {
+        min: 40,
+        max: 50,
+      },
+      note: "Power is less important than torque",
+    });
+  });
+
+  it("returns line and column hints for malformed human DSL", () => {
+    const parsed = parseRoutineDsl(
+      `
+routine "Invalid Human DSL" id:routine-invalid-human path:strength
+references macro:null meso:null micro:null
+
+# Week 1
+## Day 1
+Squat / progress: lp(5lb)
+`.trim(),
+    );
+
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) {
+      return;
+    }
+
+    expect(parsed.errors[0]).toContain("Line");
+    expect(parsed.errors[0]).toContain("column");
+    expect(parsed.errors[0]).toContain("Hint:");
   });
 
   it("returns actionable errors for invalid schema values", () => {
