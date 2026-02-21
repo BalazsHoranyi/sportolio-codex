@@ -1,0 +1,205 @@
+{
+  "$defs": {
+    "AxisLoadSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "mechanical": {
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Mechanical",
+          "type": "number"
+        },
+        "metabolic": {
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Metabolic",
+          "type": "number"
+        },
+        "neural": {
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Neural",
+          "type": "number"
+        },
+        "recruitment": {
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Recruitment",
+          "type": "number"
+        }
+      },
+      "required": [
+        "neural",
+        "metabolic",
+        "mechanical",
+        "recruitment"
+      ],
+      "title": "AxisLoadSnapshot",
+      "type": "object"
+    },
+    "WorkoutCompletedMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "athlete_id": {
+          "minLength": 1,
+          "title": "Athlete Id",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Correlation Id"
+        },
+        "event_id": {
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "event_type": {
+          "const": "workout.completed",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_version": {
+          "const": "1.0.0",
+          "title": "Event Version",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "producer": {
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "event_type",
+        "event_version",
+        "occurred_at",
+        "athlete_id",
+        "producer"
+      ],
+      "title": "WorkoutCompletedMetadata",
+      "type": "object"
+    },
+    "WorkoutCompletedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "axis_load": {
+          "$ref": "#/$defs/AxisLoadSnapshot"
+        },
+        "completed_at": {
+          "format": "date-time",
+          "title": "Completed At",
+          "type": "string"
+        },
+        "completion_state": {
+          "enum": [
+            "completed",
+            "partial"
+          ],
+          "title": "Completion State",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "minimum": 0,
+          "title": "Duration Seconds",
+          "type": "integer"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        },
+        "modality": {
+          "enum": [
+            "strength",
+            "endurance",
+            "hybrid"
+          ],
+          "title": "Modality",
+          "type": "string"
+        },
+        "session_id": {
+          "minLength": 1,
+          "title": "Session Id",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "manual",
+            "apple",
+            "garmin",
+            "strava",
+            "wahoo"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "workout_id": {
+          "minLength": 1,
+          "title": "Workout Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "session_id",
+        "workout_id",
+        "completed_at",
+        "modality",
+        "completion_state",
+        "source",
+        "duration_seconds",
+        "axis_load"
+      ],
+      "title": "WorkoutCompletedPayload",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/WorkoutCompletedMetadata"
+    },
+    "payload": {
+      "$ref": "#/$defs/WorkoutCompletedPayload"
+    }
+  },
+  "required": [
+    "metadata",
+    "payload"
+  ],
+  "title": "WorkoutCompletedEvent",
+  "type": "object"
+}

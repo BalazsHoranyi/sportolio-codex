@@ -1,0 +1,161 @@
+{
+  "$defs": {
+    "FatigueRecomputedMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "athlete_id": {
+          "minLength": 1,
+          "title": "Athlete Id",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "correlation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Correlation Id"
+        },
+        "event_id": {
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "event_type": {
+          "const": "fatigue.recomputed",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_version": {
+          "const": "1.0.0",
+          "title": "Event Version",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "producer": {
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "event_type",
+        "event_version",
+        "occurred_at",
+        "athlete_id",
+        "producer"
+      ],
+      "title": "FatigueRecomputedMetadata",
+      "type": "object"
+    },
+    "FatigueRecomputedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "affected_dates": {
+          "items": {
+            "format": "date",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Affected Dates",
+          "type": "array"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "deterministic_signature": {
+          "minLength": 1,
+          "title": "Deterministic Signature",
+          "type": "string"
+        },
+        "model_policy_version": {
+          "minLength": 1,
+          "title": "Model Policy Version",
+          "type": "string"
+        },
+        "recompute_id": {
+          "minLength": 1,
+          "title": "Recompute Id",
+          "type": "string"
+        },
+        "source_session_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Session Ids",
+          "type": "array"
+        },
+        "trigger": {
+          "enum": [
+            "session_completed",
+            "checkin_backfill",
+            "plan_move",
+            "manual_recompute"
+          ],
+          "title": "Trigger",
+          "type": "string"
+        },
+        "window_end": {
+          "format": "date",
+          "title": "Window End",
+          "type": "string"
+        },
+        "window_start": {
+          "format": "date",
+          "title": "Window Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "recompute_id",
+        "trigger",
+        "as_of",
+        "window_start",
+        "window_end",
+        "affected_dates",
+        "model_policy_version",
+        "deterministic_signature"
+      ],
+      "title": "FatigueRecomputedPayload",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/FatigueRecomputedMetadata"
+    },
+    "payload": {
+      "$ref": "#/$defs/FatigueRecomputedPayload"
+    }
+  },
+  "required": [
+    "metadata",
+    "payload"
+  ],
+  "title": "FatigueRecomputedEvent",
+  "type": "object"
+}

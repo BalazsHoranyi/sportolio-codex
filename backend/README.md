@@ -34,6 +34,21 @@ Migration lint command from repository root:
 
 - `uv run --project backend python backend/scripts/migration_lint.py --migrations-dir backend/migrations/versions`
 
+## Domain contexts and event contracts
+
+`SPRT-11` introduces explicit backend domain boundaries and versioned domain-event
+contracts so parallel implementation work stays schema-compatible.
+
+Primary references:
+
+- Architecture and ownership/lifecycle map: `backend/docs/domain-contexts-and-events.md`
+- Versioned event contracts: `backend/src/sportolo/domain/events/contracts.py`
+- Compatibility contract tests: `backend/tests/contract/test_domain_event_contracts.py`
+
+Contract schema fixtures (compatibility baselines):
+
+- `backend/tests/contract/fixtures/domain_events/`
+
 ## Today accumulation API
 
 `SPRT-36` introduces a deterministic boundary-compute endpoint:
