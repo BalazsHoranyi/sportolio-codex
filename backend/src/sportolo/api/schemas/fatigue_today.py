@@ -7,6 +7,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validato
 
 SessionState = Literal["planned", "in_progress", "completed", "partial", "abandoned"]
 BoundarySource = Literal["sleep_event", "local_midnight"]
+WorkoutType = Literal["hybrid", "strength", "endurance"]
 
 
 def _to_camel(value: str) -> str:
@@ -25,6 +26,31 @@ class FatigueAxes(CamelModel):
     recruitment: float = Field(ge=0)
 
 
+class CombinedScoreWeights(CamelModel):
+    metabolic: float = Field(ge=0)
+    mechanical: float = Field(ge=0)
+    recruitment: float = Field(ge=0)
+
+
+class CombinedScoreDebug(CamelModel):
+    workout_type: WorkoutType
+    default_sleep_applied: bool
+    base_weights: CombinedScoreWeights
+    modifier_weights: CombinedScoreWeights
+    effective_weights: CombinedScoreWeights
+    base_weighted_score: float
+    neural_gate_factor: float
+    neural_gated_score: float
+    capacity_gate_factor: float
+    capacity_gated_score: float
+
+
+class CombinedScore(CamelModel):
+    value: float
+    interpretation: str
+    debug: CombinedScoreDebug
+
+
 class SessionFatigueInput(CamelModel):
     session_id: str
     state: SessionState
@@ -36,11 +62,23 @@ class SleepEventInput(CamelModel):
     sleep_ended_at: AwareDatetime
 
 
+class SystemCapacityInput(CamelModel):
+    sleep: int | None = Field(default=None, ge=1, le=5)
+    fuel: int = Field(default=3, ge=1, le=5)
+    stress: int = Field(default=3, ge=1, le=5)
+
+
+class CombinedScoreContext(CamelModel):
+    workout_type: WorkoutType = "hybrid"
+
+
 class TodayAccumulationRequest(CamelModel):
     as_of: AwareDatetime
     timezone: str
     sessions: list[SessionFatigueInput] = Field(default_factory=list)
     sleep_events: list[SleepEventInput] = Field(default_factory=list)
+    system_capacity: SystemCapacityInput = Field(default_factory=SystemCapacityInput)
+    combined_score_context: CombinedScoreContext = Field(default_factory=CombinedScoreContext)
 
     @field_validator("timezone")
     @classmethod
@@ -65,3 +103,4 @@ class TodayAccumulationResponse(CamelModel):
     included_session_ids: list[str]
     excluded_session_ids: list[str]
     accumulated_fatigue: FatigueAxes
+    combined_score: CombinedScore
