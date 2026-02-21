@@ -65,39 +65,29 @@ function extractNeuralValueForFeb17(): string {
   return neuralValue;
 }
 
-function parseLatencyMs(summaryText: string): number {
-  const match = summaryText.match(
-    /last recompute latency:\s*([0-9]+(?:\.[0-9]+)?)ms/i,
-  );
-  if (!match?.[1]) {
-    throw new Error(
-      `Unable to parse recompute latency from summary: ${summaryText}`,
-    );
-  }
-
-  return Number(match[1]);
+function nowMs(): number {
+  return globalThis.performance?.now?.() ?? Date.now();
 }
 
 describe("CalendarPageClient real-path integration", () => {
-  it("applies drag-drop move events through the full calendar surface and keeps recompute latency within target", async () => {
+  it("applies drag-drop move events through the full calendar surface within the end-to-end interaction budget", async () => {
     const user = userEvent.setup();
 
     render(<CalendarPageClient weeklyAudit={weeklyAuditResponseSample} />);
 
     expect(extractNeuralValueForFeb17()).toBe("7.4");
 
+    const interactionStartedAtMs = nowMs();
     await user.click(
       screen.getByRole("button", {
         name: /trigger drag move/i,
       }),
     );
 
-    const summary = await screen.findByText(
-      /Audit recompute events applied: 1/i,
-    );
+    await screen.findByText(/Audit recompute events applied: 1/i);
     expect(extractNeuralValueForFeb17()).toBe("6.5");
 
-    const latencyMs = parseLatencyMs(summary.textContent ?? "");
-    expect(latencyMs).toBeLessThan(200);
+    const endToEndInteractionMs = nowMs() - interactionStartedAtMs;
+    expect(endToEndInteractionMs).toBeLessThan(200);
   });
 });
