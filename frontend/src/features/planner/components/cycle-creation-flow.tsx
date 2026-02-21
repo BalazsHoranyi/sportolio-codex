@@ -589,7 +589,7 @@ export function CycleCreationFlow() {
     >
       <header className="planner-flow-header">
         <p className="eyebrow">Planning</p>
-        <h1 id="planner-flow-title">Cycle creation flow</h1>
+        <h2 id="planner-flow-title">Cycle creation flow</h2>
         <p className="planner-flow-copy">
           Move from macro goals to executable microcycle details with explicit
           priorities, advisory warnings, and deterministic draft persistence.

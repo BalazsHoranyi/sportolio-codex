@@ -69,6 +69,7 @@ describe("TodayPage", () => {
     expect(html).toContain("Combined fatigue score");
     expect(html).toContain("System capacity");
     expect(html).toContain('aria-current="page"');
+    expect(html.match(/<h1\b/g)?.length).toBe(1);
   });
 
   it("falls back to deterministic sample data when API loader returns undefined", async () => {

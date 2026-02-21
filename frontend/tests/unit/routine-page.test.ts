@@ -12,5 +12,6 @@ describe("RoutinePage", () => {
     expect(html).toContain("Visual");
     expect(html).toContain("DSL");
     expect(html).not.toContain("Integration checklist");
+    expect(html.match(/<h1\b/g)?.length).toBe(1);
   });
 });

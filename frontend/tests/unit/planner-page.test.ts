@@ -12,5 +12,6 @@ describe("PlannerPage", () => {
     expect(html).toContain("Macro goals and events");
     expect(html).toContain('href="/routine"');
     expect(html).toContain("Open routine builder");
+    expect(html.match(/<h1\b/g)?.length).toBe(1);
   });
 });
