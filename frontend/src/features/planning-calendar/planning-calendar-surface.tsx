@@ -287,6 +287,8 @@ export function PlanningCalendarSurface({
         title: currentWorkout.title,
         fromDate: args.oldEvent.startStr || currentWorkout.date,
         toDate: args.event.startStr || currentWorkout.date,
+        workoutType: currentWorkout.workoutType,
+        intensity: currentWorkout.intensity,
         source: "drag_drop",
         occurredAt: nowIsoTimestamp(),
       });
@@ -330,6 +332,8 @@ export function PlanningCalendarSurface({
         workoutId: workout.workoutId,
         title: workout.title,
         fromDate: workout.date,
+        workoutType: workout.workoutType,
+        intensity: workout.intensity,
         source: "drag_drop",
         occurredAt: nowIsoTimestamp(),
       });
@@ -372,6 +376,8 @@ export function PlanningCalendarSurface({
       title: workout.title,
       fromDate: workout.date,
       toDate,
+      workoutType: workout.workoutType,
+      intensity: workout.intensity,
       source: "keyboard",
       occurredAt: nowIsoTimestamp(),
     });
@@ -383,6 +389,8 @@ export function PlanningCalendarSurface({
       workoutId: workout.workoutId,
       title: workout.title,
       fromDate: workout.date,
+      workoutType: workout.workoutType,
+      intensity: workout.intensity,
       source: "keyboard",
       occurredAt: nowIsoTimestamp(),
     });

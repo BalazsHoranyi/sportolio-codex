@@ -11,6 +11,30 @@ vi.mock("@fullcalendar/react", () => ({
         type="button"
         onClick={() =>
           (
+            props.eventReceive as (args: {
+              event: {
+                startStr: string;
+                extendedProps: { templateId?: string };
+                remove: () => void;
+              };
+            }) => void
+          )({
+            event: {
+              startStr: "2026-02-21",
+              extendedProps: {
+                templateId: "template-recovery-ride",
+              },
+              remove: vi.fn(),
+            },
+          })
+        }
+      >
+        Trigger drag add
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          (
             props.eventDrop as (args: {
               event: { id: string; startStr: string };
               oldEvent: { startStr: string };
@@ -133,6 +157,26 @@ describe("planning calendar surface integration", () => {
     expect(within(recomputeRegion).getByText(/workout_added/i)).toBeTruthy();
     expect(within(recomputeRegion).getByText(/workout_moved/i)).toBeTruthy();
     expect(within(recomputeRegion).getByText(/workout_removed/i)).toBeTruthy();
+  });
+
+  it("supports drag-add callbacks by emitting workout_added drag_drop recompute entries", async () => {
+    const user = userEvent.setup();
+
+    render(<PlanningCalendarSurface />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /trigger drag add/i,
+      }),
+    );
+
+    const recomputeRegion = screen.getByRole("region", {
+      name: /calendar recompute events/i,
+    });
+    expect(within(recomputeRegion).getByText(/workout_added/i)).toBeTruthy();
+    expect(
+      within(recomputeRegion).getByText(/Source: drag_drop/i),
+    ).toBeTruthy();
   });
 
   it("keeps keyboard move targets in sync after drag-move callbacks", async () => {

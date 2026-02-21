@@ -1456,6 +1456,12 @@ h1 {
   max-width: 70ch;
 }
 
+.calendar-recompute-summary {
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+  margin: 0 0 0.8rem;
+}
+
 .planning-calendar-shell {
   background:
     radial-gradient(
