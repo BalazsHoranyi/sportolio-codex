@@ -65,6 +65,9 @@ describe("TodayDashboard", () => {
     render(<TodayDashboard snapshot={buildSnapshot()} />);
 
     expect(
+      screen.getByRole("region", { name: /today bento layout/i }),
+    ).toBeTruthy();
+    expect(
       screen.getByRole("heading", { name: /today fatigue snapshot/i }),
     ).toBeTruthy();
     expect(screen.getByText("Neural")).toBeTruthy();

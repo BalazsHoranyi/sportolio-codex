@@ -11,6 +11,7 @@ describe("AnalyticsPage", () => {
     expect(html).toContain("Axis Fatigue Trend");
     expect(html).toContain("Adaptation risk timeline");
     expect(html).toContain("Session compliance");
+    expect(html).toContain('aria-label="Analytics bento layout"');
     expect(html).toContain('aria-current="page"');
   });
 });

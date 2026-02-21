@@ -25,6 +25,7 @@ describe("CalendarPage", () => {
     expect(html).toContain("Planning calendar");
     expect(html).toContain("Red zone ≥ 7.0");
     expect(html).toContain("Audit recompute events applied: 0");
+    expect(html).toContain('aria-label="Calendar bento layout"');
     expect(html).toContain('href="/analytics"');
     expect(html).toContain('aria-current="page"');
   });
