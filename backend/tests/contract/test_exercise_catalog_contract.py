@@ -9,18 +9,49 @@ def test_list_exercises_contract_response_shape_and_non_productized_canonical_na
     client = TestClient(app)
 
     response = client.get("/v1/exercises", params={"pageSize": 100})
+    split_squat_response = client.get("/v1/exercises", params={"search": "split squat"})
+    good_morning_response = client.get("/v1/exercises", params={"search": "good morning"})
+    legacy_name_response = client.get("/v1/exercises", params={"search": "barbell split squat"})
 
     assert response.status_code == 200
+    assert split_squat_response.status_code == 200
+    assert good_morning_response.status_code == 200
+    assert legacy_name_response.status_code == 200
     body = response.json()
     assert set(body) == {"items", "pagination"}
     assert isinstance(body["items"], list)
     assert body["pagination"]["page"] == 1
     assert body["pagination"]["pageSize"] == 100
 
-    names = {item["canonicalName"] for item in body["items"]}
-    assert "Split Squat" in names
-    assert "Good Morning" in names
-    assert "Barbell Split Squat" not in names
+    split_body = split_squat_response.json()
+    good_morning_body = good_morning_response.json()
+    legacy_body = legacy_name_response.json()
+    assert split_body["items"]
+    assert good_morning_body["items"]
+    assert legacy_body["items"]
+    assert split_body["items"][0]["canonicalName"] == "Split Squat"
+    assert good_morning_body["items"][0]["canonicalName"] == "Good Morning"
+    assert legacy_body["items"][0]["canonicalName"] == "Split Squat"
+
+
+def test_list_exercises_contract_returns_required_seed_metadata_fields() -> None:
+    client = TestClient(app)
+
+    response = client.get("/v1/exercises", params={"scope": "global", "pageSize": 1})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["items"]
+    first_item = body["items"][0]
+
+    assert "movementPattern" in first_item
+    assert "primaryMuscles" in first_item
+    assert "secondaryMuscles" in first_item
+    assert isinstance(first_item["movementPattern"], str)
+    assert isinstance(first_item["primaryMuscles"], list)
+    assert first_item["primaryMuscles"]
+    assert isinstance(first_item["secondaryMuscles"], list)
+    assert first_item["secondaryMuscles"]
 
 
 def test_list_exercises_is_deterministic_for_identical_queries() -> None:
@@ -55,6 +86,9 @@ def test_list_exercises_supports_filter_intersection() -> None:
                     "CBL Pallof Press",
                 ],
                 "regionTags": ["core", "obliques"],
+                "movementPattern": "general_strength",
+                "primaryMuscles": ["core", "obliques"],
+                "secondaryMuscles": ["obliques"],
                 "equipmentOptions": ["cable", "band"],
                 "ownerUserId": None,
                 "matchMetadata": {

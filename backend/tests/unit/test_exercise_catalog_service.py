@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import pytest
+
 from sportolo.services.exercise_catalog_service import (
     EQUIPMENT_ABBREVIATIONS,
     EQUIPMENT_LABELS,
+    ExerciseBlueprint,
     ExerciseCatalogService,
 )
 
@@ -204,3 +207,137 @@ def test_search_exercises_includes_match_metadata_for_alias_queries() -> None:
     assert top_match.match_metadata.highlight is not None
     assert top_match.match_metadata.highlight.field == "alias"
     assert top_match.match_metadata.highlight.value == "Cable Pallof Press"
+
+
+def test_catalog_seed_contains_at_least_1000_active_standard_exercises() -> None:
+    service = ExerciseCatalogService()
+
+    catalog = service.list_exercises(scope="global")
+
+    assert len(catalog) >= 1000
+    assert len({entry.id for entry in catalog}) == len(catalog)
+    assert len({entry.canonical_name for entry in catalog}) == len(catalog)
+
+
+def test_catalog_seed_excludes_non_canonical_generated_artifacts() -> None:
+    service = ExerciseCatalogService()
+
+    canonical_names = {entry.canonical_name for entry in service.list_exercises(scope="global")}
+
+    forbidden_examples = {
+        "Machine Machine-Supported Row",
+        "Band Banded Pull-Up",
+        "Barbell Half-Range Deadlift",
+        "Barbell Step-Through Step-Up",
+        "Landmine Landmine Deadlift",
+        "Trap Bar Trap Deadlift",
+    }
+    assert forbidden_examples.isdisjoint(canonical_names)
+
+    forbidden_fragments = (
+        "half-range",
+        "long-range",
+        "short-stride",
+        "step-through",
+        "weighted",
+        "cross-body",
+        "machine-supported",
+        "banded",
+        "double-overhand",
+        "band-resisted",
+    )
+    offenders = [
+        name
+        for name in canonical_names
+        if any(fragment in name.lower() for fragment in forbidden_fragments)
+    ]
+    assert offenders == []
+
+
+def test_catalog_entries_include_required_seed_metadata_fields() -> None:
+    service = ExerciseCatalogService()
+
+    catalog = service.list_exercises(scope="global")
+
+    assert catalog
+    for entry in catalog:
+        assert entry.equipment_options
+        assert entry.region_tags
+        assert entry.movement_pattern
+        assert entry.primary_muscles
+        assert entry.secondary_muscles
+
+
+def test_catalog_seed_validation_rejects_malformed_entries() -> None:
+    service = ExerciseCatalogService()
+
+    malformed_blueprints = (
+        ExerciseBlueprint(
+            canonical_name="",
+            region_tags=("quads",),
+            equipment_options=("barbell",),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="canonical"):
+        service._build_catalog_from_blueprints(malformed_blueprints)
+
+
+def test_catalog_seed_validation_rejects_entries_without_equipment_or_primary_muscles() -> None:
+    service = ExerciseCatalogService()
+
+    no_equipment = (
+        ExerciseBlueprint(
+            canonical_name="Validation Squat",
+            region_tags=("quads",),
+            equipment_options=(),
+        ),
+    )
+    no_primary_muscle = (
+        ExerciseBlueprint(
+            canonical_name="Validation Row",
+            region_tags=(),
+            equipment_options=("barbell",),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="equipment"):
+        service._build_catalog_from_blueprints(no_equipment)
+    with pytest.raises(ValueError, match="primary"):
+        service._build_catalog_from_blueprints(no_primary_muscle)
+
+
+def test_catalog_aliases_deduplicate_to_single_canonical_id() -> None:
+    service = ExerciseCatalogService()
+    catalog = service.list_exercises(scope="global")
+
+    alias_to_ids: dict[str, set[str]] = {}
+    for entry in catalog:
+        for alias in entry.aliases:
+            key = " ".join(alias.lower().replace("-", " ").split())
+            alias_to_ids.setdefault(key, set()).add(entry.id)
+
+    collisions = {alias: ids for alias, ids in alias_to_ids.items() if len(ids) > 1}
+    assert collisions == {}
+
+
+def test_catalog_seed_validation_rejects_duplicate_aliases_across_entries() -> None:
+    service = ExerciseCatalogService()
+
+    duplicate_alias_blueprints = (
+        ExerciseBlueprint(
+            canonical_name="Validation Front Squat",
+            region_tags=("quads", "glutes"),
+            equipment_options=("barbell",),
+            aliases=("Validation Squat",),
+        ),
+        ExerciseBlueprint(
+            canonical_name="Validation Back Squat",
+            region_tags=("quads", "glutes"),
+            equipment_options=("dumbbell",),
+            aliases=("Validation Squat",),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="duplicate alias"):
+        service._build_catalog_from_blueprints(duplicate_alias_blueprints)

@@ -51,3 +51,14 @@ Behavior:
 - Upper-body push/pull naming now includes shoulder/military press mapping, landmine press, triceps pressdowns, and straight-arm pulldowns.
 - Forearm/rotator-cuff/core gaps now include wrist curls, reverse wrist curls, pronation/supination, gripper squeezes, external/internal rotations, Cuban press, dead bug, offset carry, and ab wheel rollout.
 - Common aliases are explicitly searchable (`RFESS`, `Hyperextension`, `Adductor Machine`, `Military Press`, `Pressdown`, `GHR`, and related variants).
+
+`SPRT-65` expands this endpoint into a deterministic production-sized seed catalog:
+
+- Catalog now provides `>=1000` active deterministic global entries.
+- Each entry includes canonical metadata fields:
+  - `movementPattern`
+  - `primaryMuscles`
+  - `secondaryMuscles`
+  - plus existing `regionTags` and `equipmentOptions`.
+- Seed validation rejects malformed entries during catalog build (empty canonical name, missing equipment, missing primary muscle data, unknown equipment tokens, duplicate canonical names, duplicate IDs).
+- Seed generation is deterministic across environments because blueprint expansion and build ordering are stable and normalization-based.

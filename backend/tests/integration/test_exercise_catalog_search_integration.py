@@ -95,3 +95,13 @@ def test_search_latency_p95_stays_within_routine_builder_budget() -> None:
         assert response.status_code == 200
 
     assert _p95(durations) <= ROUTINE_BUILDER_P95_BUDGET_SECONDS
+
+
+def test_catalog_global_seed_size_exceeds_1000_entries() -> None:
+    client = TestClient(app)
+
+    response = client.get("/v1/exercises", params={"scope": "global", "page": 1, "pageSize": 100})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["pagination"]["totalItems"] >= 1000
