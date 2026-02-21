@@ -53,6 +53,8 @@ function preferredEquipmentForSelection(
 
 export function StrengthExercisePicker() {
   const searchInputId = useId();
+  const searchResultsId = useId();
+  const searchResultOptionIdPrefix = useId();
   const equipmentSelectId = useId();
   const muscleSelectId = useId();
   const [catalog, setCatalog] = useState<SearchableExerciseCatalogItem[]>(
@@ -142,6 +144,11 @@ export function StrengthExercisePicker() {
   }, [catalog]);
 
   const dslPreview = useMemo(() => toRoutineDsl(routineDraft), [routineDraft]);
+  const activeOption =
+    activeOptionIndex >= 0 ? visibleExercises[activeOptionIndex] : undefined;
+  const activeOptionId = activeOption
+    ? `${searchResultOptionIdPrefix}-${activeOption.id}`
+    : undefined;
 
   function addExercise(exercise: SearchableExerciseCatalogItem) {
     const selectedEquipment = preferredEquipmentForSelection(
@@ -243,6 +250,12 @@ export function StrengthExercisePicker() {
               onKeyDown={onSearchKeyDown}
               placeholder="Try: splt sqaut"
               autoComplete="off"
+              role="combobox"
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              aria-controls={searchResultsId}
+              aria-expanded={visibleExercises.length > 0}
+              aria-activedescendant={activeOptionId}
             />
 
             <label htmlFor={equipmentSelectId}>Equipment filter</label>
@@ -289,6 +302,7 @@ export function StrengthExercisePicker() {
           </p>
 
           <ul
+            id={searchResultsId}
             className="routine-builder-results"
             role="listbox"
             aria-label="Exercise search results"
@@ -301,6 +315,7 @@ export function StrengthExercisePicker() {
             {visibleExercises.map((exercise, index) => (
               <li key={exercise.id}>
                 <button
+                  id={`${searchResultOptionIdPrefix}-${exercise.id}`}
                   type="button"
                   role="option"
                   aria-selected={activeOptionIndex === index}
