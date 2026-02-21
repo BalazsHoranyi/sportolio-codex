@@ -245,6 +245,50 @@ h1 {
   position: relative;
 }
 
+.session-focus-card {
+  background:
+    radial-gradient(
+      circle at 12% 24%,
+      oklch(0.96 0.05 73 / 0.6),
+      transparent 48%
+    ),
+    linear-gradient(180deg, oklch(0.987 0.012 75), oklch(0.965 0.02 69));
+  display: grid;
+  gap: 0.6rem;
+}
+
+.session-focus-head h2 {
+  font-size: clamp(1.4rem, 2.8vw, 1.85rem);
+  margin-top: 0.2rem;
+}
+
+.session-focus-copy {
+  margin: 0;
+  max-width: 70ch;
+}
+
+.session-focus-id {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.session-focus-id code {
+  background: oklch(0.95 0.02 72);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  color: var(--ink-strong);
+  display: inline-block;
+  font-size: 0.82rem;
+  margin-left: 0.35rem;
+  padding: 0.15rem 0.45rem;
+}
+
+.session-focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .section-header h2 {
   font-size: clamp(1.5rem, 3vw, 2rem);
   margin-bottom: 0.45rem;
@@ -1429,6 +1473,11 @@ h1 {
 
   .split-layout {
     grid-template-columns: 1fr;
+  }
+
+  .session-focus-actions .button {
+    justify-content: center;
+    width: 100%;
   }
 
   .hero-metrics {
