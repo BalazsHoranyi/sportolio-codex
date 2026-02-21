@@ -6,20 +6,28 @@ function readGlobalsCss(): string {
   return fs.readFileSync(globalsCssPath, "utf8");
 }
 
+function readRootBlock(css: string): string {
+  const rootBlock = css.match(/:root\s*{([\s\S]*?)\n}/);
+  if (!rootBlock) {
+    throw new Error("Missing :root declaration block");
+  }
+  return rootBlock[1];
+}
+
 describe("midnight bloom token contract", () => {
   it("defines standardized shadcn theme variables in :root", () => {
-    const css = readGlobalsCss();
+    const rootCss = readRootBlock(readGlobalsCss());
 
-    expect(css).toMatch(/--background:/);
-    expect(css).toMatch(/--foreground:/);
-    expect(css).toMatch(/--card:/);
-    expect(css).toMatch(/--popover:/);
-    expect(css).toMatch(/--primary:/);
-    expect(css).toMatch(/--secondary:/);
-    expect(css).toMatch(/--muted:/);
-    expect(css).toMatch(/--accent:/);
-    expect(css).toMatch(/--border:/);
-    expect(css).toMatch(/--ring:/);
+    expect(rootCss).toMatch(/--background:/);
+    expect(rootCss).toMatch(/--foreground:/);
+    expect(rootCss).toMatch(/--card:/);
+    expect(rootCss).toMatch(/--popover:/);
+    expect(rootCss).toMatch(/--primary:/);
+    expect(rootCss).toMatch(/--secondary:/);
+    expect(rootCss).toMatch(/--muted:/);
+    expect(rootCss).toMatch(/--accent:/);
+    expect(rootCss).toMatch(/--border:/);
+    expect(rootCss).toMatch(/--ring:/);
   });
 
   it("maps app semantic tokens to standardized shadcn variables", () => {
