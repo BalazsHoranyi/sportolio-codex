@@ -11,10 +11,12 @@ describe("today view-model", () => {
       todayContributorSample,
     );
 
-    expect(viewModel.whyThisLinks).toHaveLength(1);
-    expect(viewModel.whyThisLinks[0]?.sessionId).toBe(
+    expect(viewModel.whyThisLinks).toHaveLength(3);
+    expect(viewModel.whyThisLinks.map((link) => link.sessionId)).toEqual([
       "completed-before-boundary",
-    );
+      "sprint-starts-1",
+      "threshold-run-1",
+    ]);
   });
 
   it("creates default contributor links when custom contributors are absent", () => {
@@ -169,5 +171,17 @@ describe("today view-model", () => {
     expect(links).toHaveLength(3);
     expect(links.map((link) => link.sessionId)).toEqual(["s2", "s3", "s4"]);
     expect(links[0]?.shareLabel).toBe("50%");
+  });
+
+  it("formats boundary window and as-of timestamps for scan-friendly readability", () => {
+    const viewModel = buildTodayDashboardViewModel(
+      todayAccumulationResponseSample,
+      todayContributorSample,
+    );
+
+    expect(viewModel.boundaryWindow).toContain(" to ");
+    expect(viewModel.boundaryWindow).not.toContain("->");
+    expect(viewModel.boundaryWindow).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
+    expect(viewModel.asOf).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
 });

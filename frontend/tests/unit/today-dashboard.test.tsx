@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import React from "react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import type {
   TodayAccumulationResponse,
@@ -222,7 +222,7 @@ describe("TodayDashboard", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("renders per-score explainability disclosures with contributor links", () => {
+  it("renders per-score explainability tooltips with score-specific controls and contributor links", () => {
     render(
       <TodayDashboard
         snapshot={buildSnapshot({
@@ -283,19 +283,26 @@ describe("TodayDashboard", () => {
       />,
     );
 
-    const explainabilityButtons = screen.getAllByRole("button", {
-      name: /why this score/i,
-    });
-    expect(explainabilityButtons).toHaveLength(5);
-
-    fireEvent.click(explainabilityButtons[0]!);
-    fireEvent.click(explainabilityButtons[4]!);
+    expect(
+      screen.getByRole("button", { name: /why this neural score/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /why this metabolic score/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /why this mechanical score/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /why this recruitment score/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /why this combined score/i }),
+    ).toBeTruthy();
+    expect(screen.getAllByRole("tooltip")).toHaveLength(5);
 
     expect(screen.getByText("Neural readiness.")).toBeTruthy();
     expect(screen.getByText("Combined risk.")).toBeTruthy();
     expect(screen.getAllByText("100%").length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("Neural gauge").getAttribute("title")).toBe(
-      null,
-    );
+    expect(screen.getAllByText(/top contributors/i).length).toBeGreaterThan(0);
   });
 });

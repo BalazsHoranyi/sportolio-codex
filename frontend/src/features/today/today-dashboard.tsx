@@ -14,6 +14,7 @@ import {
 interface TodayDashboardProps {
   snapshot: TodayAccumulationResponse;
   contributors?: TodayContributorSession[];
+  dataSource?: "api" | "sample";
 }
 
 interface ScoreExplainabilityDetailsProps {
@@ -56,33 +57,46 @@ function ScoreExplainabilityDetails({
   scoreLabel,
   explainability,
 }: ScoreExplainabilityDetailsProps) {
+  const tooltipId = `${scoreKey}-score-tooltip`;
+
   return (
-    <details
+    <section
       className="today-score-explain"
       data-testid={`${scoreKey}-explain`}
+      aria-label={`${scoreLabel} score explainability`}
     >
-      <summary role="button" aria-label="Why this score">
-        Why this score
-      </summary>
-      <div
-        className="today-score-explain-content"
-        role="region"
-        aria-label={`${scoreLabel} score explanation`}
-      >
-        <p className="today-score-explain-axis">{explainability.axisMeaning}</p>
-        <p className="today-score-explain-decision">
-          {explainability.decisionHint}
-        </p>
-        <p className="today-score-explain-label">Top contributors</p>
-        <ContributorChips contributors={explainability.contributors} />
+      <div className="today-score-tooltip">
+        <button
+          aria-describedby={tooltipId}
+          aria-label={`Why this ${scoreLabel} score`}
+          className="today-score-tooltip-trigger"
+          type="button"
+        >
+          Why this {scoreLabel} score
+        </button>
+        <div
+          className="today-score-tooltip-content"
+          id={tooltipId}
+          role="tooltip"
+        >
+          <p className="today-score-explain-axis">
+            {explainability.axisMeaning}
+          </p>
+          <p className="today-score-explain-decision">
+            {explainability.decisionHint}
+          </p>
+        </div>
       </div>
-    </details>
+      <p className="today-score-explain-label">Top contributors</p>
+      <ContributorChips contributors={explainability.contributors} />
+    </section>
   );
 }
 
 export function TodayDashboard({
   snapshot,
   contributors,
+  dataSource = "api",
 }: TodayDashboardProps) {
   const viewModel = buildTodayDashboardViewModel(snapshot, contributors);
 
@@ -95,6 +109,16 @@ export function TodayDashboard({
             <h2>Today fatigue snapshot</h2>
             <p>Completed-only carryover from the current boundary window.</p>
           </header>
+          <p
+            className={`today-data-source ${
+              dataSource === "sample" ? "today-data-source-sample" : ""
+            }`}
+            role="status"
+          >
+            {dataSource === "sample"
+              ? "Using sample data (API unavailable)."
+              : "Live API snapshot"}
+          </p>
 
           <dl
             className="today-boundary"

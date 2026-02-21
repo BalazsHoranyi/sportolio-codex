@@ -121,6 +121,7 @@ describe("TodayPage", () => {
     expect(html).toContain("Today fatigue snapshot");
     expect(html).toContain("Combined fatigue score");
     expect(html).toContain("System capacity");
+    expect(html).toContain("Live API snapshot");
     expect(html).toContain('aria-current="page"');
     expect(html.match(/<h1\b/g)?.length).toBe(1);
   });
@@ -132,6 +133,7 @@ describe("TodayPage", () => {
 
     expect(html).toContain("Today fatigue snapshot");
     expect(html).toContain("Boundary source");
+    expect(html).toContain("Using sample data (API unavailable).");
   });
 
   it("renders default contributor links from loaded session IDs when contributor metadata is unavailable", async () => {
@@ -229,6 +231,6 @@ describe("TodayPage", () => {
 
     await expect(
       (async () => renderToStaticMarkup(await TodayPage()))(),
-    ).resolves.toContain("Today fatigue snapshot");
+    ).resolves.toContain("Using sample data (API unavailable).");
   });
 });

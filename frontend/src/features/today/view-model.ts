@@ -78,6 +78,28 @@ function mapBoundarySource(boundarySource: string): string {
     : "Local midnight rollover";
 }
 
+function formatDateTime(value: string, timezone: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timezone,
+      timeZoneName: "short",
+    }).format(date);
+  } catch {
+    return value;
+  }
+}
+
 function toCapacityState(factor: number): ThresholdState {
   if (factor >= 1.1) {
     return "high";
@@ -210,9 +232,9 @@ export function buildTodayDashboardViewModel(
   const capacityState = toCapacityState(capacityFactor);
 
   return {
-    asOf: snapshot.asOf,
+    asOf: formatDateTime(snapshot.asOf, snapshot.boundary.timezone),
     boundarySourceLabel: mapBoundarySource(snapshot.boundary.boundarySource),
-    boundaryWindow: `${snapshot.boundary.boundaryStart} -> ${snapshot.boundary.boundaryEnd}`,
+    boundaryWindow: `${formatDateTime(snapshot.boundary.boundaryStart, snapshot.boundary.timezone)} to ${formatDateTime(snapshot.boundary.boundaryEnd, snapshot.boundary.timezone)}`,
     gauges: [
       {
         id: "neural",

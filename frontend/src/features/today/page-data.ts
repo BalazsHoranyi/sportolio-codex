@@ -12,6 +12,7 @@ import type {
 export interface TodayPageData {
   snapshot: TodayAccumulationResponse;
   contributors: TodayContributorSession[] | undefined;
+  source: "api" | "sample";
 }
 
 export async function loadTodayPageData(): Promise<TodayPageData> {
@@ -26,9 +27,11 @@ export async function loadTodayPageData(): Promise<TodayPageData> {
 
   const snapshot = loadedSnapshot ?? todayAccumulationResponseSample;
   const contributors = loadedSnapshot ? undefined : todayContributorSample;
+  const source = loadedSnapshot ? "api" : "sample";
 
   return {
     snapshot,
     contributors,
+    source,
   };
 }
